@@ -42,7 +42,7 @@ pub(crate) async fn initialize(db: &Database) {
     db.collection::<Game>(GAMES_COLLECTION)
         .create_index(
             IndexModel::builder()
-                .keys(doc! { "group": 1, "scheduled_date": -1 })
+                .keys(doc! { "status": 1, "scheduled_date": -1 })
                 .build(),
         )
         .await

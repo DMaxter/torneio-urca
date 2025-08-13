@@ -1,4 +1,7 @@
-use pm_tournament::Config;
+use std::sync::Arc;
+
+use pm_tournament::{Config, start_server};
+use tokio::sync::RwLock;
 use tracing::{Level, event};
 use tracing_subscriber::EnvFilter;
 
@@ -21,6 +24,6 @@ async fn main() {
     event!(Level::INFO, "Configuration successfully loaded");
 
     // Start server
-
     event!(Level::INFO, "Listening on {0}", config.listener);
+    start_server(Arc::new(RwLock::new(config))).await
 }

@@ -11,6 +11,15 @@ pub(crate) struct Game {
     pub scheduled_date: DateTime<Utc>,
     pub start_date: DateTime<Utc>,
     pub finish_date: DateTime<Utc>,
+    pub status: GameStatus,
     pub game_record: ObjectId,
     pub events: Vec<GameEvent>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub(crate) enum GameStatus {
+    NotStarted,
+    InProgress,
+    Finished,
+    Canceled,
 }
