@@ -1,3 +1,5 @@
+#![feature(iterator_try_collect)]
+
 mod config;
 pub(crate) mod db;
 pub(crate) mod entity;
@@ -15,12 +17,16 @@ use user::add_user;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::user::get_users;
+use crate::{
+    team::{add_team, get_teams},
+    user::get_users,
+};
 
 pub type SharedState = Arc<RwLock<Config>>;
 
 pub async fn start_server(config: SharedState) {
     let app = Router::new()
+        .route("/teams", post(add_team).get(get_teams))
         .route("/users", post(add_user).get(get_users))
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(AddExtensionLayer::new(Arc::clone(&config)));
@@ -37,7 +43,7 @@ pub async fn start_server(config: SharedState) {
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(user::add_user, user::get_users),
-    components(schemas(user::CreateUserDto, user::UserDto))
+    paths(team::add_team, team::get_teams, user::add_user, user::get_users),
+    components(schemas(team::CreateTeamDto, team::TeamDto, user::CreateUserDto, user::UserDto))
 )]
 struct ApiDoc;

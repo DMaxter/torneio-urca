@@ -10,18 +10,23 @@ use std::{
 };
 
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) enum Error {}
+pub(crate) enum Error {
+    InternalError,
+    InvalidId(String),
+}
 
 impl Error {
     fn to_code(&self) -> StatusCode {
         match self {
-            _ => StatusCode::BAD_REQUEST,
+            Error::InvalidId(_) => StatusCode::BAD_REQUEST,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
     fn to_message(&self) -> String {
         match self {
-            _ => String::from("Request not valid"),
+            Error::InvalidId(msg) => format!("ID inválido para {msg}"),
+            _ => String::from("Erro interno"),
         }
     }
 }
