@@ -2,7 +2,7 @@ use bson::oid::ObjectId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) enum GameEvent {
     StartTime {
         period: u8,
@@ -12,6 +12,7 @@ pub(crate) enum GameEvent {
     Foul {
         player_id: ObjectId,
         player_name: String,
+        team_name: String,
         period: u8,
         minute: u8,
         #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
@@ -32,7 +33,7 @@ pub(crate) enum GameEvent {
     },
     Break {
         team_id: ObjectId,
-        team_name: ObjectId,
+        team_name: String,
         #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
         timestamp: DateTime<Utc>,
     },

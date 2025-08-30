@@ -1,7 +1,7 @@
 pub(crate) mod card;
 pub(crate) mod game;
+pub(crate) mod game_call;
 pub(crate) mod game_event;
-pub(crate) mod game_record;
 pub(crate) mod gender;
 pub(crate) mod goal;
 pub(crate) mod role;
@@ -10,8 +10,8 @@ pub(crate) mod user;
 
 pub(crate) use card::*;
 pub(crate) use game::*;
+pub(crate) use game_call::*;
 pub(crate) use game_event::*;
-pub(crate) use game_record::*;
 pub(crate) use gender::*;
 pub(crate) use goal::*;
 pub(crate) use role::*;

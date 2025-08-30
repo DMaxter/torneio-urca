@@ -1,9 +1,9 @@
 use mongodb::{Database, IndexModel, bson::doc};
 
-use crate::entity::{Card, Game, GameRecord, Goal, User};
+use crate::entity::{Card, Game, GameCall, Goal, User};
 
 pub(crate) const CARDS_COLLECTION: &str = "cards";
-pub(crate) const GAME_RECORDS_COLLECTION: &str = "game_records";
+pub(crate) const GAME_CALLS_COLLECTION: &str = "game_calls";
 pub(crate) const GAMES_COLLECTION: &str = "games";
 pub(crate) const GOALS_COLLECTION: &str = "goals";
 pub(crate) const TEAMS_COLLECTION: &str = "teams";
@@ -17,9 +17,9 @@ pub(crate) async fn initialize(db: &Database) {
     db.create_collection(GAMES_COLLECTION)
         .await
         .expect("Couldn't create games collection");
-    db.create_collection(GAME_RECORDS_COLLECTION)
+    db.create_collection(GAME_CALLS_COLLECTION)
         .await
-        .expect("Couldn't create game records collection");
+        .expect("Couldn't create game calls collection");
     db.create_collection(GOALS_COLLECTION)
         .await
         .expect("Couldn't create goals collection");
@@ -47,14 +47,14 @@ pub(crate) async fn initialize(db: &Database) {
         )
         .await
         .expect("Couldn't create index on games collection");
-    db.collection::<GameRecord>(GAME_RECORDS_COLLECTION)
+    db.collection::<GameCall>(GAME_CALLS_COLLECTION)
         .create_index(
             IndexModel::builder()
-                .keys(doc! {"game": 1, "home_team": 1, "away_team": 1})
+                .keys(doc! {"game": 1, "team": 1})
                 .build(),
         )
         .await
-        .expect("Couldn't create index on game records collection");
+        .expect("Couldn't create index on game calls collection");
     db.collection::<Goal>(GOALS_COLLECTION)
         .create_index(IndexModel::builder().keys(doc! {"player": 1}).build())
         .await

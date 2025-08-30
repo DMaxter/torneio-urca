@@ -4,6 +4,7 @@ mod config;
 pub(crate) mod db;
 pub(crate) mod entity;
 pub(crate) mod error;
+pub(crate) mod game;
 pub(crate) mod team;
 pub(crate) mod user;
 
@@ -18,6 +19,7 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
+    game::{add_game, get_games},
     team::{add_team, get_teams},
     user::get_users,
 };
@@ -26,6 +28,7 @@ pub type SharedState = Arc<RwLock<Config>>;
 
 pub async fn start_server(config: SharedState) {
     let app = Router::new()
+        .route("/games", post(add_game).get(get_games))
         .route("/teams", post(add_team).get(get_teams))
         .route("/users", post(add_user).get(get_users))
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
@@ -43,7 +46,24 @@ pub async fn start_server(config: SharedState) {
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(team::add_team, team::get_teams, user::add_user, user::get_users),
-    components(schemas(team::CreateTeamDto, team::TeamDto, user::CreateUserDto, user::UserDto))
+    paths(
+        game::add_game,
+        game::get_games,
+        team::add_team,
+        team::get_teams,
+        user::add_user,
+        user::get_users
+    ),
+    components(schemas(
+        game::CreateGameDto,
+        game::CreateGameCallDto,
+        game::GameDto,
+        game::GameCallDto,
+        game::GameEventDto,
+        team::CreateTeamDto,
+        team::TeamDto,
+        user::CreateUserDto,
+        user::UserDto
+    ))
 )]
 struct ApiDoc;

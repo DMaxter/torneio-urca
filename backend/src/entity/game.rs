@@ -1,23 +1,35 @@
 use bson::oid::ObjectId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
-use crate::entity::GameEvent;
+use crate::{entity::GameEvent, game::CreateGameDto};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub(crate) struct Game {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub scheduled_date: DateTime<Utc>,
-    pub start_date: DateTime<Utc>,
-    pub finish_date: DateTime<Utc>,
+    pub start_date: Option<DateTime<Utc>>,
+    pub finish_date: Option<DateTime<Utc>>,
     pub status: GameStatus,
-    pub game_record: ObjectId,
+    pub home_call: Option<ObjectId>,
+    pub away_call: Option<ObjectId>,
     pub events: Vec<GameEvent>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+impl From<CreateGameDto> for Game {
+    fn from(value: CreateGameDto) -> Self {
+        Game {
+            scheduled_date: value.scheduled_date,
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize, ToSchema)]
 pub(crate) enum GameStatus {
+    #[default]
     NotStarted,
     InProgress,
     Finished,

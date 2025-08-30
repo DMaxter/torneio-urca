@@ -11,4 +11,5 @@ pub(crate) enum Role {
     GameDeputy,
     TeamResponsible,
     Timekeeper,
+    Organizer,
 }
