@@ -6,6 +6,7 @@ pub(crate) const CARDS_COLLECTION: &str = "cards";
 pub(crate) const GAME_CALLS_COLLECTION: &str = "game_calls";
 pub(crate) const GAMES_COLLECTION: &str = "games";
 pub(crate) const GOALS_COLLECTION: &str = "goals";
+pub(crate) const GROUPS_COLLECTION: &str = "groups";
 pub(crate) const TEAMS_COLLECTION: &str = "teams";
 pub(crate) const USERS_COLLECTION: &str = "users";
 
@@ -20,6 +21,9 @@ pub(crate) async fn initialize(db: &Database) {
     db.create_collection(GAME_CALLS_COLLECTION)
         .await
         .expect("Couldn't create game calls collection");
+    db.create_collection(GROUPS_COLLECTION)
+        .await
+        .expect("Couldn't create groups collection");
     db.create_collection(GOALS_COLLECTION)
         .await
         .expect("Couldn't create goals collection");

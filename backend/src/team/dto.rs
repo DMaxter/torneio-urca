@@ -3,7 +3,7 @@ use utoipa::ToSchema;
 
 use crate::entity::{Gender, Team};
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub(crate) struct CreateTeamDto {
     pub name: String,
     pub gender: Gender,

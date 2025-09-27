@@ -5,23 +5,23 @@ use bson::Document;
 use futures_util::TryStreamExt;
 use tracing::{Level, event, instrument};
 
-use crate::{SharedState, db::TEAMS_COLLECTION, entity::Team, error::Error};
+use crate::{SharedState, db::GROUPS_COLLECTION, entity::Group, error::Error};
 pub(crate) use dto::*;
 
-#[utoipa::path(post, path = "/teams", tag="Teams", request_body(content = CreateTeamDto), responses((status = 200, description = "Team registered")))]
+#[utoipa::path(post, path = "/groups", tag = "Groups", request_body(content = CreateGroupDto), responses((status = 200, description = "Group registered")))]
 #[instrument(skip(state))]
-pub(crate) async fn add_team(
+pub(crate) async fn add_group(
     Extension(state): Extension<SharedState>,
-    Json(team): Json<CreateTeamDto>,
+    Json(group): Json<CreateGroupDto>,
 ) -> Result<impl IntoResponse, Error> {
-    event!(Level::INFO, "Creating team");
+    event!(Level::INFO, "Creating group");
 
     state
         .read()
         .await
         .db
-        .collection(TEAMS_COLLECTION)
-        .insert_one(Team::try_from(team)?)
+        .collection(GROUPS_COLLECTION)
+        .insert_one(Group::try_from(group)?)
         .await
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create team: {e}");
@@ -34,31 +34,31 @@ pub(crate) async fn add_team(
     Ok(())
 }
 
-#[utoipa::path(get, path = "/teams", tag="Teams", responses((status = 200, description = "List of registered teams", body = Vec<TeamDto>)))]
+#[utoipa::path(get, path = "/groups", tag = "Groups", responses((status = 200, description = "List of registered groups", body = Vec<GroupDto>)))]
 #[instrument(skip(state))]
-pub(crate) async fn get_teams(
+pub(crate) async fn get_groups(
     Extension(state): Extension<SharedState>,
 ) -> Result<impl IntoResponse, Error> {
-    event!(Level::INFO, "Listing all teams");
+    event!(Level::INFO, "Listing all groups");
 
-    let teams = state
+    let groups = state
         .read()
         .await
         .db
-        .collection(TEAMS_COLLECTION)
+        .collection(GROUPS_COLLECTION)
         .find(Document::new())
         .await
         .unwrap()
-        .try_collect::<Vec<Team>>()
+        .try_collect::<Vec<Group>>()
         .await
         .map_err(|e| {
-            event!(Level::ERROR, "Couldn't get all teams: {e}");
+            event!(Level::ERROR, "Couldn't get all groups: {e}");
 
             Error::InternalError
         })?
         .into_iter()
-        .map(TeamDto::from)
+        .map(GroupDto::from)
         .collect::<Vec<_>>();
 
-    Ok(Json(teams))
+    Ok(Json(groups))
 }
