@@ -10,6 +10,7 @@ use crate::{error::Error, group::CreateGroupDto};
 pub(crate) struct Group {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
+    pub tournament: ObjectId,
     pub name: String,
     pub teams: Vec<ObjectId>,
 }
@@ -19,6 +20,7 @@ impl TryFrom<CreateGroupDto> for Group {
 
     fn try_from(value: CreateGroupDto) -> Result<Self, Self::Error> {
         Ok(Group {
+            tournament: ObjectId::from_str(&value.tournament).unwrap(),
             name: value.name,
             teams: value
                 .teams

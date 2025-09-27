@@ -7,6 +7,7 @@ pub(crate) mod goal;
 pub(crate) mod group;
 pub(crate) mod role;
 pub(crate) mod team;
+pub(crate) mod tournament;
 pub(crate) mod user;
 
 pub(crate) use card::*;
@@ -18,4 +19,5 @@ pub(crate) use goal::*;
 pub(crate) use group::*;
 pub(crate) use role::*;
 pub(crate) use team::*;
+pub(crate) use tournament::*;
 pub(crate) use user::*;

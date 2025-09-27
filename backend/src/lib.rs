@@ -7,6 +7,7 @@ pub(crate) mod error;
 pub(crate) mod game;
 pub(crate) mod group;
 pub(crate) mod team;
+pub(crate) mod tournament;
 pub(crate) mod user;
 
 use std::sync::Arc;
@@ -23,6 +24,7 @@ use crate::{
     game::{add_game, get_games},
     group::{add_group, get_groups},
     team::{add_team, get_teams},
+    tournament::{add_tournament, get_tournaments},
     user::get_users,
 };
 
@@ -33,6 +35,7 @@ pub async fn start_server(config: SharedState) {
         .route("/games", post(add_game).get(get_games))
         .route("/groups", post(add_group).get(get_groups))
         .route("/teams", post(add_team).get(get_teams))
+        .route("/tournaments", post(add_tournament).get(get_tournaments))
         .route("/users", post(add_user).get(get_users))
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .layer(AddExtensionLayer::new(Arc::clone(&config)));
@@ -56,6 +59,8 @@ pub async fn start_server(config: SharedState) {
         group::get_groups,
         team::add_team,
         team::get_teams,
+        tournament::add_tournament,
+        tournament::get_tournaments,
         user::add_user,
         user::get_users
     ),
@@ -69,6 +74,7 @@ pub async fn start_server(config: SharedState) {
         group::GroupDto,
         team::CreateTeamDto,
         team::TeamDto,
+        tournament::TournamentDto,
         user::CreateUserDto,
         user::UserDto
     ))

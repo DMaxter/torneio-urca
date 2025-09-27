@@ -10,8 +10,8 @@ use tracing::{Level, event, instrument};
 
 use crate::{
     SharedState,
-    db::{GAME_CALLS_COLLECTION, GAMES_COLLECTION},
-    entity::{Game, GameCall},
+    db::{GAME_CALLS_COLLECTION, GAMES_COLLECTION, TOURNAMENTS_COLLECTION},
+    entity::{Game, GameCall, Tournament},
     error::Error,
 };
 
@@ -24,6 +24,20 @@ pub(crate) async fn add_game(
     event!(Level::INFO, "Creating game");
 
     let db = &state.read().await.db;
+
+    let tournament = if let Some(tournament) = db
+        .collection::<Tournament>(TOURNAMENTS_COLLECTION)
+        .find_one(doc! { "_id": &game.tournament })
+        .await
+        .map_err(|e| {
+            event!(Level::ERROR, "Couldn't fetch tournament: {e}");
+
+            Error::InternalError
+        })? {
+        tournament.id.unwrap()
+    } else {
+        return Err(Error::NotFound(String::from("Torneio")));
+    };
 
     let calls = db
         .collection(GAME_CALLS_COLLECTION)
@@ -63,11 +77,23 @@ pub(crate) async fn add_game(
     db.collection::<GameCall>(GAME_CALLS_COLLECTION)
         .update_many(
             doc! {"$or": [{"_id": game.home_call}, {"_id": game.away_call}] },
-            doc! {"$set": {"game": game_id }},
+            doc! {"$set": {"game": &game_id }},
         )
         .await
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't add game_id to game calls: {e}");
+
+            Error::InternalError
+        })?;
+
+    db.collection::<Tournament>(TOURNAMENTS_COLLECTION)
+        .update_one(
+            doc! { "_id": &tournament },
+            doc! { "$push": { "games": game_id } },
+        )
+        .await
+        .map_err(|e| {
+            event!(Level::ERROR, "Couldn't add game to tournament: {e}");
 
             Error::InternalError
         })?;

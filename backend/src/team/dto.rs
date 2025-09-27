@@ -5,6 +5,7 @@ use crate::entity::{Gender, Team};
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub(crate) struct CreateTeamDto {
+    pub tournament: String,
     pub name: String,
     pub gender: Gender,
     pub responsible: String,

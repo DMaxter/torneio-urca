@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use bson::oid::ObjectId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -9,6 +11,7 @@ use crate::{entity::GameEvent, game::CreateGameDto};
 pub(crate) struct Game {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
+    pub tournament: ObjectId,
     pub scheduled_date: DateTime<Utc>,
     pub start_date: Option<DateTime<Utc>>,
     pub finish_date: Option<DateTime<Utc>>,
@@ -21,6 +24,7 @@ pub(crate) struct Game {
 impl From<CreateGameDto> for Game {
     fn from(value: CreateGameDto) -> Self {
         Game {
+            tournament: ObjectId::from_str(&value.tournament).unwrap(),
             scheduled_date: value.scheduled_date,
             ..Default::default()
         }

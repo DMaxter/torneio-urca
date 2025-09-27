@@ -1,11 +1,16 @@
 mod dto;
 
 use axum::{Extension, Json, response::IntoResponse};
-use bson::Document;
+use bson::{Document, doc};
 use futures_util::TryStreamExt;
 use tracing::{Level, event, instrument};
 
-use crate::{SharedState, db::TEAMS_COLLECTION, entity::Team, error::Error};
+use crate::{
+    SharedState,
+    db::{TEAMS_COLLECTION, TOURNAMENTS_COLLECTION},
+    entity::{Team, Tournament},
+    error::Error,
+};
 pub(crate) use dto::*;
 
 #[utoipa::path(post, path = "/teams", tag="Teams", request_body(content = CreateTeamDto), responses((status = 200, description = "Team registered")))]
@@ -16,15 +21,41 @@ pub(crate) async fn add_team(
 ) -> Result<impl IntoResponse, Error> {
     event!(Level::INFO, "Creating team");
 
-    state
-        .read()
+    let db = &state.read().await.db;
+
+    let tournament = if let Some(tournament) = db
+        .collection::<Tournament>(TOURNAMENTS_COLLECTION)
+        .find_one(doc! { "_id": &team.tournament })
         .await
-        .db
+        .map_err(|e| {
+            event!(Level::ERROR, "Couldn't fetch tournament: {e}");
+
+            Error::InternalError
+        })? {
+        tournament.id.unwrap()
+    } else {
+        return Err(Error::NotFound(String::from("Torneio")));
+    };
+
+    let team_id = db
         .collection(TEAMS_COLLECTION)
         .insert_one(Team::try_from(team)?)
         .await
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create team: {e}");
+
+            Error::InternalError
+        })?
+        .inserted_id;
+
+    db.collection::<Tournament>(TOURNAMENTS_COLLECTION)
+        .update_one(
+            doc! { "_id": &tournament },
+            doc! { "$push": { "teams": team_id } },
+        )
+        .await
+        .map_err(|e| {
+            event!(Level::ERROR, "Couldn't add team to tournament: {e}");
 
             Error::InternalError
         })?;

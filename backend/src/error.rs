@@ -13,12 +13,14 @@ use std::{
 pub(crate) enum Error {
     InternalError,
     InvalidId(String),
+    NotFound(String),
 }
 
 impl Error {
     fn to_code(&self) -> StatusCode {
         match self {
             Error::InvalidId(_) => StatusCode::BAD_REQUEST,
+            Error::NotFound(_) => StatusCode::NOT_FOUND,
             _ => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -26,6 +28,7 @@ impl Error {
     fn to_message(&self) -> String {
         match self {
             Error::InvalidId(msg) => format!("ID inválido para {msg}"),
+            Error::NotFound(msg) => format!("{msg} não existente"),
             _ => String::from("Erro interno"),
         }
     }

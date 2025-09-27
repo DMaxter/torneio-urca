@@ -6,6 +6,7 @@ use crate::entity::{Game, GameCall, GameEvent, GameStatus};
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub(crate) struct CreateGameDto {
+    pub tournament: String,
     pub scheduled_date: DateTime<Utc>,
     pub home_call: CreateGameCallDto,
     pub away_call: CreateGameCallDto,

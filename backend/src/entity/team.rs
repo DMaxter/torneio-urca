@@ -10,6 +10,7 @@ use crate::{entity::Gender, error::Error, team::CreateTeamDto};
 pub struct Team {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
+    pub tournament: ObjectId,
     pub name: String,
     pub gender: Gender,
     pub responsible: ObjectId,
@@ -51,6 +52,7 @@ impl TryFrom<CreateTeamDto> for Team {
         };
 
         Ok(Team {
+            tournament: ObjectId::from_str(&value.tournament).unwrap(),
             name: value.name,
             gender: value.gender,
             responsible: ObjectId::from_str(&value.responsible).map_err(|e| {

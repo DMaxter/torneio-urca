@@ -5,6 +5,7 @@ use crate::entity::Group;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub(crate) struct CreateGroupDto {
+    pub tournament: String,
     pub name: String,
     pub teams: Vec<String>,
 }
