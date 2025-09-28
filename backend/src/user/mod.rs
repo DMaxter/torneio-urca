@@ -27,7 +27,7 @@ pub(crate) async fn add_user(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create user: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?;
 
     event!(Level::INFO, "Successfully created user");
@@ -55,7 +55,7 @@ pub(crate) async fn get_users(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't get all users: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?
         .into_iter()
         .map(UserDto::from)

@@ -1,22 +1,23 @@
 use bson::oid::ObjectId;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
 use crate::{entity::Role, user::CreateUserDto};
 
+#[serde_as]
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub(crate) struct User {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
     pub name: String,
-    #[serde(with = "bson::serde_helpers::chrono_datetime_as_bson_datetime")]
+    #[serde_as(as = "bson::serde_helpers::datetime::FromChrono04DateTime")]
     pub birth_date: DateTime<Utc>,
     pub address: Option<String>,
     pub place_of_birth: Option<String>,
     pub fiscal_number: String,
     pub confirmed: bool,
     pub roles: Vec<Role>,
-    pub team_id: Option<ObjectId>,
 }
 
 impl From<CreateUserDto> for User {

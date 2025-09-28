@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::entity::{Game, GameCall, GameEvent, GameStatus};
+use crate::entity::{CardType, Game, GameCall, GameEvent, GameStatus};
 
 #[derive(Clone, Debug, Deserialize, Serialize, ToSchema)]
 pub(crate) struct CreateGameDto {
@@ -80,6 +80,7 @@ pub(crate) enum GameEventDto {
         team_name: String,
         period: u8,
         minute: u8,
+        card: CardType,
         timestamp: DateTime<Utc>,
     },
     Goal {
@@ -112,6 +113,7 @@ impl From<GameEvent> for GameEventDto {
                 period,
                 minute,
                 timestamp,
+                card,
             } => GameEventDto::Foul {
                 player_id: player_id.to_hex(),
                 player_name,
@@ -119,6 +121,7 @@ impl From<GameEvent> for GameEventDto {
                 period,
                 minute,
                 timestamp,
+                card,
             },
             GameEvent::EndTime { period, timestamp } => GameEventDto::EndTime { period, timestamp },
             GameEvent::Goal {

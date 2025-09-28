@@ -32,7 +32,7 @@ pub(crate) async fn add_game(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't fetch tournament: {e}");
 
-            Error::InternalError
+            Error::Internal
         })? {
         tournament.id.unwrap()
     } else {
@@ -51,7 +51,7 @@ pub(crate) async fn add_game(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create game calls: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?
         .inserted_ids
         .into_values()
@@ -70,7 +70,7 @@ pub(crate) async fn add_game(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create game: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?
         .inserted_id;
 
@@ -83,7 +83,7 @@ pub(crate) async fn add_game(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't add game_id to game calls: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?;
 
     db.collection::<Tournament>(TOURNAMENTS_COLLECTION)
@@ -95,7 +95,7 @@ pub(crate) async fn add_game(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't add game to tournament: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?;
 
     Ok(())
@@ -120,7 +120,7 @@ pub(crate) async fn get_games(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't get all games: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?;
 
     let mut game_calls = db
@@ -133,7 +133,7 @@ pub(crate) async fn get_games(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't get all game calls: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?
         .into_iter()
         .map(|g| (g.id, GameCallDto::from(g)))

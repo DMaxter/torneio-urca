@@ -18,6 +18,7 @@ pub(crate) struct Game {
     pub status: GameStatus,
     pub home_call: Option<ObjectId>,
     pub away_call: Option<ObjectId>,
+    pub current_period: u8,
     pub events: Vec<GameEvent>,
 }
 
@@ -26,12 +27,13 @@ impl From<CreateGameDto> for Game {
         Game {
             tournament: ObjectId::from_str(&value.tournament).unwrap(),
             scheduled_date: value.scheduled_date,
+            current_period: 0,
             ..Default::default()
         }
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Serialize, ToSchema)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, ToSchema)]
 pub(crate) enum GameStatus {
     #[default]
     NotStarted,

@@ -23,7 +23,6 @@ pub(crate) struct UserDto {
     pub fiscal_number: String,
     pub confirmed: bool,
     pub roles: Vec<Role>,
-    pub team_id: Option<String>,
 }
 
 impl From<User> for UserDto {
@@ -37,7 +36,6 @@ impl From<User> for UserDto {
             fiscal_number: value.fiscal_number,
             confirmed: value.confirmed,
             roles: value.roles,
-            team_id: value.team_id.map(|id| id.to_hex()),
         }
     }
 }

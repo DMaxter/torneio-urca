@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[derive(Debug, Deserialize, Serialize, ToSchema)]
+#[derive(Debug, Deserialize, PartialEq, Serialize, ToSchema)]
 pub(crate) enum Role {
     Admin,
     Player,

@@ -30,7 +30,7 @@ pub(crate) async fn add_group(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't fetch tournament: {e}");
 
-            Error::InternalError
+            Error::Internal
         })? {
         tournament.id.unwrap()
     } else {
@@ -44,7 +44,7 @@ pub(crate) async fn add_group(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create team: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?
         .inserted_id;
 
@@ -57,7 +57,7 @@ pub(crate) async fn add_group(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't add group to tournament: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?;
 
     event!(Level::INFO, "Successfully created group");
@@ -85,7 +85,7 @@ pub(crate) async fn get_groups(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't get all groups: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?
         .into_iter()
         .map(GroupDto::from)

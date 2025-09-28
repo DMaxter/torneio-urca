@@ -29,7 +29,7 @@ pub(crate) async fn add_tournament(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create tournament: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?;
 
     event!(Level::INFO, "Successfully created tournament");
@@ -57,7 +57,7 @@ pub(crate) async fn get_tournaments(
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't get all tournaments: {e}");
 
-            Error::InternalError
+            Error::Internal
         })?
         .into_iter()
         .map(TournamentDto::from)

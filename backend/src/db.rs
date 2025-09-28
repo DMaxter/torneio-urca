@@ -1,6 +1,6 @@
 use mongodb::{Database, IndexModel, bson::doc};
 
-use crate::entity::{Card, Game, GameCall, Goal, Group, Team, User};
+use crate::entity::{Card, Game, GameCall, Goal, Group, Team};
 
 pub(crate) const CARDS_COLLECTION: &str = "cards";
 pub(crate) const GAME_CALLS_COLLECTION: &str = "game_calls";
@@ -81,8 +81,4 @@ pub(crate) async fn initialize(db: &Database) {
         .create_index(IndexModel::builder().keys(doc! { "tournament": 1 }).build())
         .await
         .expect("Couldn't create index on teams collection");
-    db.collection::<User>(USERS_COLLECTION)
-        .create_index(IndexModel::builder().keys(doc! { "team": 1 }).build())
-        .await
-        .expect("Couldn't create index on users collection");
 }
