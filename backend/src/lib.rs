@@ -6,6 +6,7 @@ pub(crate) mod db;
 pub(crate) mod entity;
 pub(crate) mod error;
 pub(crate) mod game;
+pub(crate) mod goal;
 pub(crate) mod group;
 pub(crate) mod team;
 pub(crate) mod tournament;
@@ -17,17 +18,17 @@ use axum::{Router, routing::post, serve};
 pub use config::Config;
 use tokio::{net::TcpListener, sync::RwLock};
 use tower_http::add_extension::AddExtensionLayer;
-use user::add_user;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::{
-    card::assign_card,
-    game::{add_game, get_games},
+    card::route::assign_card,
+    game::{route::add_game, route::get_games},
+    goal::route::assign_goal,
     group::{add_group, get_groups},
-    team::{add_team, get_teams},
-    tournament::{add_tournament, get_tournaments},
-    user::get_users,
+    team::route::{add_team, get_teams},
+    tournament::route::{add_tournament, get_tournaments},
+    user::route::{add_user, get_users},
 };
 
 pub type SharedState = Arc<RwLock<Config>>;
@@ -36,6 +37,7 @@ pub async fn start_server(config: SharedState) {
     let app = Router::new()
         .route("/games", post(add_game).get(get_games))
         .route("/cards", post(assign_card))
+        .route("/goals", post(assign_goal))
         .route("/groups", post(add_group).get(get_groups))
         .route("/teams", post(add_team).get(get_teams))
         .route("/tournaments", post(add_tournament).get(get_tournaments))
@@ -56,17 +58,18 @@ pub async fn start_server(config: SharedState) {
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        card::assign_card,
-        game::add_game,
-        game::get_games,
+        card::route::assign_card,
+        game::route::add_game,
+        game::route::get_games,
+        goal::route::assign_goal,
         group::add_group,
         group::get_groups,
-        team::add_team,
-        team::get_teams,
-        tournament::add_tournament,
-        tournament::get_tournaments,
-        user::add_user,
-        user::get_users
+        team::route::add_team,
+        team::route::get_teams,
+        tournament::route::add_tournament,
+        tournament::route::get_tournaments,
+        user::route::add_user,
+        user::route::get_users
     ),
     components(schemas(
         card::AssignCardDto,

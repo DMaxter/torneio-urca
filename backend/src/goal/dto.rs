@@ -1,14 +1,11 @@
 use serde::Deserialize;
 use utoipa::ToSchema;
 
-use crate::entity::CardType;
-
 #[derive(Debug, Deserialize, ToSchema)]
-pub(crate) struct AssignCardDto {
+pub(crate) struct AssignGoalDto {
     pub tournament: String,
     pub game: String,
     pub team: String,
     pub player: String,
-    pub card: CardType,
     pub minute: u8,
 }

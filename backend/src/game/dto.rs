@@ -86,6 +86,7 @@ pub(crate) enum GameEventDto {
     Goal {
         player_id: String,
         player_name: String,
+        team_name: String,
         period: u8,
         minute: u8,
         timestamp: DateTime<Utc>,
@@ -127,12 +128,14 @@ impl From<GameEvent> for GameEventDto {
             GameEvent::Goal {
                 player_id,
                 player_name,
+                team_name,
                 period,
                 minute,
                 timestamp,
             } => GameEventDto::Goal {
                 player_id: player_id.to_hex(),
                 player_name,
+                team_name,
                 period,
                 minute,
                 timestamp,

@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use crate::entity::{Card, CardType};
+use crate::entity::{Card, CardType, Goal};
 
 #[serde_as]
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -31,6 +31,7 @@ pub(crate) enum GameEvent {
     Goal {
         player_id: ObjectId,
         player_name: String,
+        team_name: String,
         period: u8,
         minute: u8,
         #[serde_as(as = "bson::serde_helpers::datetime::FromChrono04DateTime")]
@@ -57,6 +58,19 @@ impl From<Card> for GameEvent {
             period: value.period,
             minute: value.minute,
             card: value.card,
+            timestamp: value.timestamp,
+        }
+    }
+}
+
+impl From<Goal> for GameEvent {
+    fn from(value: Goal) -> Self {
+        GameEvent::Goal {
+            player_id: value.player_id,
+            player_name: value.player_name,
+            team_name: value.team_name,
+            period: value.period,
+            minute: value.minute,
             timestamp: value.timestamp,
         }
     }

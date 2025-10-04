@@ -1,67 +1,30 @@
 mod dto;
+pub(crate) mod route;
 
-use axum::{Extension, Json, response::IntoResponse};
-use bson::Document;
-use futures_util::TryStreamExt;
+use bson::doc;
+use mongodb::Database;
 use tracing::{Level, event, instrument};
 
-pub(crate) use crate::tournament::dto::TournamentDto;
-use crate::{SharedState, db::TOURNAMENTS_COLLECTION, entity::Tournament, error::Error};
+use crate::{db::TOURNAMENTS_COLLECTION, entity::Tournament, error::Error};
+pub(crate) use dto::*;
 
-#[utoipa::path(post, path = "/tournaments", tag = "Tournaments", request_body = String, responses((status = 200, description = "Tournament created")))]
-#[instrument(skip(state))]
-pub(crate) async fn add_tournament(
-    Extension(state): Extension<SharedState>,
-    name: String,
-) -> Result<impl IntoResponse, Error> {
-    event!(Level::INFO, "Creating tournament");
-
-    state
-        .read()
-        .await
-        .db
-        .collection(TOURNAMENTS_COLLECTION)
-        .insert_one(Tournament {
-            name,
-            ..Default::default()
-        })
+#[instrument(skip(db))]
+pub(crate) async fn get_tournament(db: &Database, tournament: &str) -> Result<Tournament, Error> {
+    match db
+        .collection::<Tournament>(TOURNAMENTS_COLLECTION)
+        .find_one(doc! { "_id": tournament })
         .await
         .map_err(|e| {
-            event!(Level::ERROR, "Couldn't create tournament: {e}");
+            event!(Level::ERROR, "Couldn't fetch tournament: {e}");
 
             Error::Internal
-        })?;
+        }) {
+        Ok(Some(tournament)) => Ok(tournament),
+        Ok(None) => {
+            event!(Level::ERROR, "Tournament not found");
 
-    event!(Level::INFO, "Successfully created tournament");
-
-    Ok(())
-}
-
-#[utoipa::path(get, path = "/tournaments", tag = "Tournaments", responses((status = 200, description = "List of tournaments", body = Vec<TournamentDto>)))]
-#[instrument(skip(state))]
-pub(crate) async fn get_tournaments(
-    Extension(state): Extension<SharedState>,
-) -> Result<impl IntoResponse, Error> {
-    event!(Level::INFO, "Listing all tournaments");
-
-    let tournaments = state
-        .read()
-        .await
-        .db
-        .collection(TOURNAMENTS_COLLECTION)
-        .find(Document::new())
-        .await
-        .unwrap()
-        .try_collect::<Vec<Tournament>>()
-        .await
-        .map_err(|e| {
-            event!(Level::ERROR, "Couldn't get all tournaments: {e}");
-
-            Error::Internal
-        })?
-        .into_iter()
-        .map(TournamentDto::from)
-        .collect::<Vec<_>>();
-
-    Ok(Json(tournaments))
+            Err(Error::NotFound(String::from("Torneio")))
+        }
+        Err(e) => Err(e),
+    }
 }

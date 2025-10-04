@@ -41,6 +41,7 @@ impl From<AssignCardDto> for Card {
             player_id: ObjectId::from_str(&value.player).unwrap(),
             game_id: ObjectId::from_str(&value.game).unwrap(),
             card: value.card,
+            minute: value.minute,
             timestamp: Utc::now(),
             ..Default::default()
         }
