@@ -1,9 +1,9 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 use crate::entity::Tournament;
 
-#[derive(Debug, Serialize, ToSchema)]
+#[derive(Default, Debug, Serialize, ToSchema)]
 pub(crate) struct TournamentDto {
     pub id: String,
     pub name: String,
@@ -26,4 +26,9 @@ impl From<Tournament> for TournamentDto {
             cards: value.cards.into_iter().map(|id| id.to_hex()).collect(),
         }
     }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub(crate) struct CreateTournamentDto {
+    pub name: String,
 }

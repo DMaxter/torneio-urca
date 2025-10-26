@@ -82,6 +82,7 @@ pub async fn start_server(config: SharedState) {
         group::GroupDto,
         team::CreateTeamDto,
         team::TeamDto,
+        tournament::CreateTournamentDto,
         tournament::TournamentDto,
         user::CreateUserDto,
         user::UserDto

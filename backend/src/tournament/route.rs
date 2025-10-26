@@ -4,25 +4,28 @@ use futures_util::TryStreamExt;
 use tracing::{Level, event, instrument};
 
 use crate::{
-    SharedState, db::TOURNAMENTS_COLLECTION, entity::Tournament, error::Error,
-    tournament::TournamentDto,
+    SharedState,
+    db::TOURNAMENTS_COLLECTION,
+    entity::Tournament,
+    error::Error,
+    tournament::{CreateTournamentDto, TournamentDto},
 };
 
 #[utoipa::path(post, path = "/tournaments", tag = "Tournaments", request_body = String, responses((status = 200, description = "Tournament created")))]
 #[instrument(skip(state))]
 pub(crate) async fn add_tournament(
     Extension(state): Extension<SharedState>,
-    name: String,
+    Json(tournament): Json<CreateTournamentDto>,
 ) -> Result<impl IntoResponse, Error> {
     event!(Level::INFO, "Creating tournament");
 
-    state
+    let id = state
         .read()
         .await
         .db
         .collection(TOURNAMENTS_COLLECTION)
         .insert_one(Tournament {
-            name,
+            name: tournament.name.clone(),
             ..Default::default()
         })
         .await
@@ -30,11 +33,19 @@ pub(crate) async fn add_tournament(
             event!(Level::ERROR, "Couldn't create tournament: {e}");
 
             Error::Internal
-        })?;
+        })?
+        .inserted_id
+        .as_object_id()
+        .unwrap()
+        .to_hex();
 
     event!(Level::INFO, "Successfully created tournament");
 
-    Ok(())
+    Ok(Json(TournamentDto {
+        id,
+        name: tournament.name,
+        ..Default::default()
+    }))
 }
 
 #[utoipa::path(get, path = "/tournaments", tag = "Tournaments", responses((status = 200, description = "List of tournaments", body = Vec<TournamentDto>)))]
