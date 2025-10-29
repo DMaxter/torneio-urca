@@ -6,7 +6,7 @@ use tracing::{Level, event};
 
 use crate::{error::Error, group::CreateGroupDto};
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub(crate) struct Group {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,

@@ -10,6 +10,7 @@ use crate::{
     db::{GROUPS_COLLECTION, TOURNAMENTS_COLLECTION},
     entity::{Group, Tournament},
     error::Error,
+    tournament::get_tournament,
 };
 pub(crate) use dto::*;
 
@@ -23,30 +24,22 @@ pub(crate) async fn add_group(
 
     let db = &state.read().await.db;
 
-    let tournament = if let Some(tournament) = db
-        .collection::<Tournament>(TOURNAMENTS_COLLECTION)
-        .find_one(doc! { "_id": &group.tournament })
-        .await
-        .map_err(|e| {
-            event!(Level::ERROR, "Couldn't fetch tournament: {e}");
+    let tournament = get_tournament(db, &group.tournament).await?.id;
 
-            Error::Internal
-        })? {
-        tournament.id.unwrap()
-    } else {
-        return Err(Error::NotFound(String::from("Torneio")));
-    };
+    let mut entity = Group::try_from(group)?;
 
     let group_id = db
         .collection(GROUPS_COLLECTION)
-        .insert_one(Group::try_from(group)?)
+        .insert_one(entity.clone())
         .await
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create team: {e}");
 
             Error::Internal
         })?
-        .inserted_id;
+        .inserted_id
+        .as_object_id()
+        .unwrap();
 
     db.collection::<Tournament>(TOURNAMENTS_COLLECTION)
         .update_one(
@@ -62,7 +55,9 @@ pub(crate) async fn add_group(
 
     event!(Level::INFO, "Successfully created group");
 
-    Ok(())
+    entity.id = Some(group_id);
+
+    Ok(Json(GroupDto::from(entity)))
 }
 
 #[utoipa::path(get, path = "/groups", tag = "Groups", responses((status = 200, description = "List of registered groups", body = Vec<GroupDto>)))]

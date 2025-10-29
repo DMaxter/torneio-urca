@@ -12,8 +12,8 @@
     <P-Button @click="showTeamsList">Lista de Equipas</P-Button>
   </P-Fieldset>
   <P-Fieldset legend="Grupos" :pt=ptFieldset>
-    <P-Button>Criar Grupo</P-Button>
-    <P-Button>Lista de Grupos</P-Button>
+    <P-Button @click="showGroupManagement">Criar Grupo</P-Button>
+    <P-Button @click="showGroupsList">Lista de Grupos</P-Button>
   </P-Fieldset>
   <P-Fieldset legend="Jogos" :pt=ptFieldset>
     <P-Button @click="showGameManagement">Criar Jogo</P-Button>
@@ -21,6 +21,8 @@
   </P-Fieldset>
   <GameList v-model="listGames" />
   <GameManagement v-model="manageGame" />
+  <GroupList v-model="listGroups" />
+  <GroupManagement v-model="manageGroup" />
   <TeamList v-model="listTeams" />
   <TeamManagement v-model="manageTeam" />
   <TournamentList v-model="listTournaments" />
@@ -66,6 +68,16 @@ function showTeamManagement() {
 const listTeams = ref(false);
 function showTeamsList() {
   listTeams.value = true;
+}
+
+const manageGroup = ref(false);
+function showGroupManagement() {
+  manageGroup.value = true;
+}
+
+const listGroups = ref(false);
+function showGroupsList() {
+  listGroups.value = true;
 }
 
 const manageGame = ref(false);

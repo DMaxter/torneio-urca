@@ -13,6 +13,7 @@ pub(crate) struct CreateGroupDto {
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub(crate) struct GroupDto {
     pub id: String,
+    pub tournament: String,
     pub name: String,
     pub teams: Vec<String>,
 }
@@ -21,6 +22,7 @@ impl From<Group> for GroupDto {
     fn from(value: Group) -> Self {
         GroupDto {
             id: value.id.unwrap().to_hex(),
+            tournament: value.tournament.to_hex(),
             name: value.name,
             teams: value.teams.into_iter().map(|id| id.to_hex()).collect(),
         }

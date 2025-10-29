@@ -47,6 +47,8 @@ app.component("P-Select", Select);
 
 import GameList from "@components/GameList.vue";
 import GameManagement from "@components/GameManagement.vue";
+import GroupList from "@components/GroupList.vue";
+import GroupManagement from "@components/GroupManagement.vue";
 import TeamList from "@components/TeamList.vue";
 import TeamManagement from "@components/TeamManagement.vue";
 import TopBar from "@components/TopBar.vue";
@@ -57,6 +59,8 @@ import UserManagement from "@components/UserManagement.vue";
 
 app.component("GameList", GameList);
 app.component("GameManagement", GameManagement);
+app.component("GroupList", GroupList);
+app.component("GroupManagement", GroupManagement);
 app.component("TeamList", TeamList);
 app.component("TeamManagement", TeamManagement);
 app.component("TopBar", TopBar);
