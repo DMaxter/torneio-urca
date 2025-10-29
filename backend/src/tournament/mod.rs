@@ -1,7 +1,7 @@
 mod dto;
 pub(crate) mod route;
 
-use bson::doc;
+use bson::{doc, oid::ObjectId};
 use mongodb::Database;
 use tracing::{Level, event, instrument};
 
@@ -12,7 +12,7 @@ pub(crate) use dto::*;
 pub(crate) async fn get_tournament(db: &Database, tournament: &str) -> Result<Tournament, Error> {
     match db
         .collection::<Tournament>(TOURNAMENTS_COLLECTION)
-        .find_one(doc! { "_id": tournament })
+        .find_one(doc! { "_id": ObjectId::parse_str(tournament).unwrap() })
         .await
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't fetch tournament: {e}");

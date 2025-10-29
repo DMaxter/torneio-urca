@@ -19,22 +19,29 @@ pub(crate) async fn add_user(
 ) -> Result<impl IntoResponse, Error> {
     event!(Level::INFO, "Creating user");
 
-    state
+    let mut entity = User::from(user);
+
+    let id = state
         .read()
         .await
         .db
         .collection(USERS_COLLECTION)
-        .insert_one(User::from(user))
+        .insert_one(entity.clone())
         .await
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create user: {e}");
 
             Error::Internal
-        })?;
+        })?
+        .inserted_id
+        .as_object_id()
+        .unwrap();
+
+    entity.id = Some(id);
 
     event!(Level::INFO, "Successfully created user");
 
-    Ok(())
+    Ok(Json(UserDto::from(entity)))
 }
 
 #[utoipa::path(get, path="/users", tag="Users", responses((status = 200, description = "List of users", body = Vec<UserDto>)))]

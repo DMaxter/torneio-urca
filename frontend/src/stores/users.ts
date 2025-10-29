@@ -1,39 +1,39 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-import type { CreateTournament, Tournament } from "@router/backend/services/tournament/types";
+import { type CreateUser, User } from "@router/backend/services/user/types";
 import { API } from "@router/backend";
 import type { APIResponse } from "@router/backend/types";
 import { AxiosError } from "axios";
 
-export const useTournamentStore = defineStore("tournamentsStore", () => {
-  const tournaments = ref<Tournament[]>([]);
+export const useUserStore = defineStore("usersStore", () => {
+  const users = ref<User[]>([]);
 
-  function init(data: Tournament[]) {
-    tournaments.value = data;
+  function init(data: User[]) {
+    users.value = data;
   }
 
-  function add(tournament: Tournament) {
-    tournaments.value.push(tournament);
+  function add(user: User) {
+    users.value.push(user);
   }
 
   function remove(id: string) {
-    const index = tournaments.value.findIndex((t) => t.id === id);
+    const index = users.value.findIndex((t) => t.id === id);
 
     if (index === -1) {
-      console.error(`Tournament ${id} not in store`);
+      console.error(`User ${id} not in store`);
       return
     }
 
-    tournaments.value.splice(index, 1);
+    users.value.splice(index, 1);
   }
 
-  async function getTournaments(): Promise<APIResponse<string | null>> {
+  async function getUsers(): Promise<APIResponse<string | null>> {
     try {
-      const { status, data } = await API.tournaments.getTournaments();
+      const { status, data } = await API.users.getUsers();
 
       if (status === 200) {
-        init(data as Tournament[]);
+        init((data as User[]).map((u) => new User(u)));
 
         return {
           success: true,
@@ -57,12 +57,12 @@ export const useTournamentStore = defineStore("tournamentsStore", () => {
     }
   }
 
-  async function createTournament(tournament: CreateTournament): Promise<APIResponse<string | null>> {
+  async function createUser(user: CreateUser): Promise<APIResponse<string | null>> {
     try {
-      const { status, data } = await API.tournaments.createTournament(tournament);
+      const { status, data } = await API.users.createUser(user);
 
       if (status === 200) {
-        add(data as Tournament);
+        add(new User(data as User));
 
         return {
           success: true,
@@ -87,6 +87,6 @@ export const useTournamentStore = defineStore("tournamentsStore", () => {
   }
 
   return {
-    tournaments, getTournaments, createTournament
+    users, getUsers, createUser
   };
 });

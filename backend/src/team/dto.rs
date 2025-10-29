@@ -20,6 +20,7 @@ pub(crate) struct CreateTeamDto {
 #[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub(crate) struct TeamDto {
     pub id: String,
+    pub tournament: String,
     pub name: String,
     pub gender: Gender,
     pub responsible: String,
@@ -35,6 +36,7 @@ impl From<Team> for TeamDto {
     fn from(value: Team) -> Self {
         TeamDto {
             id: value.id.unwrap().to_hex(),
+            tournament: value.tournament.to_hex(),
             name: value.name,
             gender: value.gender,
             responsible: value.responsible.to_hex(),

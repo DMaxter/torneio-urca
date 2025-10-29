@@ -1,8 +1,8 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal header="Lista de Torneios">
     <P-DataTable :value="tournamentStore.tournaments">
-      <P-Column field="id" header="ID"></P-Column>
-      <P-Column field="name" header="Nome"></P-Column>
+      <P-Column field="id" header="ID" />
+      <P-Column field="name" header="Nome" />
       <!--TODO: DELETE AND EDIT -->
     </P-DataTable>
     <template #footer>

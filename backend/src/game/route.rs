@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use axum::{Extension, Json, response::IntoResponse};
-use bson::{Bson, Document, doc, oid::ObjectId};
+use bson::{Document, doc};
 use futures_util::TryStreamExt;
 use tracing::{Level, event, instrument};
 
@@ -11,6 +11,7 @@ use crate::{
     entity::{Game, GameCall, Tournament},
     error::Error,
     game::{CreateGameDto, GameCallDto, GameDto},
+    tournament::get_tournament,
 };
 
 #[utoipa::path(post, path = "/games", tag="Games", request_body(content = CreateGameDto), responses((status = 200, description = "Game created")))]
@@ -23,21 +24,9 @@ pub(crate) async fn add_game(
 
     let db = &state.read().await.db;
 
-    let tournament = if let Some(tournament) = db
-        .collection::<Tournament>(TOURNAMENTS_COLLECTION)
-        .find_one(doc! { "_id": &game.tournament })
-        .await
-        .map_err(|e| {
-            event!(Level::ERROR, "Couldn't fetch tournament: {e}");
+    let tournament = get_tournament(&db, &game.tournament).await?.id.unwrap();
 
-            Error::Internal
-        })? {
-        tournament.id.unwrap()
-    } else {
-        return Err(Error::NotFound(String::from("Torneio")));
-    };
-
-    let calls = db
+    let mut calls = db
         .collection(GAME_CALLS_COLLECTION)
         .insert_many(
             vec![game.home_call.to_owned(), game.away_call.to_owned()]
@@ -51,30 +40,33 @@ pub(crate) async fn add_game(
 
             Error::Internal
         })?
-        .inserted_ids
-        .into_values()
-        .map(|e| Bson::as_object_id(&e).unwrap())
-        .collect::<Vec<ObjectId>>();
+        .inserted_ids;
 
-    let mut game = Game::from(game.clone());
+    event!(Level::DEBUG, "Created game calls");
 
-    game.home_call = Some(calls[0]);
-    game.away_call = Some(calls[1]);
+    let mut entity = Game::from(game.clone());
+
+    entity.home_call = calls.remove(&0).unwrap().as_object_id();
+    entity.away_call = calls.remove(&1).unwrap().as_object_id();
 
     let game_id = db
         .collection(GAMES_COLLECTION)
-        .insert_one(game.clone())
+        .insert_one(entity.clone())
         .await
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create game: {e}");
 
             Error::Internal
         })?
-        .inserted_id;
+        .inserted_id
+        .as_object_id()
+        .unwrap();
+
+    event!(Level::DEBUG, "Created game");
 
     db.collection::<GameCall>(GAME_CALLS_COLLECTION)
         .update_many(
-            doc! {"$or": [{"_id": game.home_call}, {"_id": game.away_call}] },
+            doc! {"$or": [{"_id": &entity.home_call}, {"_id": &entity.away_call}] },
             doc! {"$set": {"game": &game_id }},
         )
         .await
@@ -84,10 +76,12 @@ pub(crate) async fn add_game(
             Error::Internal
         })?;
 
+    event!(Level::DEBUG, "Added game ID to game calls");
+
     db.collection::<Tournament>(TOURNAMENTS_COLLECTION)
         .update_one(
             doc! { "_id": &tournament },
-            doc! { "$push": { "games": game_id } },
+            doc! { "$push": { "games": &game_id } },
         )
         .await
         .map_err(|e| {
@@ -96,7 +90,26 @@ pub(crate) async fn add_game(
             Error::Internal
         })?;
 
-    Ok(())
+    event!(Level::INFO, "Successfully created game");
+
+    entity.id = Some(game_id);
+
+    let mut dto = GameDto::from(entity.clone());
+
+    dto.home_call = GameCallDto {
+        id: entity.home_call.unwrap().to_hex(),
+        team: game.home_call.team,
+        game: game_id.to_hex(),
+        ..Default::default()
+    };
+    dto.away_call = GameCallDto {
+        id: entity.away_call.unwrap().to_hex(),
+        team: game.away_call.team,
+        game: game_id.to_hex(),
+        ..Default::default()
+    };
+
+    Ok(Json(dto))
 }
 
 #[utoipa::path(get, path="/games", tag="Games", responses((status = 200, description = "List of games", body = Vec<GameDto>)))]

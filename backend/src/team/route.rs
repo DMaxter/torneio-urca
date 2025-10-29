@@ -23,21 +23,24 @@ pub(crate) async fn add_team(
     let db = &state.read().await.db;
 
     let tournament = get_tournament(db, &team.tournament).await?.id.unwrap();
+    let mut entity = Team::try_from(team)?;
     let team_id = db
         .collection(TEAMS_COLLECTION)
-        .insert_one(Team::try_from(team)?)
+        .insert_one(entity.clone())
         .await
         .map_err(|e| {
             event!(Level::ERROR, "Couldn't create team: {e}");
 
             Error::Internal
         })?
-        .inserted_id;
+        .inserted_id
+        .as_object_id()
+        .unwrap();
 
     db.collection::<Tournament>(TOURNAMENTS_COLLECTION)
         .update_one(
             doc! { "_id": &tournament },
-            doc! { "$push": { "teams": team_id } },
+            doc! { "$push": { "teams": &team_id } },
         )
         .await
         .map_err(|e| {
@@ -46,9 +49,11 @@ pub(crate) async fn add_team(
             Error::Internal
         })?;
 
+    entity.id = Some(team_id);
+
     event!(Level::INFO, "Successfully created team");
 
-    Ok(())
+    Ok(Json(TeamDto::from(entity)))
 }
 
 #[utoipa::path(get, path = "/teams", tag="Teams", responses((status = 200, description = "List of registered teams", body = Vec<TeamDto>)))]

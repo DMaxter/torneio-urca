@@ -1,6 +1,6 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Torneio' : 'Editar Torneio'">
-    <P-FloatLabel id="content" variant="on">
+    <P-FloatLabel id="firstLabel" variant="on">
       <P-InputText id="name" v-model="name" />
       <label for="name">Nome</label>
     </P-FloatLabel>
@@ -43,7 +43,7 @@ async function createOrUpdate() {
 }
 
 async function create() {
-  console.log(await tournamentStore.createTournament({ name: name.value }));
+  await tournamentStore.createTournament({ name: name.value });
 }
 
 async function update() {
@@ -56,7 +56,7 @@ function close() {
 </script>
 
 <style lang="scss" scoped>
-#content {
+#firstLabel {
   margin-top: 10px;
 }
 </style>

@@ -6,7 +6,7 @@ use tracing::{Level, event};
 
 use crate::{entity::Gender, error::Error, team::CreateTeamDto};
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Team {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
