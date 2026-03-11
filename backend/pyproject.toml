@@ -1,0 +1,15 @@
+[project]
+name = ""
+version = "0.0.1"
+dependencies = [
+    "fastapi==0.115.0",
+    "uvicorn==0.32.0",
+    "pymongo>=4.16",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "python-dotenv==1.0.1",
+    "python-multipart==0.0.12",
+]
+
+[tool.uv]
+package = false

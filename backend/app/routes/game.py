@@ -1,0 +1,128 @@
+from typing import List, Optional
+from bson import ObjectId
+from fastapi import APIRouter
+from datetime import datetime
+from app.db.database import (
+    db,
+    GAMES_COLLECTION,
+    GAME_CALLS_COLLECTION,
+    TOURNAMENTS_COLLECTION,
+)
+from app.schemas.schemas import CreateGameDto, GameDto, GameCallDto
+from app.models.models import GameStatus
+from app.error import Error
+
+router = APIRouter(prefix="/games", tags=["Games"])
+
+
+def game_call_to_dto(call: dict) -> GameCallDto:
+    return GameCallDto(
+        id=str(call["_id"]),
+        game=str(call.get("game", "")),
+        team=str(call["team"]),
+        players=[str(p) for p in call.get("players", [])],
+        deputy=str(call["deputy"]) if call.get("deputy") else None,
+    )
+
+
+def game_to_dto(game: dict, home_call: dict, away_call: dict) -> GameDto:
+    return GameDto(
+        id=str(game["_id"]),
+        scheduled_date=game["scheduled_date"],
+        start_date=game.get("start_date"),
+        finish_date=game.get("finish_date"),
+        status=game.get("status", GameStatus.NotStarted),
+        home_call=game_call_to_dto(home_call),
+        away_call=game_call_to_dto(away_call),
+        events=game.get("events", []),
+    )
+
+
+@router.post("", response_model=GameDto, status_code=201)
+async def add_game(game: CreateGameDto):
+    from app.routes.tournament import get_tournament
+
+    tournament = await get_tournament(game.tournament)
+
+    home_call_dict = {
+        "team": ObjectId(game.home_call.team),
+        "players": [],
+        "deputy": None,
+    }
+    away_call_dict = {
+        "team": ObjectId(game.away_call.team),
+        "players": [],
+        "deputy": None,
+    }
+
+    home_result = await db[GAME_CALLS_COLLECTION].insert_one(home_call_dict)
+    away_result = await db[GAME_CALLS_COLLECTION].insert_one(away_call_dict)
+
+    game_dict = {
+        "tournament": ObjectId(game.tournament),
+        "scheduled_date": game.scheduled_date,
+        "status": GameStatus.NotStarted,
+        "home_call": home_result.inserted_id,
+        "away_call": away_result.inserted_id,
+        "current_period": 0,
+        "events": [],
+    }
+
+    result = await db[GAMES_COLLECTION].insert_one(game_dict)
+    game_dict["_id"] = result.inserted_id
+
+    await db[GAME_CALLS_COLLECTION].update_many(
+        {"_id": {"$in": [home_result.inserted_id, away_result.inserted_id]}},
+        {"$set": {"game": result.inserted_id}},
+    )
+
+    await db[TOURNAMENTS_COLLECTION].update_one(
+        {"_id": tournament["_id"]}, {"$push": {"games": result.inserted_id}}
+    )
+
+    home_call_dict["_id"] = home_result.inserted_id
+    away_call_dict["_id"] = away_result.inserted_id
+    home_call_dict["game"] = result.inserted_id
+    away_call_dict["game"] = result.inserted_id
+
+    return game_to_dto(game_dict, home_call_dict, away_call_dict)
+
+
+@router.get("", response_model=List[GameDto])
+async def get_games():
+    games = await db[GAMES_COLLECTION].find().to_list(1000)
+    calls = await db[GAME_CALLS_COLLECTION].find().to_list(1000)
+
+    calls_map = {str(c["_id"]): c for c in calls}
+
+    result = []
+    for game in games:
+        home_call = calls_map.get(str(game.get("home_call")))
+        away_call = calls_map.get(str(game.get("away_call")))
+        if home_call and away_call:
+            result.append(game_to_dto(game, home_call, away_call))
+
+    return result
+
+
+async def get_game(game_id: str) -> dict:
+    try:
+        game = await db[GAMES_COLLECTION].find_one({"_id": ObjectId(game_id)})
+    except Exception:
+        raise Error.invalid_id("game")
+    if not game:
+        raise Error.not_found("Game")
+    return game
+
+
+async def check_game_running(tournament_id: ObjectId, game: dict) -> None:
+    if game["tournament"] != tournament_id:
+        raise Error.game_not_in_tournament()
+    if game.get("status") != GameStatus.InProgress:
+        raise Error.game_not_in_progress()
+
+
+async def add_game_event(game_id: ObjectId, event: dict) -> None:
+    await db[GAMES_COLLECTION].update_one(
+        {"_id": game_id}, {"$push": {"events": event}}
+    )
