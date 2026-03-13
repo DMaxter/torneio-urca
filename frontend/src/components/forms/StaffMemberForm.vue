@@ -1,0 +1,103 @@
+<template>
+  <fieldset>
+    <legend>{{ legend }}</legend>
+    <PersonFields v-model="personData" :id="id" />
+    <FileUpload
+      v-model="citizenCardFile"
+      :id="`${id}CitizenCard`"
+      label="Cartão de Cidadão (PDF)"
+    />
+    <FileUpload
+      v-model="proofOfResidencyFile"
+      :id="`${id}ProofResidency`"
+      label="Comprovativo de Residência (PDF)"
+    />
+  </fieldset>
+</template>
+
+<script setup lang="ts">
+import { reactive, watch } from "vue";
+import PersonFields from "./PersonFields.vue";
+import FileUpload from "./FileUpload.vue";
+
+interface StaffMemberData {
+  name: string;
+  birth_date: Date | null;
+  address: string;
+  place_of_birth: string;
+  fiscal_number: string;
+}
+
+interface StaffMemberFiles {
+  citizenCard?: File | null;
+  proofOfResidency?: File | null;
+}
+
+const props = defineProps<{
+  id: string;
+  legend: string;
+  modelValue?: StaffMemberData;
+  files?: StaffMemberFiles;
+}>();
+
+const emit = defineEmits<{
+  (e: "update:modelValue", value: StaffMemberData): void;
+  (e: "update:files", value: StaffMemberFiles): void;
+}>();
+
+const personData = reactive<StaffMemberData>({
+  name: "",
+  birth_date: null,
+  address: "",
+  place_of_birth: "",
+  fiscal_number: ""
+});
+
+const citizenCardFile = ref<File | null>(null);
+const proofOfResidencyFile = ref<File | null>(null);
+
+if (props.modelValue) {
+  Object.assign(personData, props.modelValue);
+}
+
+if (props.files) {
+  citizenCardFile.value = props.files.citizenCard || null;
+  proofOfResidencyFile.value = props.files.proofOfResidency || null;
+}
+
+watch(
+  personData,
+  (newValue) => {
+    emit("update:modelValue", { ...newValue });
+  },
+  { deep: true }
+);
+
+watch(
+  [citizenCardFile, proofOfResidencyFile],
+  () => {
+    const files: StaffMemberFiles = {
+      citizenCard: citizenCardFile.value,
+      proofOfResidency: proofOfResidencyFile.value
+    };
+    emit("update:files", files);
+  },
+  { deep: true }
+);
+
+import { ref } from "vue";
+</script>
+
+<style lang="scss" scoped>
+fieldset {
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-top: 15px;
+  border-radius: 4px;
+
+  legend {
+    font-weight: bold;
+    padding: 0 10px;
+  }
+}
+</style>

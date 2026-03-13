@@ -1,0 +1,411 @@
+<template>
+  <div class="team-registration">
+    <h1>Registar Equipa</h1>
+
+    <P-Steps :model="steps" :activeStep="currentStep" />
+
+    <div class="form-container">
+      <!-- Step 1: Team Info -->
+      <div v-show="currentStep === 0" class="step-content">
+        <h2>Informações da Equipa</h2>
+        <P-FloatLabel class="field" variant="on">
+          <P-InputText id="teamName" v-model="teamData.name" />
+          <label for="teamName">Nome da Equipa</label>
+        </P-FloatLabel>
+        <P-FloatLabel class="field" variant="on">
+          <P-Select
+            id="tournament"
+            v-model="teamData.tournament"
+            :options="tournamentStore.tournaments"
+            optionLabel="name"
+            optionValue="id"
+            fluid
+          />
+          <label for="tournament">Torneio</label>
+        </P-FloatLabel>
+      </div>
+
+      <!-- Step 2: Responsible Info -->
+      <div v-show="currentStep === 1" class="step-content">
+        <h2>Responsável da Equipa</h2>
+        <P-FloatLabel class="field" variant="on">
+          <P-InputText id="responsibleName" v-model="teamData.responsible_name" />
+          <label for="responsibleName">Nome</label>
+        </P-FloatLabel>
+        <P-FloatLabel class="field" variant="on">
+          <P-InputText id="responsibleEmail" v-model="teamData.responsible_email" type="email" />
+          <label for="responsibleEmail">Email</label>
+        </P-FloatLabel>
+        <P-FloatLabel class="field" variant="on">
+          <P-InputText id="responsiblePhone" v-model="teamData.responsible_phone" />
+          <label for="responsiblePhone">Telemóvel</label>
+        </P-FloatLabel>
+      </div>
+
+      <!-- Step 3: Players -->
+      <div v-show="currentStep === 2" class="step-content">
+        <h2>Jogadores (5 a 14)</h2>
+
+        <div v-for="(player, index) in playerForms" :key="index" class="player-fieldset">
+          <PlayerForm
+            :index="index"
+            v-model="player.data"
+            :files="player.files"
+            :showRemove="playerForms.length > 5"
+            @update:files="player.files = $event"
+            @remove="removePlayer(index)"
+          />
+        </div>
+
+        <P-Button label="Adicionar Jogador" icon="pi pi-plus" @click="addPlayer" :disabled="playerForms.length >= 14" />
+      </div>
+
+      <!-- Step 4: Staff Info -->
+      <div v-show="currentStep === 3" class="step-content">
+        <h2>Equipa Técnica (Opcional)</h2>
+
+        <StaffMemberForm
+          id="coach"
+          legend="Treinador Principal"
+          v-model="staffForms.main_coach.data"
+          :files="staffForms.main_coach.files"
+        />
+        <StaffMemberForm
+          id="physio"
+          legend="Fisioterapeuta"
+          v-model="staffForms.physiotherapist.data"
+          :files="staffForms.physiotherapist.files"
+        />
+        <StaffMemberForm
+          id="deputy1"
+          legend="Primeiro Delegado"
+          v-model="staffForms.first_deputy.data"
+          :files="staffForms.first_deputy.files"
+        />
+        <StaffMemberForm
+          id="deputy2"
+          legend="Segundo Delegado (Opcional)"
+          v-model="staffForms.second_deputy.data"
+          :files="staffForms.second_deputy.files"
+        />
+      </div>
+
+      <!-- Navigation -->
+      <div class="navigation">
+        <P-Button v-if="currentStep > 0" label="Anterior" icon="pi pi-arrow-left" @click="prevStep" />
+        <P-Button v-if="currentStep < steps.length - 1" label="Próximo" icon="pi pi-arrow-right" iconPos="right" @click="nextStep" />
+        <P-Button v-if="currentStep === steps.length - 1" label="Submeter" icon="pi pi-check" iconPos="right" @click="submit" :loading="submitting" />
+      </div>
+    </div>
+
+    <P-Toast />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useToast } from "primevue/usetoast";
+import { useTournamentStore } from "@stores/tournaments";
+import { http } from "@router/backend/api";
+import PlayerForm from "@components/forms/PlayerForm.vue";
+import StaffMemberForm from "@components/forms/StaffMemberForm.vue";
+
+interface PlayerFormData {
+  name: string;
+  birth_date: Date | null;
+  address: string;
+  place_of_birth: string;
+  fiscal_number: string;
+  is_federated: boolean;
+  federation_team: string;
+  federation_exams_up_to_date: boolean;
+}
+
+interface PlayerFiles {
+  citizenCard?: File | null;
+  proofOfResidency?: File | null;
+  authorization?: File | null;
+}
+
+interface StaffMemberData {
+  name: string;
+  birth_date: Date | null;
+  address: string;
+  place_of_birth: string;
+  fiscal_number: string;
+}
+
+interface StaffMemberFiles {
+  citizenCard?: File | null;
+  proofOfResidency?: File | null;
+}
+
+interface PlayerFormEntry {
+  data: PlayerFormData;
+  files: PlayerFiles;
+}
+
+interface StaffFormEntry {
+  data: StaffMemberData;
+  files: StaffMemberFiles;
+}
+
+const router = useRouter();
+const toast = useToast();
+const tournamentStore = useTournamentStore();
+
+const currentStep = ref(0);
+const submitting = ref(false);
+
+const steps = [
+  { label: "Equipa" },
+  { label: "Responsável" },
+  { label: "Jogadores" },
+  { label: "Staff" }
+];
+
+const teamData = reactive({
+  name: "",
+  tournament: "",
+  responsible_name: "",
+  responsible_email: "",
+  responsible_phone: ""
+});
+
+const staffForms = reactive<{
+  main_coach: StaffFormEntry;
+  physiotherapist: StaffFormEntry;
+  first_deputy: StaffFormEntry;
+  second_deputy: StaffFormEntry;
+}>({
+  main_coach: { data: createEmptyStaffMember(), files: {} },
+  physiotherapist: { data: createEmptyStaffMember(), files: {} },
+  first_deputy: { data: createEmptyStaffMember(), files: {} },
+  second_deputy: { data: createEmptyStaffMember(), files: {} }
+});
+
+const playerForms = reactive<PlayerFormEntry[]>([]);
+
+function createEmptyStaffMember(): StaffMemberData {
+  return {
+    name: "",
+    birth_date: null,
+    address: "",
+    place_of_birth: "",
+    fiscal_number: ""
+  };
+}
+
+function createEmptyPlayer(): PlayerFormData {
+  return {
+    name: "",
+    birth_date: null,
+    address: "",
+    place_of_birth: "",
+    fiscal_number: "",
+    is_federated: false,
+    federation_team: "",
+    federation_exams_up_to_date: false
+  };
+}
+
+function createEmptyPlayerFiles(): PlayerFiles {
+  return {
+    citizenCard: null,
+    proofOfResidency: null,
+    authorization: null
+  };
+}
+
+onMounted(async () => {
+  await tournamentStore.getTournaments();
+});
+
+function addPlayer() {
+  if (playerForms.length < 14) {
+    playerForms.push({
+      data: createEmptyPlayer(),
+      files: createEmptyPlayerFiles()
+    });
+  }
+}
+
+function removePlayer(index: number) {
+  playerForms.splice(index, 1);
+}
+
+function nextStep() {
+  if (currentStep.value === 2 && playerForms.length < 5) {
+    toast.add({ severity: "error", summary: "Erro", detail: "É necessário um mínimo de 5 jogadores", life: 3000 });
+    return;
+  }
+  if (currentStep.value < steps.length - 1) {
+    currentStep.value++;
+  }
+}
+
+function prevStep() {
+  if (currentStep.value > 0) {
+    currentStep.value--;
+  }
+}
+
+function isUnder16(birthDate: Date | null): boolean {
+  if (!birthDate) return false;
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age < 16;
+}
+
+async function submit() {
+  if (playerForms.length < 5) {
+    toast.add({ severity: "error", summary: "Erro", detail: "É necessário um mínimo de 5 jogadores", life: 3000 });
+    return;
+  }
+
+  for (let i = 0; i < playerForms.length; i++) {
+    if (!playerForms[i].files.citizenCard) {
+      toast.add({ severity: "error", summary: "Erro", detail: `Jogador ${i + 1}: Cartão de Cidadão é obrigatório`, life: 3000 });
+      return;
+    }
+    if (!playerForms[i].files.proofOfResidency) {
+      toast.add({ severity: "error", summary: "Erro", detail: `Jogador ${i + 1}: Comprovativo de Residência é obrigatório`, life: 3000 });
+      return;
+    }
+    if (isUnder16(playerForms[i].data.birth_date) && !playerForms[i].files.authorization) {
+      toast.add({ severity: "error", summary: "Erro", detail: `Jogador ${i + 1}: Autorização é obrigatória (menor de 16 anos)`, life: 3000 });
+      return;
+    }
+  }
+
+  submitting.value = true;
+
+  try {
+    const formData = new FormData();
+
+    formData.append("tournament", teamData.tournament);
+    formData.append("name", teamData.name);
+    formData.append("responsible_name", teamData.responsible_name);
+    formData.append("responsible_email", teamData.responsible_email);
+    formData.append("responsible_phone", teamData.responsible_phone);
+
+    if (staffForms.main_coach.data.name) {
+      appendStaffData(formData, "main_coach", staffForms.main_coach.data);
+    }
+
+    if (staffForms.physiotherapist.data.name) {
+      appendStaffData(formData, "physiotherapist", staffForms.physiotherapist.data);
+    }
+
+    if (staffForms.first_deputy.data.name) {
+      appendStaffData(formData, "first_deputy", staffForms.first_deputy.data);
+    }
+
+    if (staffForms.second_deputy.data.name) {
+      appendStaffData(formData, "second_deputy", staffForms.second_deputy.data);
+    }
+
+    const playersJson = playerForms.map(p => ({
+      name: p.data.name,
+      birth_date: p.data.birth_date?.toISOString() || "",
+      address: p.data.address,
+      place_of_birth: p.data.place_of_birth,
+      fiscal_number: p.data.fiscal_number,
+      is_federated: p.data.is_federated,
+      federation_team: p.data.federation_team,
+      federation_exams_up_to_date: p.data.federation_exams_up_to_date
+    }));
+    formData.append("players_json", JSON.stringify(playersJson));
+
+    for (let i = 0; i < playerForms.length; i++) {
+      if (playerForms[i].files.citizenCard) {
+        formData.append("files", playerForms[i].files.citizenCard!, `player_${i}_citizen_card`);
+      }
+      if (playerForms[i].files.proofOfResidency) {
+        formData.append("files", playerForms[i].files.proofOfResidency!, `player_${i}_proof_of_residency`);
+      }
+      if (playerForms[i].files.authorization) {
+        formData.append("files", playerForms[i].files.authorization!, `player_${i}_authorization`);
+      }
+    }
+
+    appendStaffFile(formData, "main_coach", staffForms.main_coach.files);
+    appendStaffFile(formData, "physiotherapist", staffForms.physiotherapist.files);
+    appendStaffFile(formData, "first_deputy", staffForms.first_deputy.files);
+    appendStaffFile(formData, "second_deputy", staffForms.second_deputy.files);
+
+    const response = await http.post("/teams/register", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data"
+      }
+    });
+
+    if (response.status === 201) {
+      toast.add({ severity: "success", summary: "Sucesso", detail: "Equipa registada com sucesso", life: 3000 });
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
+    }
+  } catch (error: any) {
+    console.error(error);
+  } finally {
+    submitting.value = false;
+  }
+}
+
+function appendStaffData(formData: FormData, prefix: string, data: StaffMemberData) {
+  formData.append(`${prefix}_name`, data.name);
+  formData.append(`${prefix}_birth_date`, data.birth_date?.toISOString() || "");
+  formData.append(`${prefix}_address`, data.address);
+  formData.append(`${prefix}_place_of_birth`, data.place_of_birth);
+  formData.append(`${prefix}_fiscal_number`, data.fiscal_number);
+}
+
+function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberFiles) {
+  if (files.citizenCard) {
+    formData.append("files", files.citizenCard, `${prefix}_citizen_card`);
+  }
+  if (files.proofOfResidency) {
+    formData.append("files", files.proofOfResidency, `${prefix}_proof_of_residency`);
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.team-registration {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.form-container {
+  margin-top: 20px;
+}
+
+.step-content {
+  margin-top: 20px;
+}
+
+.field {
+  margin-top: 15px;
+  display: block;
+}
+
+.player-fieldset {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.navigation {
+  margin-top: 30px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+</style>

@@ -2,36 +2,74 @@ from pydantic import BaseModel
 from typing import Optional, List, Any
 from datetime import datetime
 
-from app.models.models import Gender, Role, GameStatus, CardType
+from app.models.models import GameStatus, CardType, StaffType
 
 
 class CreateUserDto(BaseModel):
-    name: str
-    gender: Gender
-    birth_date: datetime
-    address: Optional[str] = None
-    place_of_birth: Optional[str] = None
-    fiscal_number: str
-    roles: List[Role]
+    username: str
+    password: str
 
 
 class UserDto(BaseModel):
     id: str
+    username: str
+
+
+class CreatePlayerDto(BaseModel):
     name: str
-    gender: Gender
     birth_date: datetime
     address: Optional[str] = None
     place_of_birth: Optional[str] = None
     fiscal_number: str
-    confirmed: bool
-    roles: List[Role]
+    is_federated: bool = False
+    federation_team: Optional[str] = None
+    federation_exams_up_to_date: bool = False
+
+
+class PlayerDto(BaseModel):
+    id: str
+    name: str
+    birth_date: datetime
+    address: Optional[str] = None
+    place_of_birth: Optional[str] = None
+    fiscal_number: str
+    citizen_card_file_id: Optional[str] = None
+    proof_of_residency_file_id: Optional[str] = None
+    authorization_file_id: Optional[str] = None
+    is_federated: bool
+    federation_team: Optional[str] = None
+    federation_exams_up_to_date: bool
+    is_confirmed: bool
+
+
+class CreateStaffDto(BaseModel):
+    name: str
+    birth_date: datetime
+    address: Optional[str] = None
+    place_of_birth: Optional[str] = None
+    fiscal_number: str
+    staff_type: StaffType
+
+
+class StaffDto(BaseModel):
+    id: str
+    name: str
+    birth_date: datetime
+    address: Optional[str] = None
+    place_of_birth: Optional[str] = None
+    fiscal_number: str
+    staff_type: StaffType
+    citizen_card_file_id: Optional[str] = None
+    proof_of_residency_file_id: Optional[str] = None
+    authorization_file_id: Optional[str] = None
 
 
 class CreateTeamDto(BaseModel):
     tournament: str
     name: str
-    gender: Gender
-    responsible: str
+    responsible_name: str
+    responsible_email: str
+    responsible_phone: str
     main_coach: str
     assistant_coach: Optional[str] = None
     players: List[str]
@@ -44,8 +82,9 @@ class TeamDto(BaseModel):
     id: str
     tournament: str
     name: str
-    gender: Gender
-    responsible: str
+    responsible_name: str
+    responsible_email: str
+    responsible_phone: str
     main_coach: str
     assistant_coach: Optional[str] = None
     players: List[str]

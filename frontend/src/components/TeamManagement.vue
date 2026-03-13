@@ -10,41 +10,16 @@
       <label for="tournament">Torneio</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-Select id="gender" v-model="team.gender" :options="GENDERS" optionLabel="name"
-        optionValue="value" fluid />
-      <label for="gender">Género</label>
+      <P-InputText id="responsibleName" v-model="team.responsible_name" />
+      <label for="responsibleName">Nome do Responsável</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-Select id="responsible" v-model="team.responsible" filter :options="userStore.users" optionLabel="name" optionValue="id"
-      fluid />
-      <label for="responsible">Responsável da Equipa</label>
+      <P-InputText id="responsibleEmail" v-model="team.responsible_email" type="email" />
+      <label for="responsibleEmail">Email do Responsável</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-Select id="coach" v-model="team.main_coach" filter :options="coaches" optionLabel="name" optionValue="id" fluid />
-      <label for="coach">Treinador Principal</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
-      <P-Select id="secondcoach" v-model="team.assistant_coach" filter :options="coaches"
-        optionLabel="name" optionValue="id" fluid />
-      <label for="secondcoach">Treinador Adjunto</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
-      <P-MultiSelect id="players" v-model="team.players" :showToggleAll="false" filter :options="players" optionLabel="name" optionValue="id" fluid />
-      <label for="players">Jogadores</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
-      <P-Select id="physiotherapist" v-model="team.physiotherapist" filter :options="physiotherapists"
-        optionLabel="name" optionValue="id" fluid />
-      <label for="physiotherapist">Fisioterapeuta</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
-      <P-Select id="deputy" v-model="team.first_deputy" filter :options="deputies" optionLabel="name" optionValue="id" fluid />
-      <label for="deputy">Primeiro Delegado</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
-      <P-Select id="seconddeputy" v-model="team.second_deputy" filter :options="deputies"
-        optionLabel="name" optionValue="id" fluid />
-      <label for="seconddeputy">Segundo Delegado</label>
+      <P-InputText id="responsiblePhone" v-model="team.responsible_phone" />
+      <label for="responsiblePhone">Telemóvel do Responsável</label>
     </P-FloatLabel>
     <template #footer>
       <P-Button @click="createOrUpdate">{{ creating ? "Criar" : "Alterar" }}</P-Button>
@@ -57,10 +32,8 @@
 import { computed, onMounted, ref } from "vue";
 
 import { CreateTeam, type Team } from "@router/backend/services/team/types";
-import { GENDERS, getRole, Role } from "@router/backend/services/user/types";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
-import { useUserStore } from "@stores/users";
 
 const enabled = defineModel<boolean>();
 const props = defineProps<{
@@ -79,14 +52,6 @@ onMounted(() => {
 
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
-const userStore = useUserStore();
-
-const players = computed(() => userStore.users.filter((u) => u.roles.includes(getRole(Role.Player)!) && u.gender === team.value.gender!));
-const coaches = computed(() => userStore.users.filter((u) => u.roles.includes(getRole(Role.Coach)!)));
-const physiotherapists = computed(() => userStore.users.filter((u) =>
-  u.roles.includes(getRole(Role.Physiotherapist)!)));
-const deputies = computed(() => userStore.users.filter((u) =>
-  u.roles.includes(getRole(Role.GameDeputy)!)));
 
 async function createOrUpdate() {
   if (creating.value) {

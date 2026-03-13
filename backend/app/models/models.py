@@ -1,22 +1,13 @@
 from enum import Enum
 from typing import Optional, List, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
-class Gender(str, Enum):
-    Male = "Male"
-    Female = "Female"
-
-
-class Role(str, Enum):
-    Admin = "Admin"
-    Player = "Player"
+class StaffType(str, Enum):
     Coach = "Coach"
     Physiotherapist = "Physiotherapist"
     GameDeputy = "GameDeputy"
-    Timekeeper = "Timekeeper"
-    Organizer = "Organizer"
 
 
 class GameStatus(str, Enum):
@@ -32,26 +23,55 @@ class CardType(str, Enum):
 
 
 class User(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: Optional[str] = Field(None, alias="_id")
+    username: str
+    password: str
+
+
+class Player(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     id: Optional[str] = Field(None, alias="_id")
     name: str
-    gender: Gender
     birth_date: datetime
     address: Optional[str] = None
     place_of_birth: Optional[str] = None
     fiscal_number: str
-    confirmed: bool = False
-    roles: List[Role] = []
+    citizen_card_file_id: Optional[str] = None
+    proof_of_residency_file_id: Optional[str] = None
+    authorization_file_id: Optional[str] = None
+    is_federated: bool = False
+    federation_team: Optional[str] = None
+    federation_exams_up_to_date: bool = False
+    is_confirmed: bool = False
 
-    class Config:
-        populate_by_name = True
+
+class Staff(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: Optional[str] = Field(None, alias="_id")
+    name: str
+    birth_date: Optional[datetime] = None
+    address: Optional[str] = None
+    place_of_birth: Optional[str] = None
+    fiscal_number: Optional[str] = None
+    staff_type: StaffType
+    citizen_card_file_id: Optional[str] = None
+    proof_of_residency_file_id: Optional[str] = None
+    authorization_file_id: Optional[str] = None
 
 
 class Team(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     id: Optional[str] = Field(None, alias="_id")
     tournament: str
     name: str
-    gender: Gender
-    responsible: str
+    responsible_name: str
+    responsible_email: str
+    responsible_phone: str
     main_coach: str
     assistant_coach: Optional[str] = None
     players: List[str] = []
@@ -60,11 +80,10 @@ class Team(BaseModel):
     second_deputy: Optional[str] = None
     valid: bool = False
 
-    class Config:
-        populate_by_name = True
-
 
 class Tournament(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     id: Optional[str] = Field(None, alias="_id")
     name: str
     teams: List[str] = []
@@ -73,19 +92,15 @@ class Tournament(BaseModel):
     goals: List[Any] = []
     cards: List[Any] = []
 
-    class Config:
-        populate_by_name = True
-
 
 class GameCall(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     id: Optional[str] = Field(None, alias="_id")
     game: Optional[str] = None
     team: str
     players: List[str] = []
     deputy: Optional[str] = None
-
-    class Config:
-        populate_by_name = True
 
 
 class GameEvent(BaseModel):
@@ -93,6 +108,8 @@ class GameEvent(BaseModel):
 
 
 class Game(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     id: Optional[str] = Field(None, alias="_id")
     tournament: str
     scheduled_date: datetime
@@ -104,21 +121,19 @@ class Game(BaseModel):
     current_period: int = 0
     events: List[Any] = []
 
-    class Config:
-        populate_by_name = True
-
 
 class Group(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     id: Optional[str] = Field(None, alias="_id")
     tournament: str
     name: str
     teams: List[str] = []
 
-    class Config:
-        populate_by_name = True
-
 
 class Goal(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     id: Optional[str] = Field(None, alias="_id")
     tournament: str
     team_id: str
@@ -130,11 +145,10 @@ class Goal(BaseModel):
     minute: int
     timestamp: datetime
 
-    class Config:
-        populate_by_name = True
-
 
 class Card(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     id: Optional[str] = Field(None, alias="_id")
     tournament: str
     team_id: str
@@ -146,6 +160,3 @@ class Card(BaseModel):
     period: int
     minute: int
     timestamp: datetime
-
-    class Config:
-        populate_by_name = True

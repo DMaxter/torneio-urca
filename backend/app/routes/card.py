@@ -7,7 +7,7 @@ from app.error import Error
 from app.routes.tournament import get_tournament
 from app.routes.game import get_game, check_game_running, add_game_event
 from app.routes.team import get_team
-from app.routes.user import get_player
+from app.routes.player import get_player
 
 router = APIRouter(prefix="/cards", tags=["Cards"])
 

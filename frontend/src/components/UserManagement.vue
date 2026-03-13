@@ -1,34 +1,12 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Utilizador' : 'Editar Utilizador'">
     <P-FloatLabel class="field" variant="on">
-      <P-InputText id="name" v-model="user.name" />
-      <label for="name">Nome</label>
+      <P-InputText id="username" v-model="user.username" />
+      <label for="username">Nome de Utilizador</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-Select id="gender" v-model="user.gender" :options="GENDERS" optionLabel="name"
-        optionValue="value" fluid/>
-      <label for="gender">Género</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
-      <P-DatePicker id="birthdate" v-model="user.birth_date" />
-      <label for="birthdate">Data de Nascimento</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
-      <P-InputText id="birthplace" v-model="user.place_of_birth" />
-      <label for="birthplace">Local de Nascimento</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
-      <P-InputText id="address" v-model="user.address" />
-      <label for="address">Morada</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
-      <P-InputText id="fiscalnumber" v-model="user.fiscal_number" />
-      <label for="fiscalnumber">NIF</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
-      <P-MultiSelect id="roles" v-model="user.roles" :showToggleAll="false" :options="ROLES" optionLabel="name"
-        optionValue="value" fluid/>
-      <label for="roles">Função</label>
+      <P-InputText id="password" v-model="user.password" type="password" />
+      <label for="password">Palavra-passe</label>
     </P-FloatLabel>
     <template #footer>
       <P-Button @click="createOrUpdate">{{ creating ? "Criar" : "Alterar" }}</P-Button>
@@ -40,7 +18,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 
-import { GENDERS, ROLES, CreateUser, type User } from "@router/backend/services/user/types";
+import { CreateUser, type User } from "@router/backend/services/user/types";
 import { useUserStore } from "@stores/users";
 
 const enabled = defineModel<boolean>();
@@ -50,10 +28,16 @@ const props = defineProps<{
 
 const creating = computed(() => props.user === undefined);
 
-const user = ref<User | CreateUser>(new CreateUser());
+interface UserForm {
+  username: string;
+  password: string;
+}
+
+const user = ref<UserForm>({ username: "", password: "" });
 onMounted(() => {
   if (!creating.value) {
-    user.value = props.user!
+    user.value.username = props.user!.username;
+    user.value.password = "";
   }
 });
 

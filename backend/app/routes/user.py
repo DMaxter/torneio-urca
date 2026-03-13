@@ -1,8 +1,7 @@
 from typing import List
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from database import db, USERS_COLLECTION
-from app.models.models import User
 from app.schemas.schemas import CreateUserDto, UserDto
 from app.error import Error
 
@@ -12,14 +11,7 @@ router = APIRouter(prefix="/users", tags=["Users"])
 def user_to_dto(user: dict) -> UserDto:
     return UserDto(
         id=str(user["_id"]),
-        name=user["name"],
-        gender=user["gender"],
-        birth_date=user["birth_date"],
-        address=user.get("address"),
-        place_of_birth=user.get("place_of_birth"),
-        fiscal_number=user["fiscal_number"],
-        confirmed=user.get("confirmed", False),
-        roles=user["roles"],
+        username=user["username"],
     )
 
 
@@ -44,13 +36,4 @@ async def get_user(user_id: str) -> dict:
         raise Error.invalid_id("user")
     if not user:
         raise Error.not_found("User")
-    return user
-
-
-async def get_player(player_id: str) -> dict:
-    from app.models.models import Role
-
-    user = await get_user(player_id)
-    if Role.Player not in user.get("roles", []):
-        raise Error.user_not_player()
     return user

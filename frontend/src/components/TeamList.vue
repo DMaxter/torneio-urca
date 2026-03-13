@@ -2,7 +2,6 @@
   <P-Dialog v-model:visible="enabled" modal header="Lista de Equipas">
     <P-DataTable :value="teamStore.teams">
       <P-Column field="id" header="ID" />
-      <P-Column field="gender" header="Género" />
       <P-Column field="name" header="Nome" />
     </P-DataTable>
     <template #footer>
