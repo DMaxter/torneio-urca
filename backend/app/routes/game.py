@@ -2,7 +2,7 @@ from typing import List, Optional
 from bson import ObjectId
 from fastapi import APIRouter
 from datetime import datetime
-from app.db.database import (
+from database import (
     db,
     GAMES_COLLECTION,
     GAME_CALLS_COLLECTION,
@@ -55,8 +55,8 @@ async def add_game(game: CreateGameDto):
         "deputy": None,
     }
 
-    home_result = await db[GAME_CALLS_COLLECTION].insert_one(home_call_dict)
-    away_result = await db[GAME_CALLS_COLLECTION].insert_one(away_call_dict)
+    home_result = await db.db[GAME_CALLS_COLLECTION].insert_one(home_call_dict)
+    away_result = await db.db[GAME_CALLS_COLLECTION].insert_one(away_call_dict)
 
     game_dict = {
         "tournament": ObjectId(game.tournament),
@@ -68,15 +68,14 @@ async def add_game(game: CreateGameDto):
         "events": [],
     }
 
-    result = await db[GAMES_COLLECTION].insert_one(game_dict)
-    game_dict["_id"] = result.inserted_id
+    result = await db.db[GAMES_COLLECTION].insert_one(game_dict)
 
-    await db[GAME_CALLS_COLLECTION].update_many(
+    await db.db[GAME_CALLS_COLLECTION].update_many(
         {"_id": {"$in": [home_result.inserted_id, away_result.inserted_id]}},
         {"$set": {"game": result.inserted_id}},
     )
 
-    await db[TOURNAMENTS_COLLECTION].update_one(
+    await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": tournament["_id"]}, {"$push": {"games": result.inserted_id}}
     )
 
@@ -90,8 +89,8 @@ async def add_game(game: CreateGameDto):
 
 @router.get("", response_model=List[GameDto])
 async def get_games():
-    games = await db[GAMES_COLLECTION].find().to_list(1000)
-    calls = await db[GAME_CALLS_COLLECTION].find().to_list(1000)
+    games = await db.db[GAMES_COLLECTION].find().to_list(1000)
+    calls = await db.db[GAME_CALLS_COLLECTION].find().to_list(1000)
 
     calls_map = {str(c["_id"]): c for c in calls}
 
@@ -107,7 +106,7 @@ async def get_games():
 
 async def get_game(game_id: str) -> dict:
     try:
-        game = await db[GAMES_COLLECTION].find_one({"_id": ObjectId(game_id)})
+        game = await db.db[GAMES_COLLECTION].find_one({"_id": ObjectId(game_id)})
     except Exception:
         raise Error.invalid_id("game")
     if not game:
@@ -123,6 +122,6 @@ async def check_game_running(tournament_id: ObjectId, game: dict) -> None:
 
 
 async def add_game_event(game_id: ObjectId, event: dict) -> None:
-    await db[GAMES_COLLECTION].update_one(
+    await db.db[GAMES_COLLECTION].update_one(
         {"_id": game_id}, {"$push": {"events": event}}
     )

@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from app.db.database import connect_db, close_db
+from database import db
 from app.routes.user import router as user_router
 from app.routes.tournament import router as tournament_router
 from app.routes.team import router as team_router
@@ -12,12 +12,12 @@ from app.routes.card import router as card_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await connect_db()
+    await db.connect()
     yield
-    await close_db()
+    await db.close()
 
 
-app = FastAPI(title="PM Tournament API", lifespan=lifespan)
+app = FastAPI(title="URCA Tournament API", lifespan=lifespan)
 
 app.include_router(user_router)
 app.include_router(tournament_router)

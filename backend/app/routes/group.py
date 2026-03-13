@@ -1,7 +1,7 @@
 from typing import List
 from bson import ObjectId
 from fastapi import APIRouter
-from app.db.database import db, GROUPS_COLLECTION, TOURNAMENTS_COLLECTION
+from database import db, GROUPS_COLLECTION, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import CreateGroupDto, GroupDto
 from app.error import Error
 
@@ -26,10 +26,9 @@ async def add_group(group: CreateGroupDto):
     group_dict["tournament"] = ObjectId(group.tournament)
     group_dict["teams"] = [ObjectId(t) for t in group.teams]
 
-    result = await db[GROUPS_COLLECTION].insert_one(group_dict)
-    group_dict["_id"] = result.inserted_id
+    result = await db.db[GROUPS_COLLECTION].insert_one(group_dict)
 
-    await db[TOURNAMENTS_COLLECTION].update_one(
+    await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": tournament["_id"]}, {"$push": {"groups": result.inserted_id}}
     )
 
@@ -38,5 +37,5 @@ async def add_group(group: CreateGroupDto):
 
 @router.get("", response_model=List[GroupDto])
 async def get_groups():
-    groups = await db[GROUPS_COLLECTION].find().to_list(1000)
+    groups = await db.db[GROUPS_COLLECTION].find().to_list(1000)
     return [group_to_dto(group) for group in groups]

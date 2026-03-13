@@ -1,7 +1,7 @@
 from bson import ObjectId
 from fastapi import APIRouter
 from datetime import datetime
-from app.db.database import db, GOALS_COLLECTION, TOURNAMENTS_COLLECTION
+from database import db, GOALS_COLLECTION, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import AssignGoalDto
 from app.error import Error
 from app.routes.tournament import get_tournament
@@ -28,7 +28,7 @@ async def assign_goal(goal: AssignGoalDto):
         raise Error.player_not_in_team()
 
     game_calls = (
-        await db["game_calls"]
+        await db.db["game_calls"]
         .find({"_id": {"$in": [game.get("home_call"), game.get("away_call")]}})
         .to_list(2)
     )
@@ -58,10 +58,10 @@ async def assign_goal(goal: AssignGoalDto):
         "timestamp": datetime.utcnow(),
     }
 
-    result = await db[GOALS_COLLECTION].insert_one(goal_dict)
+    result = await db.db[GOALS_COLLECTION].insert_one(goal_dict)
     goal_dict["_id"] = result.inserted_id
 
-    await db[TOURNAMENTS_COLLECTION].update_one(
+    await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": tournament["_id"]}, {"$push": {"goals": goal_dict}}
     )
 

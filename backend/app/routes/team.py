@@ -1,7 +1,7 @@
 from typing import List
 from bson import ObjectId
 from fastapi import APIRouter
-from app.db.database import db, TEAMS_COLLECTION, TOURNAMENTS_COLLECTION
+from database import db, TEAMS_COLLECTION, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import CreateTeamDto, TeamDto
 from app.error import Error
 
@@ -46,10 +46,9 @@ async def add_team(team: CreateTeamDto):
     )
     team_dict["valid"] = False
 
-    result = await db[TEAMS_COLLECTION].insert_one(team_dict)
-    team_dict["_id"] = result.inserted_id
+    result = await db.db[TEAMS_COLLECTION].insert_one(team_dict)
 
-    await db[TOURNAMENTS_COLLECTION].update_one(
+    await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": tournament["_id"]}, {"$push": {"teams": result.inserted_id}}
     )
 
@@ -58,13 +57,13 @@ async def add_team(team: CreateTeamDto):
 
 @router.get("", response_model=List[TeamDto])
 async def get_teams():
-    teams = await db[TEAMS_COLLECTION].find().to_list(1000)
+    teams = await db.db[TEAMS_COLLECTION].find().to_list(1000)
     return [team_to_dto(team) for team in teams]
 
 
 async def get_team(team_id: str) -> dict:
     try:
-        team = await db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+        team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
     except Exception:
         raise Error.invalid_id("team")
     if not team:

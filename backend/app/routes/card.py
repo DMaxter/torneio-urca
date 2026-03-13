@@ -1,7 +1,7 @@
 from bson import ObjectId
 from fastapi import APIRouter
 from datetime import datetime
-from app.db.database import db, CARDS_COLLECTION, TOURNAMENTS_COLLECTION
+from database import db, CARDS_COLLECTION, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import AssignCardDto
 from app.error import Error
 from app.routes.tournament import get_tournament
@@ -24,7 +24,7 @@ async def assign_card(card: AssignCardDto):
     player = await get_player(card.player)
 
     game_calls = (
-        await db["game_calls"]
+        await db.db["game_calls"]
         .find({"_id": {"$in": [game.get("home_call"), game.get("away_call")]}})
         .to_list(2)
     )
@@ -55,10 +55,10 @@ async def assign_card(card: AssignCardDto):
         "timestamp": datetime.utcnow(),
     }
 
-    result = await db[CARDS_COLLECTION].insert_one(card_dict)
+    result = await db.db[CARDS_COLLECTION].insert_one(card_dict)
     card_dict["_id"] = result.inserted_id
 
-    await db[TOURNAMENTS_COLLECTION].update_one(
+    await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": tournament["_id"]}, {"$push": {"cards": card_dict}}
     )
 

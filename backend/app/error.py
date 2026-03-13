@@ -1,6 +1,5 @@
 from fastapi import HTTPException, status
 
-
 class Error:
     @staticmethod
     def not_found(entity: str):
@@ -8,7 +7,6 @@ class Error:
             status_code=status.HTTP_404_NOT_FOUND,
             detail={
                 "error": f"{entity} não existente",
-                "message": f"{entity} not found",
             },
         )
 
@@ -16,7 +14,7 @@ class Error:
     def internal():
         return HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"error": "Internal error", "message": "Erro interno"},
+            detail={"message": "Erro interno"},
         )
 
     @staticmethod
@@ -24,7 +22,6 @@ class Error:
         return HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={
-                "error": f"Invalid ID for {entity}",
                 "message": f"ID inválido para {entity}",
             },
         )
@@ -34,7 +31,6 @@ class Error:
         return HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail={
-                "error": "Player not in team",
                 "message": "Jogador não alocado à equipa",
             },
         )
@@ -44,7 +40,6 @@ class Error:
         return HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail={
-                "error": "Player not in game",
                 "message": "Jogador não alocado ao jogo",
             },
         )
@@ -54,8 +49,7 @@ class Error:
         return HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
             detail={
-                "error": "Game not in tournament",
-                "message": "Jogo não alocado ao torneo",
+                "message": "Jogo não alocado ao torneio",
             },
         )
 
@@ -64,7 +58,6 @@ class Error:
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
-                "error": "Game not in progress",
                 "message": "O jogo não está a decorrer",
             },
         )
@@ -74,7 +67,6 @@ class Error:
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
-                "error": "User not a player",
                 "message": "Utilizador não é um jogador",
             },
         )
@@ -84,7 +76,6 @@ class Error:
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
-                "error": "Game calls not delivered",
                 "message": "As fichas de jogo ainda não foram entregues",
             },
         )

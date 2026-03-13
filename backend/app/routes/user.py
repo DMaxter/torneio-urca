@@ -1,7 +1,7 @@
 from typing import List
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException
-from app.db.database import db, USERS_COLLECTION
+from database import db, USERS_COLLECTION
 from app.models.models import User
 from app.schemas.schemas import CreateUserDto, UserDto
 from app.error import Error
@@ -26,20 +26,20 @@ def user_to_dto(user: dict) -> UserDto:
 @router.post("", response_model=UserDto, status_code=201)
 async def add_user(user: CreateUserDto):
     user_dict = user.model_dump()
-    result = await db[USERS_COLLECTION].insert_one(user_dict)
+    result = await db.db[USERS_COLLECTION].insert_one(user_dict)
     user_dict["_id"] = result.inserted_id
     return user_to_dto(user_dict)
 
 
 @router.get("", response_model=List[UserDto])
 async def get_users():
-    users = await db[USERS_COLLECTION].find().to_list(1000)
+    users = await db.db[USERS_COLLECTION].find().to_list(1000)
     return [user_to_dto(user) for user in users]
 
 
 async def get_user(user_id: str) -> dict:
     try:
-        user = await db[USERS_COLLECTION].find_one({"_id": ObjectId(user_id)})
+        user = await db.db[USERS_COLLECTION].find_one({"_id": ObjectId(user_id)})
     except Exception:
         raise Error.invalid_id("user")
     if not user:

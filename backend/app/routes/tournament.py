@@ -1,7 +1,7 @@
 from typing import List
 from bson import ObjectId
 from fastapi import APIRouter
-from app.db.database import db, TOURNAMENTS_COLLECTION
+from database import db, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import CreateTournamentDto, TournamentDto
 
 router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
@@ -29,14 +29,14 @@ async def add_tournament(tournament: CreateTournamentDto):
         "goals": [],
         "cards": [],
     }
-    result = await db[TOURNAMENTS_COLLECTION].insert_one(tournament_dict)
+    result = await db.db[TOURNAMENTS_COLLECTION].insert_one(tournament_dict)
     tournament_dict["_id"] = result.inserted_id
     return tournament_to_dto(tournament_dict)
 
 
 @router.get("", response_model=List[TournamentDto])
 async def get_tournaments():
-    tournaments = await db[TOURNAMENTS_COLLECTION].find().to_list(1000)
+    tournaments = await db.db[TOURNAMENTS_COLLECTION].find().to_list(1000)
     return [tournament_to_dto(t) for t in tournaments]
 
 
@@ -44,11 +44,11 @@ async def get_tournament(tournament_id: str) -> dict:
     from app.error import Error
 
     try:
-        tournament = await db[TOURNAMENTS_COLLECTION].find_one(
+        tournament = await db.db[TOURNAMENTS_COLLECTION].find_one(
             {"_id": ObjectId(tournament_id)}
         )
     except Exception:
-        raise Error.invalid_id("tournament")
+        raise Error.invalid_id("torneio")
     if not tournament:
-        raise Error.not_found("Tournament")
+        raise Error.not_found("Torneio")
     return tournament
