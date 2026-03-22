@@ -1,100 +1,136 @@
 <template>
   <div class="team-registration">
-    <h1>Registar Equipa</h1>
+    <div class="registration-header">
+      <h1>Registar Equipa</h1>
+      <p>Complete todos os passos para registar a sua equipa no torneio</p>
+    </div>
 
-    <P-Steps :model="steps" :activeStep="currentStep" />
+    <div class="form-card">
+      <P-Steps :model="steps" :activeStep="currentStep" />
 
-    <div class="form-container">
-      <!-- Step 1: Team Info -->
-      <div v-show="currentStep === 0" class="step-content">
-        <h2>Informações da Equipa</h2>
-        <P-FloatLabel class="field" variant="on">
-          <P-InputText id="teamName" v-model="teamData.name" />
-          <label for="teamName">Nome da Equipa</label>
-        </P-FloatLabel>
-        <P-FloatLabel class="field" variant="on">
-          <P-Select
-            id="tournament"
-            v-model="teamData.tournament"
-            :options="tournamentStore.tournaments"
-            optionLabel="name"
-            optionValue="id"
-            fluid
-          />
-          <label for="tournament">Torneio</label>
-        </P-FloatLabel>
-      </div>
-
-      <!-- Step 2: Responsible Info -->
-      <div v-show="currentStep === 1" class="step-content">
-        <h2>Responsável da Equipa</h2>
-        <P-FloatLabel class="field" variant="on">
-          <P-InputText id="responsibleName" v-model="teamData.responsible_name" />
-          <label for="responsibleName">Nome</label>
-        </P-FloatLabel>
-        <P-FloatLabel class="field" variant="on">
-          <P-InputText id="responsibleEmail" v-model="teamData.responsible_email" type="email" />
-          <label for="responsibleEmail">Email</label>
-        </P-FloatLabel>
-        <P-FloatLabel class="field" variant="on">
-          <P-InputText id="responsiblePhone" v-model="teamData.responsible_phone" />
-          <label for="responsiblePhone">Telemóvel</label>
-        </P-FloatLabel>
-      </div>
-
-      <!-- Step 3: Players -->
-      <div v-show="currentStep === 2" class="step-content">
-        <h2>Jogadores ({{ TOURNAMENT.MIN_PLAYERS }} a {{ TOURNAMENT.MAX_PLAYERS }})</h2>
-
-        <div v-for="(player, index) in playerForms" :key="index" class="player-fieldset">
-          <PlayerForm
-            :index="index"
-            v-model="player.data"
-            :files="player.files"
-            :showRemove="playerForms.length > TOURNAMENT.MIN_PLAYERS"
-            @update:files="player.files = $event"
-            @remove="removePlayer(index)"
-          />
+      <div class="form-container">
+        <!-- Step 1: Team Info -->
+        <div v-show="currentStep === 0" class="step-content">
+          <h2>Informações da Equipa</h2>
+          <P-FloatLabel class="field" variant="on">
+            <P-InputText id="teamName" v-model="teamData.name" fluid />
+            <label for="teamName">Nome da Equipa</label>
+          </P-FloatLabel>
+          <P-FloatLabel class="field" variant="on">
+            <P-Select
+              id="tournament"
+              v-model="teamData.tournament"
+              :options="tournamentStore.tournaments"
+              optionLabel="name"
+              optionValue="id"
+              fluid
+            />
+            <label for="tournament">Torneio</label>
+          </P-FloatLabel>
         </div>
 
-        <P-Button label="Adicionar Jogador" icon="pi pi-plus" @click="addPlayer" :disabled="playerForms.length >= TOURNAMENT.MAX_PLAYERS" />
-      </div>
+        <!-- Step 2: Responsible Info -->
+        <div v-show="currentStep === 1" class="step-content">
+          <h2>Responsável da Equipa</h2>
+          <P-FloatLabel class="field" variant="on">
+            <P-InputText id="responsibleName" v-model="teamData.responsible_name" fluid />
+            <label for="responsibleName">Nome</label>
+          </P-FloatLabel>
+          <P-FloatLabel class="field" variant="on">
+            <P-InputText id="responsibleEmail" v-model="teamData.responsible_email" type="email" fluid />
+            <label for="responsibleEmail">Email</label>
+          </P-FloatLabel>
+          <P-FloatLabel class="field" variant="on">
+            <P-InputText id="responsiblePhone" v-model="teamData.responsible_phone" fluid />
+            <label for="responsiblePhone">Telemóvel</label>
+          </P-FloatLabel>
+        </div>
 
-      <!-- Step 4: Staff Info -->
-      <div v-show="currentStep === 3" class="step-content">
-        <h2>Equipa Técnica (Opcional)</h2>
+        <!-- Step 3: Players -->
+        <div v-show="currentStep === 2" class="step-content">
+          <div class="step-header">
+            <h2>Jogadores ({{ TOURNAMENT.MIN_PLAYERS }} a {{ TOURNAMENT.MAX_PLAYERS }})</h2>
+            <P-Button 
+              label="Adicionar" 
+              icon="pi pi-plus" 
+              size="small"
+              @click="addPlayer" 
+              :disabled="playerForms.length >= TOURNAMENT.MAX_PLAYERS" 
+            />
+          </div>
 
-        <StaffMemberForm
-          id="coach"
-          legend="Treinador Principal"
-          v-model="staffForms.main_coach.data"
-          :files="staffForms.main_coach.files"
-        />
-        <StaffMemberForm
-          id="physio"
-          legend="Fisioterapeuta"
-          v-model="staffForms.physiotherapist.data"
-          :files="staffForms.physiotherapist.files"
-        />
-        <StaffMemberForm
-          id="deputy1"
-          legend="Primeiro Delegado"
-          v-model="staffForms.first_deputy.data"
-          :files="staffForms.first_deputy.files"
-        />
-        <StaffMemberForm
-          id="deputy2"
-          legend="Segundo Delegado (Opcional)"
-          v-model="staffForms.second_deputy.data"
-          :files="staffForms.second_deputy.files"
-        />
-      </div>
+          <div v-for="(player, index) in playerForms" :key="index" class="player-fieldset">
+            <PlayerForm
+              :index="index"
+              v-model="player.data"
+              :files="player.files"
+              :showRemove="playerForms.length > TOURNAMENT.MIN_PLAYERS"
+              @update:files="player.files = $event"
+              @remove="removePlayer(index)"
+            />
+          </div>
+        </div>
 
-      <!-- Navigation -->
-      <div class="navigation">
-        <P-Button v-if="currentStep > 0" label="Anterior" icon="pi pi-arrow-left" @click="prevStep" />
-        <P-Button v-if="currentStep < steps.length - 1" label="Próximo" icon="pi pi-arrow-right" iconPos="right" @click="nextStep" />
-        <P-Button v-if="currentStep === steps.length - 1" label="Submeter" icon="pi pi-check" iconPos="right" @click="submit" :loading="submitting" />
+        <!-- Step 4: Staff Info -->
+        <div v-show="currentStep === 3" class="step-content">
+          <h2>Equipa Técnica (Opcional)</h2>
+          <p class="optional-note">Todos os campos são opcionais</p>
+
+          <div class="staff-grid">
+            <StaffMemberForm
+              id="coach"
+              legend="Treinador Principal"
+              v-model="staffForms.main_coach.data"
+              :files="staffForms.main_coach.files"
+            />
+            <StaffMemberForm
+              id="physio"
+              legend="Fisioterapeuta"
+              v-model="staffForms.physiotherapist.data"
+              :files="staffForms.physiotherapist.files"
+            />
+            <StaffMemberForm
+              id="deputy1"
+              legend="Primeiro Delegado"
+              v-model="staffForms.first_deputy.data"
+              :files="staffForms.first_deputy.files"
+            />
+            <StaffMemberForm
+              id="deputy2"
+              legend="Segundo Delegado"
+              v-model="staffForms.second_deputy.data"
+              :files="staffForms.second_deputy.files"
+            />
+          </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="navigation">
+          <P-Button 
+            v-if="currentStep > 0" 
+            label="Anterior" 
+            icon="pi pi-arrow-left" 
+            severity="secondary"
+            @click="prevStep" 
+          />
+          <div class="spacer"></div>
+          <P-Button 
+            v-if="currentStep < steps.length - 1" 
+            label="Próximo" 
+            icon="pi pi-arrow-right" 
+            iconPos="right"
+            @click="nextStep" 
+          />
+          <P-Button 
+            v-if="currentStep === steps.length - 1" 
+            label="Submeter" 
+            icon="pi pi-check" 
+            iconPos="right"
+            severity="success"
+            @click="submit" 
+            :loading="submitting" 
+          />
+        </div>
       </div>
     </div>
 
@@ -367,35 +403,186 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
 }
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .team-registration {
-  max-width: 800px;
+  padding: 1rem;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 20px;
+  background: #fafaf9;
+}
+
+.registration-header {
+  margin-bottom: 1rem;
+}
+
+.registration-header h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1c1917;
+  margin: 0 0 0.25rem 0;
+}
+
+.registration-header p {
+  color: #78716c;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.form-card {
+  background: white;
+  border: 1px solid #e7e5e4;
+  border-radius: 12px;
+  padding: 1rem;
 }
 
 .form-container {
-  margin-top: 20px;
+  margin-top: 1rem;
 }
 
-.step-content {
-  margin-top: 20px;
+.step-content h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1c1917;
+  margin: 0 0 0.75rem 0;
+}
+
+.step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  gap: 0.5rem;
+}
+
+.step-header h2 {
+  margin: 0;
+  flex: 1;
+}
+
+.optional-note {
+  color: #78716c;
+  font-size: 0.75rem;
+  margin: -0.5rem 0 0.75rem 0;
 }
 
 .field {
-  margin-top: 15px;
-  display: block;
+  margin-top: 0.75rem;
+}
+
+.field :deep(.p-inputtext),
+.field :deep(.p-select) {
+  width: 100%;
+}
+
+.staff-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
 }
 
 .player-fieldset {
   position: relative;
-  margin-bottom: 10px;
+  margin-bottom: 0.75rem;
 }
 
 .navigation {
-  margin-top: 30px;
+  margin-top: 1rem;
   display: flex;
-  justify-content: space-between;
-  gap: 10px;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e7e5e4;
+}
+
+.navigation :deep(.p-button) {
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Large phones */
+@media (min-width: 480px) {
+  .team-registration {
+    padding: 1.25rem;
+  }
+  
+  .form-card {
+    padding: 1.25rem;
+  }
+}
+
+/* Tablets */
+@media (min-width: 768px) {
+  .team-registration {
+    padding: 1.5rem;
+  }
+
+  .registration-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .registration-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .form-card {
+    padding: 1.5rem;
+  }
+
+  .form-container {
+    margin-top: 1.5rem;
+  }
+
+  .step-content h2 {
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+  }
+
+  .step-header {
+    margin-bottom: 1rem;
+  }
+
+  .optional-note {
+    font-size: 0.875rem;
+    margin: -0.5rem 0 1rem 0;
+  }
+
+  .field {
+    margin-top: 1rem;
+  }
+
+  .staff-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .player-fieldset {
+    margin-bottom: 1rem;
+  }
+
+  .navigation {
+    margin-top: 1.5rem;
+    gap: 0.75rem;
+  }
+
+  .navigation :deep(.p-button) {
+    font-size: 0.875rem;
+    padding: 0.625rem 1rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .team-registration {
+    padding: 2rem;
+  }
+
+  .form-card {
+    padding: 2rem;
+    border-radius: 16px;
+  }
 }
 </style>

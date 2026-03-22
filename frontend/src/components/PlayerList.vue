@@ -1,25 +1,31 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal header="Lista de Jogadores" :style="{ width: '80vw' }">
-    <P-DataTable :value="playerStore.players" paginator :rows="10">
-      <P-Column field="name" header="Nome" />
-      <P-Column field="fiscal_number" header="NIF" />
-      <P-Column field="birth_date" header="Data de Nascimento">
+  <P-Dialog v-model:visible="enabled" modal header="Lista de Jogadores" :style="{ width: '900px' }">
+    <P-DataTable :value="playerStore.players" striped-rows size="small" paginator :rows="10" :rowsPerPageOptions="[5, 10, 20, 50]">
+      <P-Column field="name" header="Nome">
+        <template #body="{ data }">
+          <div class="flex align-items-center gap-2">
+            <span>🧑</span>
+            <span class="font-medium">{{ data.name }}</span>
+          </div>
+        </template>
+      </P-Column>
+      <P-Column field="fiscal_number" header="NIF" style="width: 100px" />
+      <P-Column field="birth_date" header="Nascimento" style="width: 110px">
         <template #body="{ data }">
           {{ new Date(data.birth_date).toLocaleDateString('pt-PT') }}
         </template>
       </P-Column>
-      <P-Column field="is_federated" header="Federado">
+      <P-Column header="Federado" style="width: 90px">
         <template #body="{ data }">
-          {{ data.is_federated ? 'Sim' : 'Não' }}
+          <i :class="data.is_federated ? 'pi pi-check text-green-600' : 'pi pi-times text-gray-400'" />
         </template>
       </P-Column>
-      <P-Column field="federation_team" header="Equipa Federada" />
-      <P-Column field="is_confirmed" header="Confirmado">
+      <P-Column header="Estado" style="width: 110px">
         <template #body="{ data }">
           <P-Tag :severity="data.is_confirmed ? 'success' : 'warning'" :value="data.is_confirmed ? 'Confirmado' : 'Pendente'" />
         </template>
       </P-Column>
-      <P-Column header="Ações">
+      <P-Column header="Ações" style="width: 80px">
         <template #body="{ data }">
           <P-Button 
             v-if="!data.is_confirmed" 
@@ -28,24 +34,24 @@
             text 
             rounded 
             @click="confirmPlayer(data.id)"
-            title="Confirmar jogador"
+            v-tooltip.top="'Confirmar jogador'"
           />
         </template>
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button @click="playerStore.getPlayers()">Atualizar</P-Button>
+      <P-Button label="Atualizar" icon="pi pi-refresh" @click="playerStore.getPlayers()" />
     </template>
   </P-Dialog>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from "vue";
-
+import { useToast } from "primevue/usetoast";
 import { usePlayerStore } from "@stores/players";
 
+const toast = useToast();
 const enabled = defineModel<boolean>();
-
 const playerStore = usePlayerStore();
 
 onMounted(async () => {
@@ -53,6 +59,11 @@ onMounted(async () => {
 });
 
 async function confirmPlayer(playerId: string) {
-  await playerStore.confirmPlayer(playerId);
+  const result = await playerStore.confirmPlayer(playerId);
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador confirmado", life: 3000 });
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Erro ao confirmar jogador", life: 3000 });
+  }
 }
 </script>

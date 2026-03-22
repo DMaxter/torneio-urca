@@ -22,4 +22,12 @@ export default defineConfig({
       '@views': fileURLToPath(new URL('./src/views', import.meta.url))
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

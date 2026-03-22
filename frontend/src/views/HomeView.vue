@@ -1,19 +1,36 @@
 <template>
   <div class="home">
     <div class="hero">
-      <h1>Torneio de Futsal de São Pedro 2026</h1>
-      <p class="organized-by">Organizado por URCA</p>
+      <div class="hero-badge">São Pedro 2026</div>
+      <h1>Torneio de Futsal</h1>
+      <p class="subtitle">Organizado por URCA - Porto de Mos</p>
     </div>
 
-    <div class="info-section">
-      <div class="registration-info">
-        <h3>Inscrições</h3>
+    <div class="content">
+      <div class="info-card">
+        <div class="card-icon">📅</div>
+        <h3>Inscrições Abertas</h3>
         <p class="deadline">
-          As inscrições estão abertas até <strong>8 de Maio de 2026</strong>
+          Até <strong>8 de Maio de 2026</strong>
         </p>
-        <router-link to="/register">
+        <router-link to="/register" class="cta-button">
           <P-Button label="Registar Equipa" size="large" />
         </router-link>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <span class="feature-icon">⚽</span>
+          <span class="feature-text">Equipas de Futsal</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">🏆</span>
+          <span class="feature-text">Torneio Competitivo</span>
+        </div>
+        <div class="feature">
+          <span class="feature-icon">📋</span>
+          <span class="feature-text">Gestão Integrada</span>
+        </div>
       </div>
     </div>
   </div>
@@ -22,66 +39,223 @@
 <script setup lang="ts">
 </script>
 
-<style lang="scss" scoped>
+<style scoped>
 .home {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  color: white;
+  padding: 2rem 1rem;
+  background: #fafaf9;
 }
 
 .hero {
   text-align: center;
-  margin-bottom: 60px;
+  margin-bottom: 2rem;
+}
 
-  h1 {
-    font-size: 3rem;
-    margin-bottom: 10px;
-    color: #4fc3f7;
-  }
+.hero-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: #fff7ed;
+  color: #c2410c;
+  border-radius: 50px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
-  h2 {
+.hero h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1c1917;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-size: 0.9375rem;
+  color: #78716c;
+  margin: 0;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+}
+
+.info-card {
+  background: white;
+  border: 1px solid #e7e5e4;
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  width: 100%;
+}
+
+.card-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.info-card h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #292524;
+  margin: 0 0 0.5rem 0;
+}
+
+.deadline {
+  font-size: 0.875rem;
+  color: #78716c;
+  margin: 0 0 1.25rem 0;
+}
+
+.deadline strong {
+  color: #f97316;
+}
+
+.cta-button {
+  text-decoration: none;
+  display: block;
+  width: 100%;
+}
+
+.cta-button :deep(.p-button) {
+  width: 100%;
+  font-size: 0.9375rem;
+}
+
+.features {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #78716c;
+  font-size: 0.8125rem;
+}
+
+.feature-icon {
+  font-size: 1rem;
+}
+
+.feature-text {
+  font-weight: 500;
+}
+
+/* Large phones */
+@media (min-width: 480px) {
+  .hero h1 {
     font-size: 2rem;
-    margin-bottom: 20px;
-    font-weight: 400;
   }
 
-  .organized-by {
-    font-size: 1.2rem;
-    opacity: 0.8;
+  .subtitle {
+    font-size: 1rem;
+  }
+
+  .info-card {
+    padding: 2rem;
+  }
+
+  .card-icon {
+    font-size: 3rem;
+  }
+
+  .info-card h3 {
+    font-size: 1.25rem;
+  }
+
+  .deadline {
+    font-size: 0.9375rem;
   }
 }
 
-.info-section {
-  text-align: center;
+/* Tablets */
+@media (min-width: 768px) {
+  .home {
+    padding: 3rem 2rem;
+  }
 
-  .registration-info {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 40px 60px;
-    border-radius: 16px;
-    backdrop-filter: blur(10px);
+  .hero {
+    margin-bottom: 3rem;
+  }
 
-    h3 {
-      font-size: 1.8rem;
-      margin-bottom: 20px;
-    }
+  .hero-badge {
+    padding: 6px 16px;
+    font-size: 0.75rem;
+    margin-bottom: 1rem;
+  }
 
-    .deadline {
-      font-size: 1.2rem;
-      margin-bottom: 30px;
+  .hero h1 {
+    font-size: 2.5rem;
+  }
 
-      strong {
-        color: #ffeb3b;
-      }
-    }
+  .subtitle {
+    font-size: 1.125rem;
+  }
 
-    a {
-      text-decoration: none;
-    }
+  .content {
+    gap: 2rem;
+    max-width: 500px;
+  }
+
+  .info-card {
+    padding: 2.5rem;
+    border-radius: 20px;
+  }
+
+  .card-icon {
+    font-size: 3.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .info-card h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .deadline {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .cta-button :deep(.p-button) {
+    font-size: 1rem;
+  }
+
+  .features {
+    gap: 1.5rem;
+  }
+
+  .feature {
+    font-size: 0.9375rem;
+  }
+
+  .feature-icon {
+    font-size: 1.25rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .hero h1 {
+    font-size: 3rem;
+  }
+
+  .content {
+    max-width: 560px;
   }
 }
 </style>

@@ -1,8 +1,7 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import PrimeVue from "primevue/config";
-import Aura from "@primeuix/themes/aura";
-
+import { URCATheme } from "./theme";
 
 import App from "@/App.vue";
 import router from "@router";
@@ -13,7 +12,11 @@ app.use(createPinia());
 app.use(ToastService);
 app.use(PrimeVue, {
   theme: {
-    preset: Aura
+    preset: URCATheme,
+    options: {
+      darkModeSelector: ".dark",
+      cssLayer: false
+    }
   }
 });
 app.use(router);
@@ -39,6 +42,7 @@ import Steps from "primevue/steps";
 import Tag from "primevue/tag";
 import Toast from "primevue/toast";
 import ToastService from "primevue/toastservice";
+import Tooltip from "primevue/tooltip";
 
 app.component("P-Accordion", Accordion);
 app.component("P-AccordionTab", AccordionTab);
@@ -58,6 +62,8 @@ app.component("P-Select", Select);
 app.component("P-Steps", Steps);
 app.component("P-Tag", Tag);
 app.component("P-Toast", Toast);
+
+app.directive("tooltip", Tooltip);
 
 // Custom components
 
