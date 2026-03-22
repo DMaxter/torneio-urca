@@ -9,6 +9,8 @@ dependencies = [
     "pydantic-settings~=2.7",
     "python-dotenv~=1.0.1",
     "python-multipart~=0.0.12",
+    "bcrypt~=5.0.0",
+    "PyJWT~=2.12.1",
 ]
 requires-python = "~=3.14.0"
 

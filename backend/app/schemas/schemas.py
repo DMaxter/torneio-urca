@@ -15,6 +15,11 @@ class UserDto(BaseModel):
     username: str
 
 
+class ChangePasswordDto(BaseModel):
+    current_password: str
+    new_password: str
+
+
 class CreatePlayerDto(BaseModel):
     name: str
     birth_date: datetime
@@ -70,11 +75,11 @@ class CreateTeamDto(BaseModel):
     responsible_name: str
     responsible_email: str
     responsible_phone: str
-    main_coach: str
+    main_coach: Optional[str] = None
     assistant_coach: Optional[str] = None
     players: List[str]
-    physiotherapist: str
-    first_deputy: str
+    physiotherapist: Optional[str] = None
+    first_deputy: Optional[str] = None
     second_deputy: Optional[str] = None
 
 
@@ -169,3 +174,12 @@ class AssignCardDto(BaseModel):
     player: str
     card: CardType
     minute: int
+
+
+class CreateAdminPlayerDto(BaseModel):
+    name: str
+    birth_date: datetime
+    team: str
+    tournament: str
+    is_federated: bool = False
+    federation_team: Optional[str] = None

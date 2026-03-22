@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-import { type User, CreateUser } from "@router/backend/services/user/types";
+import { type User, CreateUser, ChangePassword } from "@router/backend/services/user/types";
 import * as userService from "@router/backend/services/user";
 import { createGenericStore } from "@stores/base";
 
@@ -17,6 +17,8 @@ export const useUserStore = defineStore("usersStore", () => {
     users,
     getUsers: base.getAll,
     createUser: base.create,
+    changePassword: userService.changePassword,
+    deleteUser: userService.deleteUser,
     init: base.init,
     add: base.add,
     remove: base.remove,

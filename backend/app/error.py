@@ -87,3 +87,24 @@ class Error:
                 "message": "As fichas de jogo ainda não foram entregues",
             },
         )
+
+    @staticmethod
+    def conflict(message: str):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"message": message},
+        )
+
+    @staticmethod
+    def unauthorized(message: str):
+        return HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"message": message},
+        )
+
+    @staticmethod
+    def bad_request(message: str):
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": message},
+        )

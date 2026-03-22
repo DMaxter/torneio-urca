@@ -1,19 +1,25 @@
+import logging
 from bson import ObjectId
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from datetime import datetime
 from database import db, CARDS_COLLECTION, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import AssignCardDto
 from app.error import Error
+from app.utils.auth import get_current_user
 from app.routes.tournament import get_tournament
 from app.routes.game import get_game, check_game_running, add_game_event
 from app.routes.team import get_team
 from app.routes.player import get_player
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/cards", tags=["Cards"])
 
 
 @router.post("", status_code=201)
-async def assign_card(card: AssignCardDto):
+async def assign_card(card: AssignCardDto, current_user=Depends(get_current_user)):
+    logger.info(
+        f"[{current_user['username']}] Assigning {card.card.value} card to player: {card.player} in game: {card.game}"
+    )
     tournament = await get_tournament(card.tournament)
     game = await get_game(card.game)
 
@@ -75,5 +81,8 @@ async def assign_card(card: AssignCardDto):
     }
 
     await add_game_event(ObjectId(card.game), event)
+    logger.info(
+        f"Card assigned: {card.card.value} to {player['name']} (minute: {card.minute})"
+    )
 
     return {"message": "Card assigned successfully"}

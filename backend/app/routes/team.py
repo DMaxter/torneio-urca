@@ -1,6 +1,7 @@
+import logging
 from typing import List, Optional
 from bson import ObjectId
-from fastapi import APIRouter, Form, UploadFile, File, HTTPException
+from fastapi import APIRouter, Form, UploadFile, File, HTTPException, Depends
 from database import (
     db,
     TEAMS_COLLECTION,
@@ -12,9 +13,11 @@ from app.schemas.schemas import CreateTeamDto, TeamDto, StaffType
 from app.error import Error
 from app.constants import MIN_PLAYERS, MIN_AGE
 from app.utils import calculate_age
+from app.utils.auth import get_current_user
 from datetime import datetime
 import json
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/teams", tags=["Teams"])
 
 
@@ -122,20 +125,25 @@ def create_players(players: list, file_dict: dict[str, str]) -> list[ObjectId]:
 
 
 @router.post("", response_model=TeamDto, status_code=201)
-async def add_team(team: CreateTeamDto):
+async def add_team(team: CreateTeamDto, current_user=Depends(get_current_user)):
     """Create a new team by providing full references to existing entities."""
     from app.routes.tournament import get_tournament
 
+    logger.info(f"[{current_user['username']}] Creating team: {team.name}")
     tournament = await get_tournament(team.tournament)
     team_dict = team.model_dump()
     team_dict["tournament"] = ObjectId(team.tournament)
-    team_dict["main_coach"] = ObjectId(team.main_coach)
+    team_dict["main_coach"] = ObjectId(team.main_coach) if team.main_coach else None
     team_dict["assistant_coach"] = (
         ObjectId(team.assistant_coach) if team.assistant_coach else None
     )
-    team_dict["players"] = [ObjectId(p) for p in team.players]
-    team_dict["physiotherapist"] = ObjectId(team.physiotherapist)
-    team_dict["first_deputy"] = ObjectId(team.first_deputy)
+    team_dict["players"] = [ObjectId(p) for p in team.players] if team.players else []
+    team_dict["physiotherapist"] = (
+        ObjectId(team.physiotherapist) if team.physiotherapist else None
+    )
+    team_dict["first_deputy"] = (
+        ObjectId(team.first_deputy) if team.first_deputy else None
+    )
     team_dict["second_deputy"] = (
         ObjectId(team.second_deputy) if team.second_deputy else None
     )
@@ -146,7 +154,7 @@ async def add_team(team: CreateTeamDto):
     await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": tournament["_id"]}, {"$push": {"teams": result.inserted_id}}
     )
-
+    logger.info(f"Team created: {team.name} (id: {result.inserted_id})")
     return team_to_dto(team_dict)
 
 
@@ -192,6 +200,7 @@ async def register_team(
     """
     from app.routes.tournament import get_tournament
 
+    logger.info(f"Team registration request: {name}")
     players = json.loads(players_json)
     if len(players) < MIN_PLAYERS:
         raise HTTPException(
@@ -264,6 +273,7 @@ async def register_team(
     await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": ObjectId(tournament)}, {"$push": {"teams": result.inserted_id}}
     )
+    logger.info(f"Team registered: {name} (id: {result.inserted_id})")
 
     return team_to_dto(team_data)
 
@@ -271,6 +281,7 @@ async def register_team(
 @router.get("", response_model=List[TeamDto])
 async def get_teams():
     teams = await db.db[TEAMS_COLLECTION].find().to_list(1000)
+    logger.info(f"Retrieved {len(teams)} teams")
     return [team_to_dto(team) for team in teams]
 
 

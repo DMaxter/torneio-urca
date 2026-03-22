@@ -1,6 +1,7 @@
+import logging
 from typing import List, Optional
 from bson import ObjectId
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from datetime import datetime
 from database import (
     db,
@@ -11,7 +12,9 @@ from database import (
 from app.schemas.schemas import CreateGameDto, GameDto, GameCallDto
 from app.models.models import GameStatus
 from app.error import Error
+from app.utils.auth import get_current_user
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/games", tags=["Games"])
 
 
@@ -39,9 +42,12 @@ def game_to_dto(game: dict, home_call: dict, away_call: dict) -> GameDto:
 
 
 @router.post("", response_model=GameDto, status_code=201)
-async def add_game(game: CreateGameDto):
+async def add_game(game: CreateGameDto, current_user=Depends(get_current_user)):
     from app.routes.tournament import get_tournament
 
+    logger.info(
+        f"[{current_user['username']}] Creating game for tournament: {game.tournament}"
+    )
     tournament = await get_tournament(game.tournament)
 
     home_call_dict = {
@@ -84,6 +90,7 @@ async def add_game(game: CreateGameDto):
     home_call_dict["game"] = result.inserted_id
     away_call_dict["game"] = result.inserted_id
 
+    logger.info(f"Game created (id: {result.inserted_id})")
     return game_to_dto(game_dict, home_call_dict, away_call_dict)
 
 
@@ -101,6 +108,7 @@ async def get_games():
         if home_call and away_call:
             result.append(game_to_dto(game, home_call, away_call))
 
+    logger.info(f"Retrieved {len(result)} games")
     return result
 
 
@@ -114,7 +122,7 @@ async def get_game(game_id: str) -> dict:
     return game
 
 
-async def check_game_running(tournament_id: ObjectId, game: dict) -> None:
+def check_game_running(tournament_id: ObjectId, game: dict) -> None:
     if game["tournament"] != tournament_id:
         raise Error.game_not_in_tournament()
     if game.get("status") != GameStatus.InProgress:

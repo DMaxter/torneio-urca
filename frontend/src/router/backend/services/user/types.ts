@@ -3,6 +3,11 @@ export class CreateUser {
   password: string = "";
 };
 
+export class ChangePassword {
+  current_password: string = "";
+  new_password: string = "";
+};
+
 export class User {
   id: string = "";
   username: string = "";

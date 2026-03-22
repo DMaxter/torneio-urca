@@ -9,6 +9,15 @@ export class CreatePlayer {
   federation_exams_up_to_date: boolean = false;
 };
 
+export class CreateAdminPlayer {
+  name: string = "";
+  birth_date: Date | null = null;
+  team: string = "";
+  tournament: string = "";
+  is_federated: boolean = false;
+  federation_team: string = "";
+};
+
 export class Player {
   id: string = "";
   name: string = "";

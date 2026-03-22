@@ -1,10 +1,13 @@
+import logging
 from typing import List
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from database import db, PLAYERS_COLLECTION
-from app.schemas.schemas import CreatePlayerDto, PlayerDto
+from app.schemas.schemas import CreatePlayerDto, CreateAdminPlayerDto, PlayerDto
 from app.error import Error
+from app.utils.auth import get_current_user, get_admin_user
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/players", tags=["Players"])
 
 
@@ -27,16 +30,55 @@ def player_to_dto(player: dict) -> PlayerDto:
 
 
 @router.post("", response_model=PlayerDto, status_code=201)
-async def add_player(player: CreatePlayerDto):
+async def add_player(player: CreatePlayerDto, current_user=Depends(get_current_user)):
+    logger.info(f"[{current_user['username']}] Creating player: {player.name}")
     player_dict = player.model_dump()
     result = await db.db[PLAYERS_COLLECTION].insert_one(player_dict)
     player_dict["_id"] = result.inserted_id
+    logger.info(f"Player created: {player.name} (id: {result.inserted_id})")
+    return player_to_dto(player_dict)
+
+
+@router.post("/admin", response_model=PlayerDto, status_code=201)
+async def add_player_admin(
+    player_data: CreateAdminPlayerDto,
+    current_user=Depends(get_admin_user),
+):
+    logger.info(
+        f"[{current_user['username']}] Admin creating player: {player_data.name}"
+    )
+    player_dict = {
+        "name": player_data.name,
+        "birth_date": player_data.birth_date,
+        "fiscal_number": "",
+        "is_federated": player_data.is_federated,
+        "federation_team": player_data.federation_team,
+        "federation_exams_up_to_date": False,
+        "is_confirmed": True,
+    }
+    result = await db.db[PLAYERS_COLLECTION].insert_one(player_dict)
+    player_dict["_id"] = result.inserted_id
+
+    from app.routes.team import get_team
+
+    team = await get_team(player_data.team)
+    player_id_str = str(result.inserted_id)
+    if player_id_str not in team["players"]:
+        from database import db as database_db
+
+        await database_db.db["teams"].update_one(
+            {"_id": ObjectId(player_data.team)},
+            {"$push": {"players": player_id_str}},
+        )
+
+    logger.info(f"Admin player created: {player_data.name} (id: {result.inserted_id})")
     return player_to_dto(player_dict)
 
 
 @router.get("", response_model=List[PlayerDto])
 async def get_players():
     players = await db.db[PLAYERS_COLLECTION].find().to_list(1000)
+    logger.info(f"Retrieved {len(players)} players")
     return [player_to_dto(player) for player in players]
 
 
@@ -52,7 +94,8 @@ async def _get_player(player_id: str):
 
 
 @router.patch("/{player_id}/confirm", response_model=PlayerDto)
-async def confirm_player(player_id: str):
+async def confirm_player(player_id: str, current_user=Depends(get_current_user)):
+    logger.info(f"[{current_user['username']}] Confirming player: {player_id}")
     try:
         result = await db.db[PLAYERS_COLLECTION].find_one_and_update(
             {"_id": ObjectId(player_id)},
@@ -63,6 +106,7 @@ async def confirm_player(player_id: str):
         raise Error.invalid_id("player")
     if not result:
         raise Error.not_found("Player")
+    logger.info(f"Player confirmed: {player_id}")
     return player_to_dto(result)
 
 

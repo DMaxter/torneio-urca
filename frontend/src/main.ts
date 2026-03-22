@@ -79,7 +79,9 @@ import TournamentList from "@components/TournamentList.vue";
 import TournamentManagement from "@components/TournamentManagement.vue";
 import UserList from "@components/UserList.vue";
 import UserManagement from "@components/UserManagement.vue";
+import AdminPlayerForm from "@components/AdminPlayerForm.vue";
 
+app.component("AdminPlayerForm", AdminPlayerForm);
 app.component("GameList", GameList);
 app.component("GameManagement", GameManagement);
 app.component("GroupList", GroupList);

@@ -1,19 +1,25 @@
+import logging
 from bson import ObjectId
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from datetime import datetime
 from database import db, GOALS_COLLECTION, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import AssignGoalDto
 from app.error import Error
+from app.utils.auth import get_current_user
 from app.routes.tournament import get_tournament
 from app.routes.game import get_game, check_game_running, add_game_event
 from app.routes.team import get_team
 from app.routes.player import get_player
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/goals", tags=["Goals"])
 
 
 @router.post("", status_code=201)
-async def assign_goal(goal: AssignGoalDto):
+async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user)):
+    logger.info(
+        f"[{current_user['username']}] Assigning goal to player: {goal.player} in game: {goal.game}"
+    )
     tournament = await get_tournament(goal.tournament)
     game = await get_game(goal.game)
 
@@ -77,5 +83,6 @@ async def assign_goal(goal: AssignGoalDto):
     }
 
     await add_game_event(ObjectId(goal.game), event)
+    logger.info(f"Goal assigned: {player['name']} (minute: {goal.minute})")
 
     return {"message": "Goal assigned successfully"}

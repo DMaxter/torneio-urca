@@ -9,21 +9,67 @@
           </div>
         </template>
       </P-Column>
+      <P-Column header="Ações" :style="{ width: '120px' }">
+        <template #body="{ data }">
+          <div class="flex gap-2">
+            <P-Button
+              v-if="data.username !== 'admin'"
+              severity="danger"
+              size="small"
+              icon="pi pi-trash"
+              @click="confirmDelete(data)"
+            />
+          </div>
+        </template>
+      </P-Column>
     </P-DataTable>
     <template #footer>
       <P-Button label="Atualizar" icon="pi pi-refresh" @click="userStore.getUsers()" />
     </template>
   </P-Dialog>
+
+  <P-Dialog v-model:visible="deleteDialog" modal header="Confirmar" :style="{ width: '350px' }">
+    <p>Tem a certeza que deseja eliminar o utilizador <strong>{{ userToDelete?.username }}</strong>?</p>
+    <template #footer>
+      <P-Button severity="danger" label="Eliminar" @click="handleDelete" />
+      <P-Button severity="secondary" label="Cancelar" @click="deleteDialog = false" />
+    </template>
+  </P-Dialog>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
-import { useUserStore } from "@stores/users";
+import { ref, onMounted } from "vue";
+import { useToast } from "primevue/usetoast";
 
+import { useUserStore } from "@stores/users";
+import type { User } from "@router/backend/services/user/types";
+
+const toast = useToast();
 const enabled = defineModel<boolean>();
 const userStore = useUserStore();
+
+const deleteDialog = ref(false);
+const userToDelete = ref<User | null>(null);
 
 onMounted(async () => {
   await userStore.getUsers();
 });
+
+function confirmDelete(user: User) {
+  userToDelete.value = user;
+  deleteDialog.value = true;
+}
+
+async function handleDelete() {
+  if (!userToDelete.value) return;
+  const result = await userStore.deleteUser(userToDelete.value.id);
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Utilizador eliminado", life: 3000 });
+    await userStore.getUsers();
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: result.content || "Erro ao eliminar utilizador", life: 3000 });
+  }
+  deleteDialog.value = false;
+  userToDelete.value = null;
+}
 </script>

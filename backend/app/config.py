@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     http_host: str = "0.0.0.0"
     http_port: int = 8000
     database_name: str = "pm_tournament"
+    jwt_secret: str
 
     class Config:
         env_file = ".env"

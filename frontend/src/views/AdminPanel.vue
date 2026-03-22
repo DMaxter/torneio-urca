@@ -1,8 +1,13 @@
 <template>
   <div class="admin-panel">
     <div class="admin-header">
-      <h1>Painel de Administração</h1>
-      <p>Gerir torneios, equipas, jogadores e muito mais</p>
+      <div class="header-content">
+        <div>
+          <h1>Painel de Administração</h1>
+          <p>Gerir torneios, equipas, jogadores e muito mais</p>
+        </div>
+        <P-Button label="Sair" icon="pi pi-sign-out" severity="secondary" @click="handleLogout" />
+      </div>
     </div>
 
     <div class="admin-grid">
@@ -33,6 +38,7 @@
     <TeamList v-model="listTeams" />
     <TeamManagement v-model="manageTeam" />
     <PlayerList v-model="listPlayers" />
+    <AdminPlayerForm v-model="createPlayer" />
     <TournamentList v-model="listTournaments" />
     <TournamentManagement v-model="manageTournament" />
     <UserList v-model="listUsers" />
@@ -43,6 +49,14 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
+import { useAuthStore } from "@stores/auth";
+
+const authStore = useAuthStore();
+
+function handleLogout() {
+  authStore.logout();
+}
+
 const listTournaments = ref(false);
 const manageTournament = ref(false);
 const listUsers = ref(false);
@@ -50,6 +64,7 @@ const manageUser = ref(false);
 const listTeams = ref(false);
 const manageTeam = ref(false);
 const listPlayers = ref(false);
+const createPlayer = ref(false);
 const listGroups = ref(false);
 const manageGroup = ref(false);
 const listGames = ref(false);
@@ -97,6 +112,7 @@ const sections: Section[] = [
     title: "Jogadores",
     icon: "🧑",
     actions: [
+      { label: "Criar", icon: "pi pi-plus", severity: "success", handler: () => createPlayer.value = true },
       { label: "Listar", icon: "pi pi-list", handler: () => listPlayers.value = true }
     ]
   },
@@ -129,6 +145,13 @@ const sections: Section[] = [
 
 .admin-header {
   margin-bottom: 1.5rem;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
 }
   
 .admin-header h1 {

@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-import { type Player, CreatePlayer } from "@router/backend/services/player/types";
+import { type Player, CreatePlayer, CreateAdminPlayer } from "@router/backend/services/player/types";
 import * as playerService from "@router/backend/services/player";
 import { createGenericStore } from "@stores/base";
 
@@ -12,6 +12,14 @@ export const usePlayerStore = defineStore("playersStore", () => {
     getAll: playerService.getPlayers,
     create: playerService.createPlayer,
   });
+
+  async function createAdminPlayer(player: CreateAdminPlayer) {
+    const { status, data } = await playerService.createAdminPlayer(player);
+    if (status === 201) {
+      return { success: true, content: data as Player };
+    }
+    return { success: false, content: ((data as unknown) as Error).message, status };
+  }
 
   async function confirmPlayer(playerId: string) {
     const { status, data } = await playerService.confirmPlayer(playerId);
@@ -26,6 +34,7 @@ export const usePlayerStore = defineStore("playersStore", () => {
     players,
     getPlayers: base.getAll,
     createPlayer: base.create,
+    createAdminPlayer,
     confirmPlayer,
     init: base.init,
     add: base.add,
