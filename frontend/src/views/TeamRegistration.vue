@@ -274,6 +274,14 @@ function removePlayer(index: number) {
 }
 
 function nextStep() {
+  if (currentStep.value === 0 && (!teamData.name || !teamData.tournament)) {
+    toast.add({ severity: "error", summary: "Erro", detail: "Preencha o nome da equipa e selecione o torneio", life: 3000 });
+    return;
+  }
+  if (currentStep.value === 1 && (!teamData.responsible_name || !teamData.responsible_email || !teamData.responsible_phone)) {
+    toast.add({ severity: "error", summary: "Erro", detail: "Preencha todos os campos do responsável", life: 3000 });
+    return;
+  }
   if (currentStep.value === 2 && playerForms.length < TOURNAMENT.MIN_PLAYERS) {
     toast.add({ severity: "error", summary: "Erro", detail: `É necessário um mínimo de ${TOURNAMENT.MIN_PLAYERS} jogadores`, life: 3000 });
     return;
