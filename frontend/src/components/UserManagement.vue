@@ -17,10 +17,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useToast } from "primevue/usetoast";
 
 import { CreateUser, type User } from "@router/backend/services/user/types";
 import { useUserStore } from "@stores/users";
 
+const toast = useToast();
 const enabled = defineModel<boolean>();
 const props = defineProps<{
   user?: User
@@ -52,11 +54,17 @@ async function createOrUpdate() {
 }
 
 async function create() {
-  await userStore.createUser(user.value as CreateUser);
+  const result = await userStore.createUser(user.value as CreateUser);
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Utilizador criado com sucesso", life: 3000 });
+    close();
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: result.content || "Erro ao criar utilizador", life: 3000 });
+  }
 }
 
 async function update() {
-  console.error("TODO");
+  toast.add({ severity: "warn", summary: "Em desenvolvimento", detail: "Funcionalidade de edição ainda não disponível", life: 3000 });
 }
 
 function close() {

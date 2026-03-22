@@ -30,11 +30,13 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useToast } from "primevue/usetoast";
 
 import { CreateTeam, type Team } from "@router/backend/services/team/types";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 
+const toast = useToast();
 const enabled = defineModel<boolean>();
 const props = defineProps<{
   team?: Team
@@ -62,11 +64,17 @@ async function createOrUpdate() {
 }
 
 async function create() {
-  await teamStore.createTeam(team.value as CreateTeam);
+  const result = await teamStore.createTeam(team.value as CreateTeam);
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Equipa criada com sucesso", life: 3000 });
+    close();
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: result.content || "Erro ao criar equipa", life: 3000 });
+  }
 }
 
 async function update() {
-  console.error("TODO");
+  toast.add({ severity: "warn", summary: "Em desenvolvimento", detail: "Funcionalidade de edição ainda não disponível", life: 3000 });
 }
 
 function close() {

@@ -44,20 +44,20 @@
 
       <!-- Step 3: Players -->
       <div v-show="currentStep === 2" class="step-content">
-        <h2>Jogadores (5 a 14)</h2>
+        <h2>Jogadores ({{ TOURNAMENT.MIN_PLAYERS }} a {{ TOURNAMENT.MAX_PLAYERS }})</h2>
 
         <div v-for="(player, index) in playerForms" :key="index" class="player-fieldset">
           <PlayerForm
             :index="index"
             v-model="player.data"
             :files="player.files"
-            :showRemove="playerForms.length > 5"
+            :showRemove="playerForms.length > TOURNAMENT.MIN_PLAYERS"
             @update:files="player.files = $event"
             @remove="removePlayer(index)"
           />
         </div>
 
-        <P-Button label="Adicionar Jogador" icon="pi pi-plus" @click="addPlayer" :disabled="playerForms.length >= 14" />
+        <P-Button label="Adicionar Jogador" icon="pi pi-plus" @click="addPlayer" :disabled="playerForms.length >= TOURNAMENT.MAX_PLAYERS" />
       </div>
 
       <!-- Step 4: Staff Info -->
@@ -108,6 +108,8 @@ import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useTournamentStore } from "@stores/tournaments";
 import { http } from "@router/backend/api";
+import { TOURNAMENT } from "@/constants";
+import { isUnderAge } from "@/utils";
 import PlayerForm from "@components/forms/PlayerForm.vue";
 import StaffMemberForm from "@components/forms/StaffMemberForm.vue";
 
@@ -223,7 +225,7 @@ onMounted(async () => {
 });
 
 function addPlayer() {
-  if (playerForms.length < 14) {
+  if (playerForms.length < TOURNAMENT.MAX_PLAYERS) {
     playerForms.push({
       data: createEmptyPlayer(),
       files: createEmptyPlayerFiles()
@@ -236,8 +238,8 @@ function removePlayer(index: number) {
 }
 
 function nextStep() {
-  if (currentStep.value === 2 && playerForms.length < 5) {
-    toast.add({ severity: "error", summary: "Erro", detail: "É necessário um mínimo de 5 jogadores", life: 3000 });
+  if (currentStep.value === 2 && playerForms.length < TOURNAMENT.MIN_PLAYERS) {
+    toast.add({ severity: "error", summary: "Erro", detail: `É necessário um mínimo de ${TOURNAMENT.MIN_PLAYERS} jogadores`, life: 3000 });
     return;
   }
   if (currentStep.value < steps.length - 1) {
@@ -251,21 +253,9 @@ function prevStep() {
   }
 }
 
-function isUnder16(birthDate: Date | null): boolean {
-  if (!birthDate) return false;
-  const today = new Date();
-  const birth = new Date(birthDate);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-  return age < 16;
-}
-
 async function submit() {
-  if (playerForms.length < 5) {
-    toast.add({ severity: "error", summary: "Erro", detail: "É necessário um mínimo de 5 jogadores", life: 3000 });
+  if (playerForms.length < TOURNAMENT.MIN_PLAYERS) {
+    toast.add({ severity: "error", summary: "Erro", detail: `É necessário um mínimo de ${TOURNAMENT.MIN_PLAYERS} jogadores`, life: 3000 });
     return;
   }
 
@@ -278,8 +268,8 @@ async function submit() {
       toast.add({ severity: "error", summary: "Erro", detail: `Jogador ${i + 1}: Comprovativo de Residência é obrigatório`, life: 3000 });
       return;
     }
-    if (isUnder16(playerForms[i].data.birth_date) && !playerForms[i].files.authorization) {
-      toast.add({ severity: "error", summary: "Erro", detail: `Jogador ${i + 1}: Autorização é obrigatória (menor de 16 anos)`, life: 3000 });
+    if (isUnderAge(playerForms[i].data.birth_date, TOURNAMENT.MIN_AGE) && !playerForms[i].files.authorization) {
+      toast.add({ severity: "error", summary: "Erro", detail: `Jogador ${i + 1}: Autorização é obrigatória (menor de ${TOURNAMENT.MIN_AGE} anos)`, life: 3000 });
       return;
     }
   }

@@ -1,4 +1,12 @@
+"""
+Custom error helpers for the tournament API.
+
+Provides a collection of pre-configured HTTP exceptions with localized
+error messages in Portuguese for consistent API error responses.
+"""
+
 from fastapi import HTTPException, status
+
 
 class Error:
     @staticmethod

@@ -13,10 +13,12 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useToast } from "primevue/usetoast";
 
 import type { Tournament } from "@router/backend/services/tournament/types";
 import { useTournamentStore } from "@stores/tournaments";
 
+const toast = useToast();
 const enabled = defineModel<boolean>();
 const props = defineProps<{
   tournament?: Tournament
@@ -43,11 +45,17 @@ async function createOrUpdate() {
 }
 
 async function create() {
-  await tournamentStore.createTournament({ name: name.value });
+  const result = await tournamentStore.createTournament({ name: name.value });
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Torneio criado com sucesso", life: 3000 });
+    close();
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: result.content || "Erro ao criar torneio", life: 3000 });
+  }
 }
 
 async function update() {
-  console.error("TODO");
+  toast.add({ severity: "warn", summary: "Em desenvolvimento", detail: "Funcionalidade de edição ainda não disponível", life: 3000 });
 }
 
 function close() {

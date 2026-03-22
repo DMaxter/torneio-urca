@@ -54,8 +54,8 @@
       </div>
     </div>
 
-    <div v-if="checkUnder16()" class="field authorization-required">
-      <P-Tag severity="warn" value="Menor de 16 anos - é necessário autorização" />
+    <div v-if="checkUnderAge()" class="field authorization-required">
+      <P-Tag severity="warn" :value="`Menor de ${TOURNAMENT.MIN_AGE} anos - é necessário autorização`" />
       <FileUpload
         :modelValue="localFiles.authorization"
         @update:modelValue="localFiles.authorization = $event"
@@ -69,6 +69,8 @@
 
 <script setup lang="ts">
 import { reactive, watchEffect } from "vue";
+import { isUnderAge } from "@/utils";
+import { TOURNAMENT } from "@/constants";
 import FileUpload from "./FileUpload.vue";
 
 interface PlayerFormData {
@@ -147,17 +149,8 @@ watchEffect(() => {
   });
 });
 
-function checkUnder16(): boolean {
-  const birthDate = formData.birth_date;
-  if (!birthDate) return false;
-  const today = new Date();
-  const birth = new Date(birthDate);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-    age--;
-  }
-  return age < 16;
+function checkUnderAge(): boolean {
+  return isUnderAge(formData.birth_date, TOURNAMENT.MIN_AGE);
 }
 </script>
 

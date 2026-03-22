@@ -1,3 +1,18 @@
+"""
+Domain models for the tournament management system.
+
+These models represent the core entities in the futsal tournament system:
+- User: Admin users who manage tournaments
+- Player: Individual players registered to teams
+- Staff: Team staff members (coaches, physiotherapists, deputies)
+- Team: Futsal teams participating in tournaments
+- Tournament: The main organizing entity containing teams, games, and groups
+- Game: Individual matches between teams
+- GameCall: The roster of players called for a specific game
+- Group: Groups of teams within a tournament for round-robin play
+- Goal/Card: Game events tracking scoring and discipline
+"""
+
 from enum import Enum
 from typing import Optional, List, Any
 from datetime import datetime
@@ -5,12 +20,16 @@ from pydantic import BaseModel, Field, ConfigDict
 
 
 class StaffType(str, Enum):
+    """Types of staff members that can be associated with a team."""
+
     Coach = "Coach"
     Physiotherapist = "Physiotherapist"
     GameDeputy = "GameDeputy"
 
 
 class GameStatus(str, Enum):
+    """Status of a game in the tournament lifecycle."""
+
     NotStarted = "NotStarted"
     InProgress = "InProgress"
     Finished = "Finished"
@@ -18,6 +37,8 @@ class GameStatus(str, Enum):
 
 
 class CardType(str, Enum):
+    """Types of cards that can be given to players during games."""
+
     Yellow = "Yellow"
     Red = "Red"
 
