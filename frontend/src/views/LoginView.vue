@@ -11,13 +11,14 @@
         <label for="password">Palavra-passe</label>
       </P-FloatLabel>
       <P-Button
-        class="field"
+        class="mt-10 field"
         label="Entrar"
-        icon="pi pi-sign-in"
         @click="handleLogin"
         :loading="loading"
         fluid
-      />
+      >
+        <span class="material-symbols-outlined">login</span>
+      </P-Button>
     </div>
   </div>
 </template>

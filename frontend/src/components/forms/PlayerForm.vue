@@ -1,7 +1,9 @@
 <template>
   <fieldset>
     <legend>Jogador {{ index + 1 }}</legend>
-    <P-Button v-if="showRemove" icon="pi pi-trash" severity="danger" text @click="$emit('remove')" class="remove-btn" />
+    <span v-if="showRemove" class="material-symbols-outlined remove-btn" @click="$emit('remove')">
+      delete
+    </span>
 
     <P-FloatLabel class="field" variant="on">
       <P-InputText :id="`${playerId}Name`" v-model="formData.name" />

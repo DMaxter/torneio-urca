@@ -3,7 +3,7 @@
     <div class="topbar-content">
       <router-link to="/" class="logo">
         <span class="logo-icon">⚽</span>
-        <span class="logo-text">Torneio URCA</span>
+        <span class="logo-text">Torneio de Futsal de São Pedro</span>
       </router-link>
 
       <button class="menu-toggle" @click="menuOpen = !menuOpen" aria-label="Toggle menu">

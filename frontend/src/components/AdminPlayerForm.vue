@@ -26,7 +26,9 @@
       <label for="federationTeam">Equipa Federada</label>
     </P-FloatLabel>
     <template #footer>
-      <P-Button label="Criar" icon="pi pi-check" @click="create" :loading="loading" />
+      <P-Button label="Criar" @click="create" :loading="loading">
+        <span class="material-symbols-outlined">check</span>
+      </P-Button>
       <P-Button label="Cancelar" severity="secondary" @click="close" />
     </template>
   </P-Dialog>

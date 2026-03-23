@@ -17,7 +17,9 @@
       </P-Column>
       <P-Column header="Federado" style="width: 90px">
         <template #body="{ data }">
-          <i :class="data.is_federated ? 'pi pi-check text-green-600' : 'pi pi-times text-gray-400'" />
+          <span class="material-symbols-outlined" :style="{ color: data.is_federated ? '#16a34a' : '#78716c' }">
+            {{ data.is_federated ? 'check' : 'close' }}
+          </span>
         </template>
       </P-Column>
       <P-Column header="Estado" style="width: 110px">
@@ -27,20 +29,21 @@
       </P-Column>
       <P-Column header="Ações" style="width: 80px">
         <template #body="{ data }">
-          <P-Button 
-            v-if="!data.is_confirmed" 
-            icon="pi pi-check" 
-            severity="success" 
-            text 
-            rounded 
+          <span
+            v-if="!data.is_confirmed"
+            class="material-symbols-outlined icon-btn success"
             @click="confirmPlayer(data.id)"
             v-tooltip.top="'Confirmar jogador'"
-          />
+          >
+            check
+          </span>
         </template>
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button label="Atualizar" icon="pi pi-refresh" @click="playerStore.getPlayers()" />
+      <P-Button label="Atualizar" @click="playerStore.getPlayers()">
+        <span class="material-symbols-outlined">sync</span>
+      </P-Button>
     </template>
   </P-Dialog>
 </template>
@@ -65,3 +68,20 @@ async function confirmPlayer(playerId: string) {
   }
 }
 </script>
+
+<style scoped>
+.icon-btn {
+  cursor: pointer;
+  font-size: 20px;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.icon-btn.success {
+  color: #16a34a;
+}
+
+.icon-btn.success:hover {
+  background-color: #f0fdf4;
+}
+</style>

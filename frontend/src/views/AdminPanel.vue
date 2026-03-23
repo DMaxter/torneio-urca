@@ -6,7 +6,9 @@
           <h1>Painel de Administração</h1>
           <p>Gerir torneios, equipas, jogadores e muito mais</p>
         </div>
-        <P-Button label="Sair" icon="pi pi-sign-out" severity="secondary" @click="handleLogout" />
+        <P-Button label="Sair" severity="secondary" @click="handleLogout">
+          <span class="material-symbols-outlined">logout</span>
+        </P-Button>
       </div>
     </div>
 
@@ -21,12 +23,13 @@
             v-for="action in section.actions"
             :key="action.label"
             :label="action.label"
-            :icon="action.icon"
             :severity="action.severity || 'secondary'"
             outlined
             size="small"
             @click="action.handler"
-          />
+          >
+            <span class="material-symbols-outlined">{{ action.icon }}</span>
+          </P-Button>
         </div>
       </div>
     </div>
@@ -88,48 +91,48 @@ const sections: Section[] = [
     title: "Torneios",
     icon: "🏆",
     actions: [
-      { label: "Criar", icon: "pi pi-plus", severity: "success", handler: () => manageTournament.value = true },
-      { label: "Listar", icon: "pi pi-list", handler: () => listTournaments.value = true }
+      { label: "Criar", icon: "add", severity: "success", handler: () => manageTournament.value = true },
+      { label: "Listar", icon: "list", handler: () => listTournaments.value = true }
     ]
   },
   {
     title: "Utilizadores",
     icon: "👥",
     actions: [
-      { label: "Criar", icon: "pi pi-plus", severity: "success", handler: () => manageUser.value = true },
-      { label: "Listar", icon: "pi pi-list", handler: () => listUsers.value = true }
+      { label: "Criar", icon: "add", severity: "success", handler: () => manageUser.value = true },
+      { label: "Listar", icon: "list", handler: () => listUsers.value = true }
     ]
   },
   {
     title: "Equipas",
     icon: "⚽",
     actions: [
-      { label: "Criar", icon: "pi pi-plus", severity: "success", handler: () => manageTeam.value = true },
-      { label: "Listar", icon: "pi pi-list", handler: () => listTeams.value = true }
+      { label: "Criar", icon: "add", severity: "success", handler: () => manageTeam.value = true },
+      { label: "Listar", icon: "list", handler: () => listTeams.value = true }
     ]
   },
   {
     title: "Jogadores",
     icon: "🧑",
     actions: [
-      { label: "Criar", icon: "pi pi-plus", severity: "success", handler: () => createPlayer.value = true },
-      { label: "Listar", icon: "pi pi-list", handler: () => listPlayers.value = true }
+      { label: "Criar", icon: "add", severity: "success", handler: () => createPlayer.value = true },
+      { label: "Listar", icon: "list", handler: () => listPlayers.value = true }
     ]
   },
   {
     title: "Grupos",
     icon: "📋",
     actions: [
-      { label: "Criar", icon: "pi pi-plus", severity: "success", handler: () => manageGroup.value = true },
-      { label: "Listar", icon: "pi pi-list", handler: () => listGroups.value = true }
+      { label: "Criar", icon: "add", severity: "success", handler: () => manageGroup.value = true },
+      { label: "Listar", icon: "list", handler: () => listGroups.value = true }
     ]
   },
   {
     title: "Jogos",
     icon: "🎮",
     actions: [
-      { label: "Criar", icon: "pi pi-plus", severity: "success", handler: () => manageGame.value = true },
-      { label: "Listar", icon: "pi pi-list", handler: () => listGames.value = true }
+      { label: "Criar", icon: "add", severity: "success", handler: () => manageGame.value = true },
+      { label: "Listar", icon: "list", handler: () => listGames.value = true }
     ]
   }
 ];

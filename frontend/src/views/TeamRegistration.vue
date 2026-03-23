@@ -52,11 +52,12 @@
             <h2>Jogadores ({{ TOURNAMENT.MIN_PLAYERS }} a {{ TOURNAMENT.MAX_PLAYERS }})</h2>
             <P-Button 
               label="Adicionar" 
-              icon="pi pi-plus" 
               size="small"
               @click="addPlayer" 
               :disabled="playerForms.length >= TOURNAMENT.MAX_PLAYERS" 
-            />
+            >
+              <span class="material-symbols-outlined">add</span>
+            </P-Button>
           </div>
 
           <div v-for="(player, index) in playerForms" :key="index" class="player-fieldset">
@@ -109,27 +110,28 @@
           <P-Button 
             v-if="currentStep > 0" 
             label="Anterior" 
-            icon="pi pi-arrow-left" 
             severity="secondary"
             @click="prevStep" 
-          />
+          >
+            <span class="material-symbols-outlined">arrow_back</span>
+          </P-Button>
           <div class="spacer"></div>
           <P-Button 
             v-if="currentStep < steps.length - 1" 
             label="Próximo" 
-            icon="pi pi-arrow-right" 
-            iconPos="right"
             @click="nextStep" 
-          />
+          >
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </P-Button>
           <P-Button 
             v-if="currentStep === steps.length - 1" 
             label="Submeter" 
-            icon="pi pi-check" 
-            iconPos="right"
             severity="success"
             @click="submit" 
             :loading="submitting" 
-          />
+          >
+            <span class="material-symbols-outlined">check</span>
+          </P-Button>
         </div>
       </div>
     </div>

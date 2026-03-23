@@ -21,7 +21,9 @@
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button label="Atualizar" icon="pi pi-refresh" @click="teamStore.getTeams()" />
+      <P-Button label="Atualizar" @click="teamStore.getTeams()">
+        <span class="material-symbols-outlined">sync</span>
+      </P-Button>
     </template>
   </P-Dialog>
 </template>

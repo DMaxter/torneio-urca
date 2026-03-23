@@ -16,7 +16,9 @@
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button label="Atualizar" icon="pi pi-refresh" @click="groupStore.getGroups()" />
+      <P-Button label="Atualizar" @click="groupStore.getGroups()">
+        <span class="material-symbols-outlined">sync</span>
+      </P-Button>
     </template>
   </P-Dialog>
 </template>
