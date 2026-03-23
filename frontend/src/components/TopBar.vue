@@ -18,7 +18,7 @@
         <router-link to="/" class="nav-link" @click="menuOpen = false">
           Início
         </router-link>
-        <router-link to="/register" class="nav-link cta-link" @click="menuOpen = false">
+        <router-link v-if="isRegistrationOpen" to="/register" class="nav-link cta-link" @click="menuOpen = false">
           Registar Equipa
         </router-link>
         <router-link to="/admin" class="nav-link admin-link" @click="menuOpen = false">
@@ -31,7 +31,9 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRegistrationDeadline } from "@composables/useRegistrationDeadline";
 
+const { isOpen: isRegistrationOpen } = useRegistrationDeadline();
 const menuOpen = ref(false);
 </script>
 

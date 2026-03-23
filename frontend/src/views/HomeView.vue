@@ -7,18 +7,47 @@
     </div>
 
     <div class="content">
-      <div class="info-card">
+      <div v-if="isOpen" class="info-card">
         <div class="card-icon">📅</div>
         <h3>Inscrições Abertas</h3>
         <p class="deadline">
           Até <strong>8 de Maio de 2026</strong>
         </p>
+        <div class="countdown">
+          <div class="countdown-item">
+            <span class="countdown-value">{{ timeLeft?.days || 0 }}</span>
+            <span class="countdown-label">Dias</span>
+          </div>
+          <div class="countdown-item">
+            <span class="countdown-value">{{ String(timeLeft?.hours || 0).padStart(2, '0') }}</span>
+            <span class="countdown-label">Horas</span>
+          </div>
+          <div class="countdown-item">
+            <span class="countdown-value">{{ String(timeLeft?.minutes || 0).padStart(2, '0') }}</span>
+            <span class="countdown-label">Min</span>
+          </div>
+          <div class="countdown-item">
+            <span class="countdown-value">{{ String(timeLeft?.seconds || 0).padStart(2, '0') }}</span>
+            <span class="countdown-label">Seg</span>
+          </div>
+        </div>
         <router-link to="/register" class="cta-button">
           <P-Button size="large">
           <span class="material-symbols-outlined">how_to_reg</span>
           Registar Equipa
         </P-Button>
         </router-link>
+      </div>
+
+      <div v-else class="info-card">
+        <div class="card-icon">🎉</div>
+        <h3>Bem-vindo ao Torneio!</h3>
+        <p class="deadline">
+          As inscrições encerraram
+        </p>
+        <p class="welcome-text">
+          O torneio começará em breve...
+        </p>
       </div>
 
       <div class="features">
@@ -40,6 +69,9 @@
 </template>
 
 <script setup lang="ts">
+import { useRegistrationDeadline } from "@composables/useRegistrationDeadline";
+
+const { timeLeft, isOpen } = useRegistrationDeadline();
 </script>
 
 <style scoped>
@@ -122,6 +154,44 @@
 
 .deadline strong {
   color: var(--primary);
+}
+
+.welcome-text {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.countdown {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem 0;
+}
+
+.countdown-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg-surface);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  min-width: 60px;
+}
+
+.countdown-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown-label {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .cta-button {

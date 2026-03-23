@@ -8,6 +8,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@components/*": ["./src/components/*"],
+      "@composables/*": ["./src/composables/*"],
       "@router": ["./src/router/index.ts"],
       "@router/*": ["./src/router/*"],
       "@stores/*": ["./src/stores/*"],

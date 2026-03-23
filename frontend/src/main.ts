@@ -2,6 +2,7 @@ import { createApp } from "vue";
 import { createPinia } from "pinia";
 import PrimeVue from "primevue/config";
 import { URCATheme } from "./theme";
+import { pt } from "primelocale/js/pt.js";
 import "material-symbols";
 
 import App from "@/App.vue";
@@ -12,6 +13,7 @@ const app = createApp(App);
 app.use(createPinia());
 app.use(ToastService);
 app.use(PrimeVue, {
+  locale: pt,
   theme: {
     preset: URCATheme,
     options: {

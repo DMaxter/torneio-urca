@@ -150,8 +150,15 @@ import { useTournamentStore } from "@stores/tournaments";
 import { http } from "@router/backend/api";
 import { TOURNAMENT } from "@/constants";
 import { isUnderAge } from "@/utils";
+import { useRegistrationDeadline } from "@composables/useRegistrationDeadline";
 import PlayerForm from "@components/forms/PlayerForm.vue";
 import StaffMemberForm from "@components/forms/StaffMemberForm.vue";
+
+const { isOpen: isRegistrationOpen } = useRegistrationDeadline();
+
+const router = useRouter();
+const toast = useToast();
+const tournamentStore = useTournamentStore();
 
 interface PlayerFormData {
   name: string;
@@ -193,10 +200,6 @@ interface StaffFormEntry {
   data: StaffMemberData;
   files: StaffMemberFiles;
 }
-
-const router = useRouter();
-const toast = useToast();
-const tournamentStore = useTournamentStore();
 
 const currentStep = ref(0);
 const submitting = ref(false);
@@ -275,6 +278,10 @@ function createEmptyPlayerFiles(): PlayerFiles {
 }
 
 onMounted(async () => {
+  if (!isRegistrationOpen.value) {
+    router.push("/");
+    return;
+  }
   await tournamentStore.getTournaments();
 });
 

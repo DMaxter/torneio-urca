@@ -23,6 +23,9 @@ importers:
       pinia:
         specifier: ^3.0.3
         version: 3.0.3(typescript@5.8.3)(vue@3.5.22(typescript@5.8.3))
+      primelocale:
+        specifier: ^2.3.1
+        version: 2.3.1
       primevue:
         specifier: ^4.4.1
         version: 4.4.1(vue@3.5.22(typescript@5.8.3))
@@ -1764,6 +1767,10 @@ packages:
     resolution: {integrity: sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==}
     engines: {node: '>=14'}
     hasBin: true
+
+  primelocale@2.3.1:
+    resolution: {integrity: sha512-qnATrq3XbcpDp/6JvMatv3nXU54cw7MvfFTaC34M/FY6igvYEgnqM0q38jDIjDLx0cYdlOyouzQrdTFgaMHMIg==}
+    engines: {node: '>=18.0.0', npm: '>=8.6.0'}
 
   primevue@4.4.1:
     resolution: {integrity: sha512-JbHBa5k30pZ7mn/z4vYBOnyt5GrR15eM3X0wa3VanonxnFLYkTEx8OMh33aU6ndWeOfi7Ef57dOL3bTH+3f4hQ==}
@@ -3630,6 +3637,8 @@ snapshots:
       fast-diff: 1.3.0
 
   prettier@3.6.2: {}
+
+  primelocale@2.3.1: {}
 
   primevue@4.4.1(vue@3.5.22(typescript@5.8.3)):
     dependencies:
