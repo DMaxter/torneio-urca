@@ -1,7 +1,7 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Torneio' : 'Editar Torneio'">
     <P-FloatLabel id="firstLabel" variant="on">
-      <P-InputText id="name" v-model="name" />
+      <P-InputText id="name" v-model="name" fluid />
       <label for="name">Nome</label>
     </P-FloatLabel>
     <template #footer>

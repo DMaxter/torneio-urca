@@ -1,7 +1,7 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal header="Criar Jogador" :style="{ width: '450px' }">
     <P-FloatLabel class="mt-4" variant="on">
-      <P-InputText id="name" v-model="player.name" />
+      <P-InputText id="name" v-model="player.name" fluid />
       <label for="name">Nome</label>
     </P-FloatLabel>
     <P-FloatLabel class="mt-4" variant="on">
@@ -22,7 +22,7 @@
       <label for="federated" class="ml-2">É federado?</label>
     </div>
     <P-FloatLabel v-if="player.is_federated" class="mt-4" variant="on">
-      <P-InputText id="federationTeam" v-model="player.federation_team" />
+      <P-InputText id="federationTeam" v-model="player.federation_team" fluid />
       <label for="federationTeam">Equipa Federada</label>
     </P-FloatLabel>
     <template #footer>

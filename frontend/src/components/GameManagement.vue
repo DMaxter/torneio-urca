@@ -6,7 +6,7 @@
       <label for="tournament">Torneio</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-DatePicker id="date" v-model="game.scheduled_date" showTime hourFormat="24" />
+      <P-DatePicker id="date" v-model="game.scheduled_date" showTime hourFormat="24" fluid />
       <label for="date">Data e Hora do Jogo</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">

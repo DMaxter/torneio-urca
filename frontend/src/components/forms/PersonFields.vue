@@ -1,6 +1,6 @@
 <template>
   <P-FloatLabel class="field" variant="on">
-    <P-InputText :id="`${id}Name`" v-model="data.name" />
+    <P-InputText :id="`${id}Name`" v-model="data.name" fluid />
     <label :for="`${id}Name`">Nome</label>
   </P-FloatLabel>
   <P-FloatLabel class="field" variant="on">
@@ -8,15 +8,15 @@
     <label :for="`${id}BirthDate`">Data de Nascimento</label>
   </P-FloatLabel>
   <P-FloatLabel class="field" variant="on">
-    <P-InputText :id="`${id}FiscalNumber`" v-model="data.fiscal_number" />
+    <P-InputText :id="`${id}FiscalNumber`" v-model="data.fiscal_number" fluid />
     <label :for="`${id}FiscalNumber`">NIF</label>
   </P-FloatLabel>
   <P-FloatLabel class="field" variant="on">
-    <P-InputText :id="`${id}Address`" v-model="data.address" />
+    <P-InputText :id="`${id}Address`" v-model="data.address" fluid />
     <label :for="`${id}Address`">Morada</label>
   </P-FloatLabel>
   <P-FloatLabel class="field" variant="on">
-    <P-InputText :id="`${id}PlaceOfBirth`" v-model="data.place_of_birth" />
+    <P-InputText :id="`${id}PlaceOfBirth`" v-model="data.place_of_birth" fluid />
     <label :for="`${id}PlaceOfBirth`">Local de Nascimento</label>
   </P-FloatLabel>
 </template>

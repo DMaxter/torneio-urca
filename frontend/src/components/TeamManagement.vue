@@ -1,7 +1,7 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Equipa' : 'Editar Equipa'">
     <P-FloatLabel class="field" variant="on">
-      <P-InputText id="name" v-model="team.name" />
+      <P-InputText id="name" v-model="team.name" fluid />
       <label for="name">Nome</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
@@ -10,15 +10,15 @@
       <label for="tournament">Torneio</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-InputText id="responsibleName" v-model="team.responsible_name" />
+      <P-InputText id="responsibleName" v-model="team.responsible_name" fluid />
       <label for="responsibleName">Nome do Responsável</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-InputText id="responsibleEmail" v-model="team.responsible_email" type="email" />
+      <P-InputText id="responsibleEmail" v-model="team.responsible_email" type="email" fluid />
       <label for="responsibleEmail">Email do Responsável</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-InputText id="responsiblePhone" v-model="team.responsible_phone" />
+      <P-InputText id="responsiblePhone" v-model="team.responsible_phone" fluid />
       <label for="responsiblePhone">Telemóvel do Responsável</label>
     </P-FloatLabel>
     <template #footer>

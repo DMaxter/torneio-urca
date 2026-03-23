@@ -14,7 +14,7 @@
     </div>
 
     <P-FloatLabel class="field" variant="on">
-      <P-InputText :id="`${playerId}Name`" v-model="formData.name" />
+      <P-InputText :id="`${playerId}Name`" v-model="formData.name" fluid />
       <label :for="`${playerId}Name`">Nome</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
@@ -22,15 +22,15 @@
       <label :for="`${playerId}BirthDate`">Data de Nascimento</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-InputText :id="`${playerId}FiscalNumber`" v-model="formData.fiscal_number" />
+      <P-InputText :id="`${playerId}FiscalNumber`" v-model="formData.fiscal_number" fluid />
       <label :for="`${playerId}FiscalNumber`">NIF</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-InputText :id="`${playerId}Address`" v-model="formData.address" />
+      <P-InputText :id="`${playerId}Address`" v-model="formData.address" fluid />
       <label :for="`${playerId}Address`">Morada</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-InputText :id="`${playerId}PlaceOfBirth`" v-model="formData.place_of_birth" />
+      <P-InputText :id="`${playerId}PlaceOfBirth`" v-model="formData.place_of_birth" fluid />
       <label :for="`${playerId}PlaceOfBirth`">Local de Nascimento</label>
     </P-FloatLabel>
 
@@ -55,7 +55,7 @@
     </div>
     <div v-if="formData.is_federated">
       <P-FloatLabel class="field" variant="on">
-        <P-InputText :id="`${playerId}FederationTeam`" v-model="formData.federation_team" />
+        <P-InputText :id="`${playerId}FederationTeam`" v-model="formData.federation_team" fluid />
         <label :for="`${playerId}FederationTeam`">Equipa Federada</label>
       </P-FloatLabel>
       <div class="field">

@@ -6,22 +6,22 @@
     :style="{ width: '350px' }"
   >
     <P-FloatLabel v-if="creating" class="field" variant="on">
-      <P-InputText id="username" v-model="user.username" />
+      <P-InputText id="username" v-model="user.username" fluid />
       <label for="username">Nome de Utilizador</label>
     </P-FloatLabel>
     <div v-if="creating" class="field">
       <P-FloatLabel variant="on">
-        <P-InputText id="password" v-model="user.password" type="password" />
+        <P-InputText id="password" v-model="user.password" type="password" fluid />
         <label for="password">Palavra-passe</label>
       </P-FloatLabel>
     </div>
     <div v-else class="flex flex-column gap-3">
       <P-FloatLabel variant="on">
-        <P-InputText id="current-password" v-model="passwords.current_password" type="password" />
+        <P-InputText id="current-password" v-model="passwords.current_password" type="password" fluid />
         <label for="current-password">Palavra-passe Atual</label>
       </P-FloatLabel>
       <P-FloatLabel variant="on">
-        <P-InputText id="new-password" v-model="passwords.new_password" type="password" />
+        <P-InputText id="new-password" v-model="passwords.new_password" type="password" fluid />
         <label for="new-password">Nova Palavra-passe</label>
       </P-FloatLabel>
     </div>

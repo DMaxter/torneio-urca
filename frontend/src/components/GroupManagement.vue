@@ -1,7 +1,7 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Grupo' : 'Editar Grupo'">
     <P-FloatLabel class="field" variant="on">
-      <P-InputText id="name" v-model="group.name" />
+      <P-InputText id="name" v-model="group.name" fluid />
       <label for="name">Nome</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
