@@ -49,8 +49,6 @@ async function create() {
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Torneio criado com sucesso", life: 3000 });
     close();
-  } else {
-    toast.add({ severity: "error", summary: "Erro", detail: result.content || "Erro ao criar torneio", life: 3000 });
   }
 }
 

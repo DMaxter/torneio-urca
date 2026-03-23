@@ -80,8 +80,6 @@ async function create() {
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Utilizador criado com sucesso", life: 3000 });
     close();
-  } else {
-    toast.add({ severity: "error", summary: "Erro", detail: result.content || "Erro ao criar utilizador", life: 3000 });
   }
 }
 
@@ -94,8 +92,6 @@ async function changePassword() {
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Palavra-passe alterada com sucesso", life: 3000 });
     close();
-  } else {
-    toast.add({ severity: "error", summary: "Erro", detail: result.content || "Erro ao alterar palavra-passe", life: 3000 });
   }
 }
 

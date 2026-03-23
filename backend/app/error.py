@@ -13,98 +13,82 @@ class Error:
     def not_found(entity: str):
         return HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "error": f"{entity} não existente",
-            },
+            detail={"error": f"{entity} não existente"},
         )
 
     @staticmethod
     def internal():
         return HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={"message": "Erro interno"},
+            detail={"error": "Erro interno"},
         )
 
     @staticmethod
     def invalid_id(entity: str):
         return HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
-                "message": f"ID inválido para {entity}",
-            },
+            detail={"error": f"ID inválido para {entity}"},
         )
 
     @staticmethod
     def player_not_in_team():
         return HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
-            detail={
-                "message": "Jogador não alocado à equipa",
-            },
+            detail={"error": "Jogador não alocado à equipa"},
         )
 
     @staticmethod
     def player_not_in_game():
         return HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
-            detail={
-                "message": "Jogador não alocado ao jogo",
-            },
+            detail={"error": "Jogador não alocado ao jogo"},
         )
 
     @staticmethod
     def game_not_in_tournament():
         return HTTPException(
             status_code=status.HTTP_412_PRECONDITION_FAILED,
-            detail={
-                "message": "Jogo não alocado ao torneio",
-            },
+            detail={"error": "Jogo não alocado ao torneio"},
         )
 
     @staticmethod
     def game_not_in_progress():
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "message": "O jogo não está a decorrer",
-            },
+            detail={"error": "O jogo não está a decorrer"},
         )
 
     @staticmethod
     def user_not_player():
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "message": "Utilizador não é um jogador",
-            },
+            detail={"error": "Utilizador não é um jogador"},
         )
 
     @staticmethod
     def game_calls_not_delivered():
         return HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "message": "As fichas de jogo ainda não foram entregues",
-            },
+            detail={"error": "As fichas de jogo ainda não foram entregues"},
         )
 
     @staticmethod
     def conflict(message: str):
         return HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={"message": message},
+            detail={"error": message},
         )
 
     @staticmethod
     def unauthorized(message: str):
         return HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"message": message},
+            detail={"error": message},
         )
 
     @staticmethod
     def bad_request(message: str):
         return HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"message": message},
+            detail={"error": message},
         )

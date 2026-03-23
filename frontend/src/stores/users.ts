@@ -13,12 +13,21 @@ export const useUserStore = defineStore("usersStore", () => {
     create: userService.createUser,
   });
 
+  async function deleteUser(userId: string) {
+    try {
+      const { status } = await userService.deleteUser(userId);
+      return { success: true, content: null };
+    } catch {
+      return { success: false, content: null };
+    }
+  }
+
   return {
     users,
     getUsers: base.getAll,
     createUser: base.create,
     changePassword: userService.changePassword,
-    deleteUser: userService.deleteUser,
+    deleteUser,
     init: base.init,
     add: base.add,
     remove: base.remove,

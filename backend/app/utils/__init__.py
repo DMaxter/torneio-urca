@@ -1,10 +1,20 @@
 import jwt
+import logging
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from fastapi import HTTPException, status
 
 from app.constants import MIN_AGE
 
 ALGORITHM = "HS256"
+REQUEST_ID: ContextVar[str] = ContextVar("request_id", default="no-request-id")
+
+_base_logger = logging.getLogger()
+
+
+def get_logger() -> logging.LoggerAdapter:
+    """Get a logger with request ID context."""
+    return logging.LoggerAdapter(_base_logger, {"extra": REQUEST_ID.get()})
 
 
 def calculate_age(birth_date: datetime) -> int:
@@ -28,9 +38,9 @@ def decode_token(token: str, secret: str) -> dict:
         return jwt.decode(token, secret, algorithms=[ALGORITHM])
     except jwt.ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expirado"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail={"error": "Token expirado"}
         )
     except jwt.InvalidTokenError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail={"error": "Token inválido"}
         )

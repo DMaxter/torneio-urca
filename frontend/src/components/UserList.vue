@@ -12,13 +12,12 @@
       <P-Column header="Ações" :style="{ width: '120px' }">
         <template #body="{ data }">
           <div class="flex gap-2">
-            <P-Button
-              v-if="data.username !== 'admin'"
-              severity="danger"
-              size="small"
-              icon="pi pi-trash"
+            <span
+              class="material-symbols-outlined delete-icon"
               @click="confirmDelete(data)"
-            />
+            >
+              person_remove
+            </span>
           </div>
         </template>
       </P-Column>
@@ -66,10 +65,20 @@ async function handleDelete() {
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Utilizador eliminado", life: 3000 });
     await userStore.getUsers();
-  } else {
-    toast.add({ severity: "error", summary: "Erro", detail: result.content || "Erro ao eliminar utilizador", life: 3000 });
   }
   deleteDialog.value = false;
   userToDelete.value = null;
 }
 </script>
+
+<style scoped>
+.delete-icon {
+  cursor: pointer;
+  color: #dc2626;
+  font-size: 24px;
+}
+
+.delete-icon:hover {
+  opacity: 0.7;
+}
+</style>

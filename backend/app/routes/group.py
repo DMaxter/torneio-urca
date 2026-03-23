@@ -1,4 +1,3 @@
-import logging
 from typing import List
 from bson import ObjectId
 from fastapi import APIRouter, Depends
@@ -6,8 +5,8 @@ from database import db, GROUPS_COLLECTION, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import CreateGroupDto, GroupDto
 from app.error import Error
 from app.utils.auth import get_current_user
+from app.utils import get_logger
 
-logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/groups", tags=["Groups"])
 
 
@@ -24,7 +23,7 @@ def group_to_dto(group: dict) -> GroupDto:
 async def add_group(group: CreateGroupDto, current_user=Depends(get_current_user)):
     from app.routes.tournament import get_tournament
 
-    logger.info(f"[{current_user['username']}] Creating group: {group.name}")
+    get_logger().info(f"[{current_user['username']}] Creating group '{group.name}'")
     tournament = await get_tournament(group.tournament)
     group_dict = group.model_dump()
     group_dict["tournament"] = ObjectId(group.tournament)
@@ -32,16 +31,22 @@ async def add_group(group: CreateGroupDto, current_user=Depends(get_current_user
 
     result = await db.db[GROUPS_COLLECTION].insert_one(group_dict)
 
+    get_logger().info(
+        f"Adding group '{group.name}' to tournament '{tournament['name']}'"
+    )
     await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": tournament["_id"]}, {"$push": {"groups": result.inserted_id}}
     )
-    logger.info(f"Group created: {group.name} (id: {result.inserted_id})")
+    get_logger().info(
+        f"[{current_user['username']}] Group '{group.name}' created successfully"
+    )
 
     return group_to_dto(group_dict)
 
 
 @router.get("", response_model=List[GroupDto])
 async def get_groups():
+    get_logger().info("Retrieving all groups")
     groups = await db.db[GROUPS_COLLECTION].find().to_list(1000)
-    logger.info(f"Retrieved {len(groups)} groups")
+    get_logger().info(f"Retrieved {len(groups)} groups")
     return [group_to_dto(group) for group in groups]

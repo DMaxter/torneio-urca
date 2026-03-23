@@ -32,10 +32,9 @@ export const useAuthStore = defineStore("auth", () => {
         setToken(response.data.access_token);
         return { success: true };
       }
-      return { success: false, content: "Credenciais inválidas" };
-    } catch (error: any) {
-      const detail = error.response?.data?.detail || "Erro ao iniciar sessão";
-      return { success: false, content: detail };
+      return { success: false };
+    } catch {
+      return { success: false };
     }
   }
 

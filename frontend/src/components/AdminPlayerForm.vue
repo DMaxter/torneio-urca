@@ -85,8 +85,6 @@ async function create() {
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador criado com sucesso", life: 3000 });
     close();
-  } else {
-    toast.add({ severity: "error", summary: "Erro", detail: result.content || "Erro ao criar jogador", life: 3000 });
   }
 }
 

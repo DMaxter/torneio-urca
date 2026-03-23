@@ -1,4 +1,3 @@
-import logging
 from typing import List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Form, UploadFile, File, HTTPException, Depends
@@ -12,12 +11,11 @@ from database import (
 from app.schemas.schemas import CreateTeamDto, TeamDto, StaffType
 from app.error import Error
 from app.constants import MIN_PLAYERS, MIN_AGE
-from app.utils import calculate_age
+from app.utils import calculate_age, get_logger
 from app.utils.auth import get_current_user
 from datetime import datetime
 import json
 
-logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/teams", tags=["Teams"])
 
 
@@ -129,7 +127,7 @@ async def add_team(team: CreateTeamDto, current_user=Depends(get_current_user)):
     """Create a new team by providing full references to existing entities."""
     from app.routes.tournament import get_tournament
 
-    logger.info(f"[{current_user['username']}] Creating team: {team.name}")
+    get_logger().info(f"[{current_user['username']}] Creating team '{team.name}'")
     tournament = await get_tournament(team.tournament)
     team_dict = team.model_dump()
     team_dict["tournament"] = ObjectId(team.tournament)
@@ -151,10 +149,13 @@ async def add_team(team: CreateTeamDto, current_user=Depends(get_current_user)):
 
     result = await db.db[TEAMS_COLLECTION].insert_one(team_dict)
 
+    get_logger().info(f"Adding team '{team.name}' to tournament '{tournament['name']}'")
     await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": tournament["_id"]}, {"$push": {"teams": result.inserted_id}}
     )
-    logger.info(f"Team created: {team.name} (id: {result.inserted_id})")
+    get_logger().info(
+        f"[{current_user['username']}] Team '{team.name}' created successfully"
+    )
     return team_to_dto(team_dict)
 
 
@@ -200,16 +201,18 @@ async def register_team(
     """
     from app.routes.tournament import get_tournament
 
-    logger.info(f"Team registration request: {name}")
+    get_logger().info(f"Starting team registration for '{name}'")
     players = json.loads(players_json)
     if len(players) < MIN_PLAYERS:
         raise HTTPException(
             status_code=400, detail=f"É necessário um mínimo de {MIN_PLAYERS} jogadores"
         )
 
+    get_logger().info("Validating tournament and processing files")
     await get_tournament(tournament)
     file_dict = await process_files(files)
 
+    get_logger().info("Creating staff members")
     main_coach_id = create_staff_member(
         StaffType.Coach,
         main_coach_name,
@@ -251,8 +254,10 @@ async def register_team(
         "second_deputy",
     )
 
+    get_logger().info("Creating players")
     player_ids = create_players(players, file_dict)
 
+    get_logger().info(f"Inserting team '{name}' into database")
     team_data = {
         "tournament": ObjectId(tournament),
         "name": name,
@@ -270,18 +275,20 @@ async def register_team(
     result = await db.db[TEAMS_COLLECTION].insert_one(team_data)
     team_data["_id"] = result.inserted_id
 
+    get_logger().info(f"Adding team '{name}' to tournament")
     await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": ObjectId(tournament)}, {"$push": {"teams": result.inserted_id}}
     )
-    logger.info(f"Team registered: {name} (id: {result.inserted_id})")
+    get_logger().info(f"Team '{name}' registered successfully")
 
     return team_to_dto(team_data)
 
 
 @router.get("", response_model=List[TeamDto])
 async def get_teams():
+    get_logger().info("Retrieving all teams")
     teams = await db.db[TEAMS_COLLECTION].find().to_list(1000)
-    logger.info(f"Retrieved {len(teams)} teams")
+    get_logger().info(f"Retrieved {len(teams)} teams")
     return [team_to_dto(team) for team in teams]
 
 

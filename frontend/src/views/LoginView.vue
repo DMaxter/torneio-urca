@@ -50,8 +50,6 @@ async function handleLogin() {
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Sessão iniciada", life: 2000 });
     router.push("/admin");
-  } else {
-    toast.add({ severity: "error", summary: "Erro", detail: result.content || "Erro ao iniciar sessão", life: 3000 });
   }
 }
 </script>

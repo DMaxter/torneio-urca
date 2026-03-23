@@ -1,4 +1,3 @@
-import logging
 from typing import List
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Depends
@@ -6,8 +5,8 @@ from database import db, PLAYERS_COLLECTION
 from app.schemas.schemas import CreatePlayerDto, CreateAdminPlayerDto, PlayerDto
 from app.error import Error
 from app.utils.auth import get_current_user, get_admin_user
+from app.utils import get_logger
 
-logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/players", tags=["Players"])
 
 
@@ -31,11 +30,13 @@ def player_to_dto(player: dict) -> PlayerDto:
 
 @router.post("", response_model=PlayerDto, status_code=201)
 async def add_player(player: CreatePlayerDto, current_user=Depends(get_current_user)):
-    logger.info(f"[{current_user['username']}] Creating player: {player.name}")
+    get_logger().info(f"[{current_user['username']}] Creating player '{player.name}'")
     player_dict = player.model_dump()
     result = await db.db[PLAYERS_COLLECTION].insert_one(player_dict)
     player_dict["_id"] = result.inserted_id
-    logger.info(f"Player created: {player.name} (id: {result.inserted_id})")
+    get_logger().info(
+        f"[{current_user['username']}] Player '{player.name}' created successfully"
+    )
     return player_to_dto(player_dict)
 
 
@@ -44,8 +45,8 @@ async def add_player_admin(
     player_data: CreateAdminPlayerDto,
     current_user=Depends(get_admin_user),
 ):
-    logger.info(
-        f"[{current_user['username']}] Admin creating player: {player_data.name}"
+    get_logger().info(
+        f"[{current_user['username']}] Creating player '{player_data.name}' for team '{player_data.team}'"
     )
     player_dict = {
         "name": player_data.name,
@@ -61,6 +62,7 @@ async def add_player_admin(
 
     from app.routes.team import get_team
 
+    get_logger().info(f"Adding player to team '{player_data.team}'")
     team = await get_team(player_data.team)
     player_id_str = str(result.inserted_id)
     if player_id_str not in team["players"]:
@@ -71,19 +73,23 @@ async def add_player_admin(
             {"$push": {"players": player_id_str}},
         )
 
-    logger.info(f"Admin player created: {player_data.name} (id: {result.inserted_id})")
+    get_logger().info(
+        f"[{current_user['username']}] Player '{player_data.name}' created and added to team successfully"
+    )
     return player_to_dto(player_dict)
 
 
 @router.get("", response_model=List[PlayerDto])
 async def get_players():
+    get_logger().info("Retrieving all players")
     players = await db.db[PLAYERS_COLLECTION].find().to_list(1000)
-    logger.info(f"Retrieved {len(players)} players")
+    get_logger().info(f"Retrieved {len(players)} players")
     return [player_to_dto(player) for player in players]
 
 
 @router.get("/{player_id}", response_model=PlayerDto)
 async def _get_player(player_id: str):
+    get_logger().info(f"Retrieving player '{player_id}'")
     try:
         player = await db.db[PLAYERS_COLLECTION].find_one({"_id": ObjectId(player_id)})
     except Exception:
@@ -95,7 +101,7 @@ async def _get_player(player_id: str):
 
 @router.patch("/{player_id}/confirm", response_model=PlayerDto)
 async def confirm_player(player_id: str, current_user=Depends(get_current_user)):
-    logger.info(f"[{current_user['username']}] Confirming player: {player_id}")
+    get_logger().info(f"[{current_user['username']}] Confirming player '{player_id}'")
     try:
         result = await db.db[PLAYERS_COLLECTION].find_one_and_update(
             {"_id": ObjectId(player_id)},
@@ -106,7 +112,9 @@ async def confirm_player(player_id: str, current_user=Depends(get_current_user))
         raise Error.invalid_id("player")
     if not result:
         raise Error.not_found("Player")
-    logger.info(f"Player confirmed: {player_id}")
+    get_logger().info(
+        f"[{current_user['username']}] Player '{player_id}' confirmed successfully"
+    )
     return player_to_dto(result)
 
 

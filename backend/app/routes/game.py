@@ -1,4 +1,3 @@
-import logging
 from typing import List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends
@@ -13,8 +12,8 @@ from app.schemas.schemas import CreateGameDto, GameDto, GameCallDto
 from app.models.models import GameStatus
 from app.error import Error
 from app.utils.auth import get_current_user
+from app.utils import get_logger
 
-logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/games", tags=["Games"])
 
 
@@ -45,8 +44,8 @@ def game_to_dto(game: dict, home_call: dict, away_call: dict) -> GameDto:
 async def add_game(game: CreateGameDto, current_user=Depends(get_current_user)):
     from app.routes.tournament import get_tournament
 
-    logger.info(
-        f"[{current_user['username']}] Creating game for tournament: {game.tournament}"
+    get_logger().info(
+        f"[{current_user['username']}] Creating game for tournament '{game.tournament}'"
     )
     tournament = await get_tournament(game.tournament)
 
@@ -61,6 +60,7 @@ async def add_game(game: CreateGameDto, current_user=Depends(get_current_user)):
         "deputy": None,
     }
 
+    get_logger().info("Creating game calls for home and away teams")
     home_result = await db.db[GAME_CALLS_COLLECTION].insert_one(home_call_dict)
     away_result = await db.db[GAME_CALLS_COLLECTION].insert_one(away_call_dict)
 
@@ -76,11 +76,13 @@ async def add_game(game: CreateGameDto, current_user=Depends(get_current_user)):
 
     result = await db.db[GAMES_COLLECTION].insert_one(game_dict)
 
+    get_logger().info("Linking game calls to game")
     await db.db[GAME_CALLS_COLLECTION].update_many(
         {"_id": {"$in": [home_result.inserted_id, away_result.inserted_id]}},
         {"$set": {"game": result.inserted_id}},
     )
 
+    get_logger().info(f"Adding game to tournament '{tournament['name']}'")
     await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": tournament["_id"]}, {"$push": {"games": result.inserted_id}}
     )
@@ -90,12 +92,13 @@ async def add_game(game: CreateGameDto, current_user=Depends(get_current_user)):
     home_call_dict["game"] = result.inserted_id
     away_call_dict["game"] = result.inserted_id
 
-    logger.info(f"Game created (id: {result.inserted_id})")
+    get_logger().info(f"[{current_user['username']}] Game created successfully")
     return game_to_dto(game_dict, home_call_dict, away_call_dict)
 
 
 @router.get("", response_model=List[GameDto])
 async def get_games():
+    get_logger().info("Retrieving all games")
     games = await db.db[GAMES_COLLECTION].find().to_list(1000)
     calls = await db.db[GAME_CALLS_COLLECTION].find().to_list(1000)
 
@@ -108,7 +111,7 @@ async def get_games():
         if home_call and away_call:
             result.append(game_to_dto(game, home_call, away_call))
 
-    logger.info(f"Retrieved {len(result)} games")
+    get_logger().info(f"Retrieved {len(result)} games")
     return result
 
 

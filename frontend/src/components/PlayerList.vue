@@ -62,8 +62,6 @@ async function confirmPlayer(playerId: string) {
   const result = await playerStore.confirmPlayer(playerId);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador confirmado", life: 3000 });
-  } else {
-    toast.add({ severity: "error", summary: "Erro", detail: "Erro ao confirmar jogador", life: 3000 });
   }
 }
 </script>

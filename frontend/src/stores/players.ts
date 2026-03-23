@@ -14,20 +14,28 @@ export const usePlayerStore = defineStore("playersStore", () => {
   });
 
   async function createAdminPlayer(player: CreateAdminPlayer) {
-    const { status, data } = await playerService.createAdminPlayer(player);
-    if (status === 201) {
-      return { success: true, content: data as Player };
+    try {
+      const { status, data } = await playerService.createAdminPlayer(player);
+      if (status === 201) {
+        return { success: true, content: data as Player };
+      }
+      return { success: false, content: null };
+    } catch {
+      return { success: false, content: null };
     }
-    return { success: false, content: ((data as unknown) as Error).message, status };
   }
 
   async function confirmPlayer(playerId: string) {
-    const { status, data } = await playerService.confirmPlayer(playerId);
-    if (status === 200) {
-      base.update(data as Player);
-      return { success: true, content: null };
+    try {
+      const { status, data } = await playerService.confirmPlayer(playerId);
+      if (status === 200) {
+        base.update(data as Player);
+        return { success: true, content: null };
+      }
+      return { success: false, content: null };
+    } catch {
+      return { success: false, content: null };
     }
-    return { success: false, content: ((data as unknown) as Error).message, status };
   }
 
   return {

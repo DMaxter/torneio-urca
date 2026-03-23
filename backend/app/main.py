@@ -1,7 +1,12 @@
 import logging
+import traceback
+import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.middleware.base import BaseHTTPMiddleware
 from database import db
 from app.routes.auth import router as auth_router
 from app.routes.user import router as user_router, create_default_admin
@@ -12,9 +17,22 @@ from app.routes.group import router as group_router
 from app.routes.game import router as game_router
 from app.routes.goal import router as goal_router
 from app.routes.card import router as card_router
+from app.utils import REQUEST_ID, get_logger
 
-logging.basicConfig(level=logging.INFO)
+LOGGING_FORMAT = "%(asctime)s | %(levelname)s | [%(extra)s] %(funcName)s | %(message)s"
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, datefmt=DATE_FORMAT)
 logger = logging.getLogger(__name__)
+
+
+class RequestIDMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        request_id = str(uuid.uuid4())[:8]
+        REQUEST_ID.set(request_id)
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
 
 
 @asynccontextmanager
@@ -39,6 +57,36 @@ app.add_middleware(
 )
 
 api_router = FastAPI()
+api_router.add_middleware(RequestIDMiddleware)
+
+
+@api_router.exception_handler(HTTPException)
+async def api_http_exception_handler(request: Request, exc: HTTPException):
+    detail = exc.detail
+    if isinstance(detail, dict):
+        return JSONResponse(status_code=exc.status_code, content=detail)
+    return JSONResponse(status_code=exc.status_code, content={"error": str(detail)})
+
+
+@api_router.exception_handler(RequestValidationError)
+async def api_validation_exception_handler(
+    request: Request, exc: RequestValidationError
+):
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"error": str(exc.errors())},
+    )
+
+
+@api_router.exception_handler(Exception)
+async def api_general_exception_handler(request: Request, exc: Exception):
+    log = get_logger()
+    log.error(f"Unhandled exception: {exc}\n{traceback.format_exc()}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"error": "Erro interno"},
+    )
+
 
 api_router.include_router(auth_router)
 api_router.include_router(user_router)
