@@ -160,7 +160,7 @@ function checkUnderAge(): boolean {
 
 <style lang="scss" scoped>
 fieldset {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-default);
   padding: 10px;
   margin-top: 15px;
   border-radius: 4px;
@@ -194,7 +194,7 @@ fieldset {
 }
 
 .player-fieldset {
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-default);
   padding: 15px;
   margin-top: 15px;
   border-radius: 4px;

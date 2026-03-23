@@ -5,7 +5,7 @@
         <span class="footer-logo">⚽</span>
         <div class="footer-info">
           <span class="footer-title">Torneio de Futsal de São Pedro</span>
-          <span class="footer-subtitle">Organizado por URCA - Porto de Mos</span>
+          <span class="footer-subtitle">Organizado por URCA - Porto de Mós</span>
         </div>
       </div>
       <div class="footer-contact">
@@ -71,7 +71,7 @@
     gap: 0.5rem;
     text-align: center;
   }
-  
+
   .footer-brand {
     flex-direction: column;
   }

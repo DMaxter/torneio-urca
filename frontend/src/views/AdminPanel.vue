@@ -145,7 +145,7 @@ const sections: Section[] = [
     transition: all 0.2s ease;
   }
   .admin-card:hover {
-    border-color: #fed7aa;
+    border-color: var(--border-warning);
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     transform: translateY(-2px);
   }

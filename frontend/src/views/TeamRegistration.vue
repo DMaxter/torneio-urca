@@ -278,10 +278,14 @@ onMounted(async () => {
   await tournamentStore.getTournaments();
 });
 
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+}
+
 function addPlayer() {
   if (playerForms.length < TOURNAMENT.MAX_PLAYERS) {
     playerForms.push({
-      id: crypto.randomUUID(),
+      id: generateId(),
       data: createEmptyPlayer(),
       files: createEmptyPlayerFiles()
     });
@@ -438,7 +442,7 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
   padding: 1rem;
   max-width: 900px;
   margin: 0 auto;
-  background: #fafaf9;
+  background: var(--bg-surface);
 }
 
 .registration-header {
@@ -448,19 +452,19 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
 .registration-header h1 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #1c1917;
+  color: var(--text-dark);
   margin: 0 0 0.25rem 0;
 }
 
 .registration-header p {
-  color: #78716c;
+  color: var(--text-muted);
   margin: 0;
   font-size: 0.875rem;
 }
 
 .form-card {
   background: white;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--border-light);
   border-radius: 12px;
   padding: 1rem;
 }
@@ -472,7 +476,7 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
 .step-content h2 {
   font-size: 1rem;
   font-weight: 600;
-  color: #1c1917;
+  color: var(--text-dark);
   margin: 0 0 0.75rem 0;
 }
 
@@ -490,7 +494,7 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
 }
 
 .optional-note {
-  color: #78716c;
+  color: var(--text-muted);
   font-size: 0.75rem;
   margin: -0.5rem 0 0.75rem 0;
 }
@@ -526,7 +530,7 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
   align-items: center;
   gap: 0.5rem;
   padding-top: 1rem;
-  border-top: 1px solid #e7e5e4;
+  border-top: 1px solid var(--border-light);
 }
 
 .navigation :deep(.p-button) {

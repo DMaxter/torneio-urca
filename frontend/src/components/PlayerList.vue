@@ -17,7 +17,7 @@
       </P-Column>
       <P-Column header="Federado" style="width: 90px">
         <template #body="{ data }">
-          <span class="material-symbols-outlined" :style="{ color: data.is_federated ? '#16a34a' : '#78716c' }">
+          <span class="material-symbols-outlined" :class="data.is_federated ? 'status-success' : 'status-muted'">
             {{ data.is_federated ? 'check' : 'close' }}
           </span>
         </template>

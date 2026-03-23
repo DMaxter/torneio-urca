@@ -37,7 +37,7 @@ const menuOpen = ref(false);
 
 <style scoped>
 .topbar {
-  background: #1c1917;
+  background: var(--bg-dark);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -60,7 +60,7 @@ const menuOpen = ref(false);
   font-weight: 700;
   font-size: 1rem;
   text-decoration: none;
-  color: #f97316;
+  color: var(--primary);
 }
 
 .logo-icon {
@@ -85,7 +85,7 @@ const menuOpen = ref(false);
 .menu-icon span {
   display: block;
   height: 2px;
-  background: #d6d3d1;
+  background: var(--text-light);
   border-radius: 2px;
   transition: all 0.2s ease;
 }
@@ -114,39 +114,17 @@ const menuOpen = ref(false);
   text-decoration: none;
   font-weight: 500;
   font-size: 0.875rem;
-  color: #d6d3d1;
+  color: var(--text-light);
   white-space: nowrap;
-  transition: all 0.15s ease;
-}
-
-.nav-link:hover {
-  background: #292524;
-  color: white;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s ease;
 }
 
 .nav-link.router-link-active {
-  background: #f97316;
-  color: white;
-  font-weight: 600;
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: var(--bg-hover);
 }
-
-  .cta-link {
-    background: #f97316;
-    color: white !important;
-  }
-
-  .cta-link:hover {
-    background: #ea580c !important;
-  }
-
-  .admin-link {
-    background: #44403c;
-    color: white !important;
-  }
-
-  .admin-link:hover {
-    background: #57534e !important;
-  }
 
   .cta-link,
   .admin-link {
@@ -181,8 +159,8 @@ const menuOpen = ref(false);
     left: 0.75rem;
     right: 0.75rem;
     flex-direction: column;
-    background: #1c1917;
-    border: 1px solid #292524;
+    background: var(--bg-dark);
+    border: 1px solid var(--bg-hover);
     border-radius: 8px;
     padding: 0.5rem 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -196,18 +174,15 @@ const menuOpen = ref(false);
     padding: 1rem 1.25rem;
     border-radius: 6px;
     font-size: 1rem;
-    color: #d6d3d1;
+    color: var(--text-light);
     margin: 0 0.5rem;
-  }
-
-  .nav-link:hover {
-    background: #292524;
-    color: white;
+    border-bottom: 2px solid transparent;
   }
 
   .nav-link.router-link-active {
-    background: #f97316;
-    color: white;
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: var(--bg-hover);
   }
 
   .cta-link,

@@ -3,7 +3,7 @@
     <div class="hero">
       <div class="hero-badge">São Pedro 2026</div>
       <h1>Torneio de Futsal</h1>
-      <p class="subtitle">Organizado por URCA - Porto de Mos</p>
+      <p class="subtitle">Organizado pela URCA - União Recreativa Casais e Andainho</p>
     </div>
 
     <div class="content">
@@ -49,7 +49,7 @@
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
-  background: #fafaf9;
+  background: var(--bg-surface);
 }
 
 .hero {
@@ -60,8 +60,8 @@
 .hero-badge {
   display: inline-block;
   padding: 4px 12px;
-  background: #fff7ed;
-  color: #c2410c;
+  background: var(--primary-light);
+  color: var(--primary-dark);
   border-radius: 50px;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -73,14 +73,14 @@
 .hero h1 {
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1c1917;
+  color: var(--text-dark);
   margin: 0 0 0.5rem 0;
   line-height: 1.2;
 }
 
 .subtitle {
   font-size: 0.9375rem;
-  color: #78716c;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -95,7 +95,7 @@
 
 .info-card {
   background: white;
-  border: 1px solid #e7e5e4;
+  border: 1px solid var(--border-light);
   border-radius: 16px;
   padding: 1.5rem;
   text-align: center;
@@ -110,18 +110,18 @@
 .info-card h3 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #292524;
+  color: var(--bg-hover);
   margin: 0 0 0.5rem 0;
 }
 
 .deadline {
   font-size: 0.875rem;
-  color: #78716c;
+  color: var(--text-muted);
   margin: 0 0 1.25rem 0;
 }
 
 .deadline strong {
-  color: #f97316;
+  color: var(--primary);
 }
 
 .cta-button {
@@ -146,7 +146,7 @@
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  color: #78716c;
+  color: var(--text-muted);
   font-size: 0.8125rem;
 }
 
