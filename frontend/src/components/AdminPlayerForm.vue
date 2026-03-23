@@ -1,35 +1,39 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal header="Criar Jogador" :style="{ width: '450px' }">
-    <P-FloatLabel class="field" variant="on">
+    <P-FloatLabel class="mt-4" variant="on">
       <P-InputText id="name" v-model="player.name" />
       <label for="name">Nome</label>
     </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
+    <P-FloatLabel class="mt-4" variant="on">
       <P-DatePicker id="birthDate" v-model="player.birth_date" fluid dateFormat="dd/mm/yy" />
       <label for="birthDate">Data de Nascimento</label>
     </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
+    <P-FloatLabel class="mt-4" variant="on">
       <P-Select id="tournament" v-model="player.tournament" :options="tournamentStore.tournaments"
         optionLabel="name" optionValue="id" @change="onTournamentChange" fluid />
       <label for="tournament">Torneio</label>
     </P-FloatLabel>
-    <P-FloatLabel class="field" variant="on">
+    <P-FloatLabel class="mt-4" variant="on">
       <P-Select id="team" v-model="player.team" :options="availableTeams" optionLabel="name" optionValue="id" fluid />
       <label for="team">Equipa</label>
     </P-FloatLabel>
-    <div class="field">
+    <div class="mt-4 flex items-center">
       <P-Checkbox v-model="player.is_federated" :binary="true" inputId="federated" />
       <label for="federated" class="ml-2">É federado?</label>
     </div>
-    <P-FloatLabel v-if="player.is_federated" class="field" variant="on">
+    <P-FloatLabel v-if="player.is_federated" class="mt-4" variant="on">
       <P-InputText id="federationTeam" v-model="player.federation_team" />
       <label for="federationTeam">Equipa Federada</label>
     </P-FloatLabel>
     <template #footer>
-      <P-Button label="Criar" @click="create" :loading="loading">
+      <P-Button @click="create" :loading="loading">
         <span class="material-symbols-outlined">check</span>
+        Criar
       </P-Button>
-      <P-Button label="Cancelar" severity="secondary" @click="close" />
+      <P-Button severity="secondary" @click="close">
+        <span class="material-symbols-outlined">close</span>
+        Cancelar
+      </P-Button>
     </template>
   </P-Dialog>
 </template>
@@ -94,13 +98,3 @@ function close() {
   enabled.value = false;
 }
 </script>
-
-<style lang="scss" scoped>
-.field {
-  margin-top: 15px;
-}
-
-.ml-2 {
-  margin-left: 8px;
-}
-</style>

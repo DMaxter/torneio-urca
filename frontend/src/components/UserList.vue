@@ -11,20 +11,22 @@
       </P-Column>
       <P-Column header="Ações" :style="{ width: '120px' }">
         <template #body="{ data }">
-          <div class="flex gap-2">
+          <div class="flex gap-2 items-center">
             <span
-              class="material-symbols-outlined delete-icon"
+              class="material-symbols-outlined text-red-600 text-xl cursor-pointer hover:opacity-70"
               @click="confirmDelete(data)"
             >
               person_remove
             </span>
+            <span class="text-xs text-stone-500">Eliminar</span>
           </div>
         </template>
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button label="Atualizar" @click="userStore.getUsers()">
+      <P-Button @click="userStore.getUsers()">
         <span class="material-symbols-outlined">sync</span>
+        Atualizar
       </P-Button>
     </template>
   </P-Dialog>
@@ -32,8 +34,14 @@
   <P-Dialog v-model:visible="deleteDialog" modal header="Confirmar" :style="{ width: '350px' }">
     <p>Tem a certeza que deseja eliminar o utilizador <strong>{{ userToDelete?.username }}</strong>?</p>
     <template #footer>
-      <P-Button severity="danger" label="Eliminar" @click="handleDelete" />
-      <P-Button severity="secondary" label="Cancelar" @click="deleteDialog = false" />
+      <P-Button severity="danger" @click="handleDelete">
+        <span class="material-symbols-outlined">delete</span>
+        Eliminar
+      </P-Button>
+      <P-Button severity="secondary" @click="deleteDialog = false">
+        <span class="material-symbols-outlined">close</span>
+        Cancelar
+      </P-Button>
     </template>
   </P-Dialog>
 </template>
@@ -72,15 +80,3 @@ async function handleDelete() {
   userToDelete.value = null;
 }
 </script>
-
-<style scoped>
-.delete-icon {
-  cursor: pointer;
-  color: #dc2626;
-  font-size: 24px;
-}
-
-.delete-icon:hover {
-  opacity: 0.7;
-}
-</style>

@@ -2,7 +2,10 @@
   <div class="field">
     <label>{{ label }} {{ required ? '*' : '' }}</label>
     <div class="file-input-wrapper">
-      <P-Button label="Selecionar" size="small" @click="triggerFileInput" />
+      <P-Button size="small" @click="triggerFileInput">
+        <span class="material-symbols-outlined">upload</span>
+        Selecionar
+      </P-Button>
       <span class="file-name">{{ fileName }}</span>
       <input
         type="file"

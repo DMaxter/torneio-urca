@@ -9,12 +9,22 @@ from app.constants import MIN_AGE
 ALGORITHM = "HS256"
 REQUEST_ID: ContextVar[str] = ContextVar("request_id", default="no-request-id")
 
+
+class RequestIdFilter(logging.Filter):
+    """Add request_id to log records."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.request_id = REQUEST_ID.get()
+        return True
+
+
 _base_logger = logging.getLogger()
+_base_logger.addFilter(RequestIdFilter())
 
 
-def get_logger() -> logging.LoggerAdapter:
+def get_logger() -> logging.Logger:
     """Get a logger with request ID context."""
-    return logging.LoggerAdapter(_base_logger, {"extra": REQUEST_ID.get()})
+    return _base_logger
 
 
 def calculate_age(birth_date: datetime) -> int:

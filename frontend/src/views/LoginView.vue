@@ -1,23 +1,23 @@
 <template>
-  <div class="login-page">
-    <div class="login-card">
-      <h1>Iniciar Sessão</h1>
-      <P-FloatLabel class="field" variant="on">
+  <div class="min-h-screen flex items-center justify-center bg-stone-100">
+    <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+      <h1 class="text-center mb-6 text-2xl font-bold text-stone-900">Iniciar Sessão</h1>
+      <P-FloatLabel class="mt-4" variant="on">
         <P-InputText id="username" v-model="credentials.username" fluid />
         <label for="username">Nome de Utilizador</label>
       </P-FloatLabel>
-      <P-FloatLabel class="field" variant="on">
+      <P-FloatLabel class="mt-4" variant="on">
         <P-InputText id="password" v-model="credentials.password" type="password" fluid />
         <label for="password">Palavra-passe</label>
       </P-FloatLabel>
       <P-Button
-        class="mt-10 field"
-        label="Entrar"
+        class="mt-6 w-full"
         @click="handleLogin"
         :loading="loading"
         fluid
       >
         <span class="material-symbols-outlined">login</span>
+        Entrar
       </P-Button>
     </div>
   </div>
@@ -56,35 +56,4 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.login-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f5f5f5;
-}
-
-.login-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
-}
-
-.login-card h1 {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  color: #1c1917;
-  font-size: 1.5rem;
-}
-
-.field {
-  margin-top: 1rem;
-}
-
-.field:first-of-type {
-  margin-top: 0;
-}
 </style>

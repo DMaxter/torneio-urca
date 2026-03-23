@@ -50,26 +50,27 @@
         <div v-show="currentStep === 2" class="step-content">
           <div class="step-header">
             <h2>Jogadores ({{ TOURNAMENT.MIN_PLAYERS }} a {{ TOURNAMENT.MAX_PLAYERS }})</h2>
-            <P-Button 
-              label="Adicionar" 
-              size="small"
-              @click="addPlayer" 
-              :disabled="playerForms.length >= TOURNAMENT.MAX_PLAYERS" 
-            >
-              <span class="material-symbols-outlined">add</span>
-            </P-Button>
           </div>
 
-          <div v-for="(player, index) in playerForms" :key="index" class="player-fieldset">
+          <div v-for="player in playerForms" :key="player.id" class="player-fieldset">
             <PlayerForm
-              :index="index"
+              :index="playerForms.indexOf(player)"
               v-model="player.data"
               :files="player.files"
-              :showRemove="playerForms.length > TOURNAMENT.MIN_PLAYERS"
               @update:files="player.files = $event"
-              @remove="removePlayer(index)"
+              @remove="removePlayer(player.id)"
             />
           </div>
+          <P-Button 
+            size="small"
+            severity="secondary"
+            @click="addPlayer" 
+            :disabled="playerForms.length >= TOURNAMENT.MAX_PLAYERS" 
+            class="add-player-btn"
+          >
+            <span class="material-symbols-outlined">add</span>
+            Adicionar Jogador
+          </P-Button>
         </div>
 
         <!-- Step 4: Staff Info -->
@@ -109,28 +110,29 @@
         <div class="navigation">
           <P-Button 
             v-if="currentStep > 0" 
-            label="Anterior" 
             severity="secondary"
             @click="prevStep" 
           >
             <span class="material-symbols-outlined">arrow_back</span>
+            Anterior
           </P-Button>
           <div class="spacer"></div>
           <P-Button 
             v-if="currentStep < steps.length - 1" 
-            label="Próximo" 
             @click="nextStep" 
+            :disabled="!canProceed"
           >
+            Próximo
             <span class="material-symbols-outlined">arrow_forward</span>
           </P-Button>
           <P-Button 
             v-if="currentStep === steps.length - 1" 
-            label="Submeter" 
             severity="success"
             @click="submit" 
             :loading="submitting" 
           >
             <span class="material-symbols-outlined">check</span>
+            Submeter
           </P-Button>
         </div>
       </div>
@@ -141,7 +143,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useTournamentStore } from "@stores/tournaments";
@@ -182,6 +184,7 @@ interface StaffMemberFiles {
 }
 
 interface PlayerFormEntry {
+  id: string;
   data: PlayerFormData;
   files: PlayerFiles;
 }
@@ -227,6 +230,19 @@ const staffForms = reactive<{
 
 const playerForms = reactive<PlayerFormEntry[]>([]);
 
+const canProceed = computed(() => {
+  if (currentStep.value === 0) {
+    return !!teamData.name && !!teamData.tournament;
+  }
+  if (currentStep.value === 1) {
+    return !!teamData.responsible_name && !!teamData.responsible_email && !!teamData.responsible_phone;
+  }
+  if (currentStep.value === 2) {
+    return playerForms.length >= TOURNAMENT.MIN_PLAYERS;
+  }
+  return true;
+});
+
 function createEmptyStaffMember(): StaffMemberData {
   return {
     name: "",
@@ -265,14 +281,18 @@ onMounted(async () => {
 function addPlayer() {
   if (playerForms.length < TOURNAMENT.MAX_PLAYERS) {
     playerForms.push({
+      id: crypto.randomUUID(),
       data: createEmptyPlayer(),
       files: createEmptyPlayerFiles()
     });
   }
 }
 
-function removePlayer(index: number) {
-  playerForms.splice(index, 1);
+function removePlayer(id: string) {
+  const index = playerForms.findIndex(p => p.id === id);
+  if (index !== -1) {
+    playerForms.splice(index, 1);
+  }
 }
 
 function nextStep() {
@@ -493,6 +513,11 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
 .player-fieldset {
   position: relative;
   margin-bottom: 0.75rem;
+}
+
+.add-player-btn {
+  width: 100%;
+  margin-top: 0.5rem;
 }
 
 .navigation {

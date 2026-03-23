@@ -1,9 +1,17 @@
 <template>
-  <fieldset>
-    <legend>Jogador {{ index + 1 }}</legend>
-    <span v-if="showRemove" class="material-symbols-outlined remove-btn" @click="$emit('remove')">
-      delete
-    </span>
+  <fieldset class="player-fieldset">
+    <div class="fieldset-header">
+      <legend>Jogador {{ index + 1 }}</legend>
+      <P-Button
+        severity="secondary"
+        size="small"
+        text
+        class="delete-btn"
+        @click="$emit('remove')"
+      >
+        <span class="material-symbols-outlined">delete</span>
+      </P-Button>
+    </div>
 
     <P-FloatLabel class="field" variant="on">
       <P-InputText :id="`${playerId}Name`" v-model="formData.name" />
@@ -43,7 +51,7 @@
 
     <div class="field">
       <P-Checkbox v-model="formData.is_federated" :binary="true" :inputId="`federated${playerId}`" />
-      <label :for="`federated${playerId}`">É federado?</label>
+      <label :for="`federated${playerId}`"> É federado?</label>
     </div>
     <div v-if="formData.is_federated">
       <P-FloatLabel class="field" variant="on">
@@ -52,7 +60,7 @@
       </P-FloatLabel>
       <div class="field">
         <P-Checkbox v-model="formData.federation_exams_up_to_date" :binary="true" :inputId="`exams${playerId}`" />
-        <label :for="`exams${playerId}`">Exames em dia?</label>
+        <label :for="`exams${playerId}`"> Exames em dia?</label>
       </div>
     </div>
 
@@ -92,17 +100,11 @@ interface PlayerFiles {
   authorization?: File | null;
 }
 
-const props = withDefaults(
-  defineProps<{
-    index: number;
-    modelValue?: PlayerFormData;
-    files?: PlayerFiles;
-    showRemove?: boolean;
-  }>(),
-  {
-    showRemove: true
-  }
-);
+const props = defineProps<{
+  index: number;
+  modelValue?: PlayerFormData;
+  files?: PlayerFiles;
+}>();
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: PlayerFormData): void;
@@ -144,7 +146,7 @@ watchEffect(() => {
 });
 
 watchEffect(() => {
-  emit("update:files", { 
+  emit("update:files", {
     citizenCard: localFiles.citizenCard,
     proofOfResidency: localFiles.proofOfResidency,
     authorization: localFiles.authorization
@@ -162,17 +164,20 @@ fieldset {
   padding: 10px;
   margin-top: 15px;
   border-radius: 4px;
+  position: relative;
+}
+
+.player-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
 
   legend {
     font-weight: bold;
     padding: 0 10px;
+    margin: 0;
   }
-}
-
-.remove-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
 }
 
 .field {
@@ -189,6 +194,46 @@ fieldset {
 }
 
 .player-fieldset {
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-top: 15px;
+  border-radius: 4px;
   position: relative;
+}
+
+.fieldset-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: absolute;
+  top: -12px;
+  left: 20px;
+  right: 20px;
+}
+
+legend {
+  font-weight: bold;
+  padding: 0 10px;
+  margin: 0;
+  background: white;
+}
+
+.delete-btn {
+  padding: 4px;
+  background: white !important;
+  border-radius: 50%;
+}
+
+.field {
+  margin-top: 15px;
+  display: block;
+}
+
+.authorization-required {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
+  background-color: var(--p-surface-ground);
+  border: 1px solid var(--p-warn);
 }
 </style>

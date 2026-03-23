@@ -21,8 +21,9 @@
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button label="Atualizar" @click="tournamentStore.getTournaments()">
+      <P-Button @click="tournamentStore.getTournaments()">
         <span class="material-symbols-outlined">sync</span>
+        Atualizar
       </P-Button>
     </template>
   </P-Dialog>

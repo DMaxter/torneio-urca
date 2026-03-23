@@ -26,8 +26,13 @@
       </P-FloatLabel>
     </div>
     <template #footer>
-      <P-Button @click="createOrUpdate">{{ creating ? "Criar" : "Alterar" }}</P-Button>
-      <P-Button severity="secondary" @click="close">Cancelar</P-Button>
+      <P-Button severity="secondary" @click="close">
+        <span class="material-symbols-outlined">close</span>
+        Cancelar
+      </P-Button>
+      <P-Button @click="createOrUpdate">
+        {{ creating ? "Criar" : "Alterar" }}
+      </P-Button>
     </template>
   </P-Dialog>
 </template>

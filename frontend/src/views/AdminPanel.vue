@@ -1,34 +1,35 @@
 <template>
-  <div class="admin-panel">
-    <div class="admin-header">
-      <div class="header-content">
+  <div class="admin-panel p-4 max-w-7xl mx-auto bg-stone-50 md:p-6 lg:p-8">
+    <div class="mb-6 md:mb-8">
+      <div class="flex justify-between items-start gap-4">
         <div>
-          <h1>Painel de Administração</h1>
-          <p>Gerir torneios, equipas, jogadores e muito mais</p>
+          <h1 class="text-xl font-bold text-stone-900 mb-1 md:text-2xl">Painel de Administração</h1>
+          <p class="text-stone-500 text-sm md:text-base">Gerir torneios, equipas, jogadores e muito mais</p>
         </div>
-        <P-Button label="Sair" severity="secondary" @click="handleLogout">
+        <P-Button severity="secondary" @click="handleLogout">
           <span class="material-symbols-outlined">logout</span>
+          Sair
         </P-Button>
       </div>
     </div>
 
-    <div class="admin-grid">
-      <div v-for="section in sections" :key="section.title" class="admin-card">
-        <div class="card-header">
-          <span class="card-icon">{{ section.icon }}</span>
-          <h2>{{ section.title }}</h2>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+      <div v-for="section in sections" :key="section.title" class="admin-card bg-white border border-stone-300 rounded-xl p-4 md:p-5">
+        <div class="card-header flex items-center gap-3 pb-3 mb-3 border-b border-stone-100">
+          <span class="text-xl md:text-2xl">{{ section.icon }}</span>
+          <h2 class="text-base font-semibold text-stone-900 m-0">{{ section.title }}</h2>
         </div>
-        <div class="card-actions">
+        <div class="flex gap-2">
           <P-Button
             v-for="action in section.actions"
             :key="action.label"
-            :label="action.label"
-            :severity="action.severity || 'secondary'"
-            outlined
+            :severity="action.severity"
             size="small"
+            class="flex-1 justify-center font-semibold text-sm"
             @click="action.handler"
           >
             <span class="material-symbols-outlined">{{ action.icon }}</span>
+            {{ action.label }}
           </P-Button>
         </div>
       </div>
@@ -139,168 +140,13 @@ const sections: Section[] = [
 </script>
 
 <style scoped>
-.admin-panel {
-  padding: 1rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  background: #fafaf9;
-}
-
-.admin-header {
-  margin-bottom: 1.5rem;
-}
-
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 1rem;
-}
-  
-.admin-header h1 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #1c1917;
-  margin: 0 0 0.25rem 0;
-}
-
-.admin-header p {
-  color: #78716c;
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-.admin-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
-
-.admin-card {
-  background: white;
-  border: 1px solid #d6d3d1;
-  border-radius: 12px;
-  padding: 1rem;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e7e5e4;
-}
-
-.card-icon {
-  font-size: 1.25rem;
-}
-
-.card-header h2 {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  margin: 0;
-  color: #1c1917;
-}
-
-.card-actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.card-actions :deep(.p-button) {
-  flex: 1;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.8125rem;
-  background: #fff7ed;
-  border-color: #f97316;
-  color: #c2410c;
-}
-
-.card-actions :deep(.p-button:hover) {
-  background: #f97316;
-  color: white;
-  border-color: #f97316;
-}
-
-.card-actions :deep(.p-button.p-button-success) {
-  background: #f0fdf4;
-  border-color: #16a34a;
-  color: #15803d;
-}
-
-.card-actions :deep(.p-button.p-button-success:hover) {
-  background: #16a34a;
-  color: white;
-  border-color: #16a34a;
-}
-
-/* Large phones */
-@media (min-width: 480px) {
-  .admin-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .admin-card {
-    padding: 1.25rem;
-  }
-  
-  .card-header {
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-  }
-}
-
-/* Tablets */
-@media (min-width: 768px) {
-  .admin-panel {
-    padding: 1.5rem;
-  }
-
-  .admin-header {
-    margin-bottom: 2rem;
-  }
-
-  .admin-header h1 {
-    font-size: 1.5rem;
-  }
-
-  .admin-header p {
-    font-size: 1rem;
-  }
-
-  .admin-card {
-    padding: 1.5rem;
-  }
-
-  .card-icon {
-    font-size: 1.5rem;
-  }
-
-  .card-header h2 {
-    font-size: 1rem;
-  }
-}
-
-/* Desktop */
 @media (min-width: 1024px) {
-  .admin-panel {
-    padding: 2rem;
-  }
-
-  .admin-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-  }
-
   .admin-card {
     transition: all 0.2s ease;
   }
-
   .admin-card:hover {
     border-color: #fed7aa;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     transform: translateY(-2px);
   }
 }

@@ -16,8 +16,9 @@
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button label="Atualizar" @click="groupStore.getGroups()">
+      <P-Button @click="groupStore.getGroups()">
         <span class="material-symbols-outlined">sync</span>
+        Atualizar
       </P-Button>
     </template>
   </P-Dialog>

@@ -34,8 +34,9 @@
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button label="Atualizar" @click="gameStore.getGames()">
+      <P-Button @click="gameStore.getGames()">
         <span class="material-symbols-outlined">sync</span>
+        Atualizar
       </P-Button>
     </template>
   </P-Dialog>

@@ -14,7 +14,10 @@
           Até <strong>8 de Maio de 2026</strong>
         </p>
         <router-link to="/register" class="cta-button">
-          <P-Button label="Registar Equipa" size="large" />
+          <P-Button size="large">
+          <span class="material-symbols-outlined">how_to_reg</span>
+          Registar Equipa
+        </P-Button>
         </router-link>
       </div>
 

@@ -29,20 +29,23 @@
       </P-Column>
       <P-Column header="Ações" style="width: 80px">
         <template #body="{ data }">
-          <span
-            v-if="!data.is_confirmed"
-            class="material-symbols-outlined icon-btn success"
-            @click="confirmPlayer(data.id)"
-            v-tooltip.top="'Confirmar jogador'"
-          >
-            check
-          </span>
+          <div class="flex gap-2 items-center" v-if="!data.is_confirmed">
+            <span
+              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-green-600 hover:bg-green-50"
+              @click="confirmPlayer(data.id)"
+              v-tooltip.top="'Confirmar jogador'"
+            >
+              check
+            </span>
+            <span class="text-xs text-stone-500">Confirmar</span>
+          </div>
         </template>
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button label="Atualizar" @click="playerStore.getPlayers()">
+      <P-Button @click="playerStore.getPlayers()">
         <span class="material-symbols-outlined">sync</span>
+        Atualizar
       </P-Button>
     </template>
   </P-Dialog>
@@ -68,20 +71,3 @@ async function confirmPlayer(playerId: string) {
   }
 }
 </script>
-
-<style scoped>
-.icon-btn {
-  cursor: pointer;
-  font-size: 20px;
-  padding: 4px;
-  border-radius: 4px;
-}
-
-.icon-btn.success {
-  color: #16a34a;
-}
-
-.icon-btn.success:hover {
-  background-color: #f0fdf4;
-}
-</style>

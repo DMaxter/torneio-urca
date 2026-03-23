@@ -15,8 +15,13 @@
       <label for="teams">Equipas</label>
     </P-FloatLabel>
     <template #footer>
-      <P-Button @click="createOrUpdate">{{ creating ? "Criar" : "Alterar" }}</P-Button>
-      <P-Button @click="close">Cancelar</P-Button>
+      <P-Button severity="secondary" @click="close">
+        <span class="material-symbols-outlined">close</span>
+        Cancelar
+      </P-Button>
+      <P-Button @click="createOrUpdate">
+        {{ creating ? "Criar" : "Alterar" }}
+      </P-Button>
     </template>
   </P-Dialog>
 </template>

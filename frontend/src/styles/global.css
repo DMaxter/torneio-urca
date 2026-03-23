@@ -52,3 +52,61 @@ h1, h2, h3, h4, h5, h6 {
   outline: 2px solid var(--p-primary-400);
   outline-offset: 2px;
 }
+
+/* Material Symbols */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Icon buttons */
+.icon-btn {
+  @apply cursor-pointer text-xl p-1 rounded;
+}
+
+.icon-btn.success {
+  @apply text-green-600;
+}
+
+.icon-btn.success:hover {
+  @apply bg-green-50;
+}
+
+.icon-btn.danger {
+  @apply text-red-600;
+}
+
+.icon-btn.danger:hover {
+  @apply bg-red-50;
+}
+
+/* Form fields */
+.form-field {
+  @apply mt-4;
+}
+
+/* Delete icon */
+.delete-icon {
+  @apply text-red-600 text-2xl cursor-pointer;
+}
+
+.delete-icon:hover {
+  @apply opacity-70;
+}
+
+/* Page layouts */
+.page-container {
+  @apply p-4 max-w-7xl mx-auto bg-stone-50;
+}
+
+.card {
+  @apply bg-white border border-stone-300 rounded-xl p-4;
+}
+
+.card:hover {
+  @apply border-orange-200 shadow-md;
+}
+
+/* Buttons */
+.btn-icon {
+  @apply flex items-center gap-2;
+}

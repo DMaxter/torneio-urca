@@ -19,7 +19,9 @@ from app.routes.goal import router as goal_router
 from app.routes.card import router as card_router
 from app.utils import REQUEST_ID, get_logger
 
-LOGGING_FORMAT = "%(asctime)s | %(levelname)s | [%(extra)s] %(funcName)s | %(message)s"
+LOGGING_FORMAT = (
+    "%(asctime)s | %(levelname)s | [%(request_id)s] %(funcName)s | %(message)s"
+)
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, datefmt=DATE_FORMAT)

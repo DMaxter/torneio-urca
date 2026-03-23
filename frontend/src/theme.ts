@@ -71,4 +71,32 @@ export const URCATheme = definePreset(Aura, {
       },
     },
   },
+  components: {
+    Button: {
+      success: {
+        background: "#16a34a",
+        borderColor: "#16a34a",
+        color: "#ffffff",
+        hoverBackground: "#15803d",
+        hoverBorderColor: "#15803d",
+        focusBackground: "#15803d",
+      },
+      secondary: {
+        background: "#ea580c",
+        borderColor: "#ea580c",
+        color: "#ffffff",
+        hoverBackground: "#c2410c",
+        hoverBorderColor: "#c2410c",
+        focusBackground: "#c2410c",
+      },
+      danger: {
+        background: "#dc2626",
+        borderColor: "#dc2626",
+        color: "#ffffff",
+        hoverBackground: "#b91c1c",
+        hoverBorderColor: "#b91c1c",
+        focusBackground: "#b91c1c",
+      },
+    },
+  },
 });

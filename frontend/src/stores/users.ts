@@ -22,11 +22,20 @@ export const useUserStore = defineStore("usersStore", () => {
     }
   }
 
+  async function changePassword(userId: string, passwordData: ChangePassword) {
+    try {
+      const { status } = await userService.changePassword(userId, passwordData);
+      return { success: true, content: null };
+    } catch {
+      return { success: false, content: null };
+    }
+  }
+
   return {
     users,
     getUsers: base.getAll,
     createUser: base.create,
-    changePassword: userService.changePassword,
+    changePassword,
     deleteUser,
     init: base.init,
     add: base.add,
