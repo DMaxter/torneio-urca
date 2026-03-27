@@ -84,7 +84,7 @@ def create_staff_member(
     return result.inserted_id
 
 
-def create_players(players: list, file_dict: dict[str, str]) -> list[ObjectId]:
+async def create_players(players: list, file_dict: dict[str, str]) -> list[ObjectId]:
     """Create players in the database and return their IDs."""
     player_ids = []
     for i, player in enumerate(players):
@@ -117,7 +117,7 @@ def create_players(players: list, file_dict: dict[str, str]) -> list[ObjectId]:
             ),
             "is_confirmed": False,
         }
-        result = db.db[PLAYERS_COLLECTION].insert_one(player_data)
+        result = await db.db[PLAYERS_COLLECTION].insert_one(player_data)
         player_ids.append(result.inserted_id)
     return player_ids
 
@@ -255,7 +255,7 @@ async def register_team(
     )
 
     get_logger().info("Creating players")
-    player_ids = create_players(players, file_dict)
+    player_ids = await create_players(players, file_dict)
 
     get_logger().info(f"Inserting team '{name}' into database")
     team_data = {
@@ -296,8 +296,61 @@ async def get_team(team_id: str) -> dict:
     """Retrieve a single team by its ID. Used by other routes."""
     try:
         team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
-    except Exception:
+    except Exception as e:
         raise Error.invalid_id("team")
     if not team:
         raise Error.not_found("Team")
+    get_logger().info(f"Team players field: {team.get('players')}")
+    get_logger().info(f"Team players type: {type(team.get('players'))}")
     return team
+
+
+@router.get("/{team_id}", response_model=TeamDto)
+async def get_team_endpoint(team_id: str):
+    """Retrieve a single team by its ID."""
+    get_logger().info(f"Retrieving team '{team_id}'")
+    team = await get_team(team_id)
+    return team_to_dto(team)
+
+
+@router.get("/{team_id}/players")
+async def get_team_players(team_id: str):
+    """Retrieve all players belonging to a team."""
+    get_logger().info(f"Retrieving players for team '{team_id}'")
+    team = await get_team(team_id)
+    player_ids = team.get("players", [])
+
+    get_logger().info(f"Team: {team.get('name')}, Player IDs: {player_ids}")
+
+    if not player_ids:
+        return []
+
+    player_ids_converted = []
+    for pid in player_ids:
+        if isinstance(pid, ObjectId):
+            player_ids_converted.append(pid)
+        elif isinstance(pid, str):
+            try:
+                player_ids_converted.append(ObjectId(pid))
+            except Exception:
+                get_logger().warning(f"Invalid player ID format: {pid}")
+        else:
+            get_logger().warning(f"Unknown player ID type: {type(pid)}")
+
+    get_logger().info(f"Converted player IDs: {player_ids_converted}")
+
+    try:
+        players = (
+            await db.db[PLAYERS_COLLECTION]
+            .find({"_id": {"$in": player_ids_converted}})
+            .to_list(1000)
+        )
+    except Exception as e:
+        get_logger().error(f"Error querying players: {e}")
+        return []
+
+    get_logger().info(f"Found {len(players)} players")
+
+    from app.routes.player import player_to_dto
+
+    return [player_to_dto(player) for player in players]

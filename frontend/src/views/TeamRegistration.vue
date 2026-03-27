@@ -61,11 +61,11 @@
               @remove="removePlayer(player.id)"
             />
           </div>
-          <P-Button 
+          <P-Button
             size="small"
             severity="secondary"
-            @click="addPlayer" 
-            :disabled="playerForms.length >= TOURNAMENT.MAX_PLAYERS" 
+            @click="addPlayer"
+            :disabled="playerForms.length >= TOURNAMENT.MAX_PLAYERS"
             class="add-player-btn"
           >
             <span class="material-symbols-outlined">add</span>
@@ -108,28 +108,28 @@
 
         <!-- Navigation -->
         <div class="navigation">
-          <P-Button 
-            v-if="currentStep > 0" 
+          <P-Button
+            v-if="currentStep > 0"
             severity="secondary"
-            @click="prevStep" 
+            @click="prevStep"
           >
             <span class="material-symbols-outlined">arrow_back</span>
             Anterior
           </P-Button>
           <div class="spacer"></div>
-          <P-Button 
-            v-if="currentStep < steps.length - 1" 
-            @click="nextStep" 
+          <P-Button
+            v-if="currentStep < steps.length - 1"
+            @click="nextStep"
             :disabled="!canProceed"
           >
             Próximo
             <span class="material-symbols-outlined">arrow_forward</span>
           </P-Button>
-          <P-Button 
-            v-if="currentStep === steps.length - 1" 
+          <P-Button
+            v-if="currentStep === steps.length - 1"
             severity="success"
-            @click="submit" 
-            :loading="submitting" 
+            @click="submit"
+            :loading="submitting"
           >
             <span class="material-symbols-outlined">check</span>
             Submeter
@@ -224,6 +224,10 @@ const staffForms = reactive<{
   first_deputy: { data: createEmptyStaffMember(), files: {} },
   second_deputy: { data: createEmptyStaffMember(), files: {} }
 });
+
+const toast = useToast();
+const router = useRouter();
+const { isOpen: isRegistrationOpen } = useRegistrationDeadline();
 
 const playerForms = reactive<PlayerFormEntry[]>([]);
 
@@ -550,7 +554,7 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
   .team-registration {
     padding: 1.25rem;
   }
-  
+
   .form-card {
     padding: 1.25rem;
   }

@@ -118,6 +118,29 @@ async def confirm_player(player_id: str, current_user=Depends(get_current_user))
     return player_to_dto(result)
 
 
+@router.delete("/{player_id}", status_code=204)
+async def delete_player(player_id: str, current_user=Depends(get_admin_user)):
+    get_logger().info(f"[{current_user['username']}] Deleting player '{player_id}'")
+    try:
+        result = await db.db[PLAYERS_COLLECTION].delete_one(
+            {"_id": ObjectId(player_id)}
+        )
+    except Exception:
+        raise Error.invalid_id("player")
+    if result.deleted_count == 0:
+        raise Error.not_found("Player")
+
+    from database import db as database_db
+
+    await database_db.db["teams"].update_many(
+        {"players": player_id}, {"$pull": {"players": player_id}}
+    )
+
+    get_logger().info(
+        f"[{current_user['username']}] Player '{player_id}' deleted successfully"
+    )
+
+
 async def get_player(player_id: str) -> dict:
     try:
         player = await db.db[PLAYERS_COLLECTION].find_one({"_id": ObjectId(player_id)})

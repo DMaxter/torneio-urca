@@ -17,6 +17,7 @@ from app.routes.group import router as group_router
 from app.routes.game import router as game_router
 from app.routes.goal import router as goal_router
 from app.routes.card import router as card_router
+from app.routes.file import router as file_router
 from app.utils import REQUEST_ID, get_logger
 
 LOGGING_FORMAT = (
@@ -99,6 +100,7 @@ api_router.include_router(group_router)
 api_router.include_router(game_router)
 api_router.include_router(goal_router)
 api_router.include_router(card_router)
+api_router.include_router(file_router)
 
 app.mount("/api", api_router)
 

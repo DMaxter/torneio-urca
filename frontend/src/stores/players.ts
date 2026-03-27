@@ -38,12 +38,26 @@ export const usePlayerStore = defineStore("playersStore", () => {
     }
   }
 
+  async function deletePlayer(playerId: string) {
+    try {
+      const { status } = await playerService.deletePlayer(playerId);
+      if (status === 204) {
+        base.remove(playerId);
+        return { success: true, content: null };
+      }
+      return { success: false, content: null };
+    } catch {
+      return { success: false, content: null };
+    }
+  }
+
   return {
     players,
     getPlayers: base.getAll,
     createPlayer: base.create,
     createAdminPlayer,
     confirmPlayer,
+    deletePlayer,
     init: base.init,
     add: base.add,
     update: base.update,

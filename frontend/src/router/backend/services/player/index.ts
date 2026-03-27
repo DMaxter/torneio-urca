@@ -23,3 +23,7 @@ export async function createAdminPlayer(player: CreateAdminPlayer): Promise<Axio
 export async function confirmPlayer(playerId: string): Promise<AxiosResponse<Player | Error>> {
   return await http.patch(`/players/${playerId}/confirm`);
 }
+
+export async function deletePlayer(playerId: string): Promise<AxiosResponse<Player | Error>> {
+  return await http.delete(`/players/${playerId}`);
+}

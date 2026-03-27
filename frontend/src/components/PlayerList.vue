@@ -27,17 +27,24 @@
           <P-Tag :severity="data.is_confirmed ? 'success' : 'warning'" :value="data.is_confirmed ? 'Confirmado' : 'Pendente'" />
         </template>
       </P-Column>
-      <P-Column header="Ações" style="width: 80px">
+      <P-Column header="Ações" style="width: 120px">
         <template #body="{ data }">
-          <div class="flex gap-2 items-center" v-if="!data.is_confirmed">
+          <div class="flex gap-2 items-center">
             <span
+              v-if="!data.is_confirmed"
               class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-green-600 hover:bg-green-50"
               @click="confirmPlayer(data.id)"
               v-tooltip.top="'Confirmar jogador'"
             >
               check
             </span>
-            <span class="text-xs text-stone-500">Confirmar</span>
+            <span
+              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
+              @click="removePlayer(data.id)"
+              v-tooltip.top="'Remover jogador'"
+            >
+              delete
+            </span>
           </div>
         </template>
       </P-Column>
@@ -68,6 +75,15 @@ async function confirmPlayer(playerId: string) {
   const result = await playerStore.confirmPlayer(playerId);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador confirmado", life: 3000 });
+  }
+}
+
+async function removePlayer(playerId: string) {
+  const result = await playerStore.deletePlayer(playerId);
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador removido", life: 3000 });
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível remover o jogador", life: 3000 });
   }
 }
 </script>
