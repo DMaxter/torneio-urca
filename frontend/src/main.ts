@@ -69,12 +69,17 @@ app.component("P-Toast", Toast);
 app.directive("tooltip", Tooltip);
 
 // Custom components
-
+import AdminPlayerForm from "@components/AdminPlayerForm.vue";
+import CustomFileUpload from "@components/forms/FileUpload.vue";
+import FooterBar from "@components/FooterBar.vue";
 import GameList from "@components/GameList.vue";
 import GameManagement from "@components/GameManagement.vue";
 import GroupList from "@components/GroupList.vue";
 import GroupManagement from "@components/GroupManagement.vue";
+import PersonFields from "@components/forms/PersonFields.vue";
+import PlayerForm from "@components/forms/PlayerForm.vue";
 import PlayerList from "@components/PlayerList.vue";
+import StaffMemberForm from "@components/forms/StaffMemberForm.vue";
 import TeamList from "@components/TeamList.vue";
 import TeamManagement from "@components/TeamManagement.vue";
 import TopBar from "@components/TopBar.vue";
@@ -82,14 +87,18 @@ import TournamentList from "@components/TournamentList.vue";
 import TournamentManagement from "@components/TournamentManagement.vue";
 import UserList from "@components/UserList.vue";
 import UserManagement from "@components/UserManagement.vue";
-import AdminPlayerForm from "@components/AdminPlayerForm.vue";
 
 app.component("AdminPlayerForm", AdminPlayerForm);
+app.component("FileUpload", CustomFileUpload);
+app.component("FooterBar", FooterBar);
 app.component("GameList", GameList);
 app.component("GameManagement", GameManagement);
 app.component("GroupList", GroupList);
 app.component("GroupManagement", GroupManagement);
+app.component("PersonFields", PersonFields);
+app.component("PlayerForm", PlayerForm);
 app.component("PlayerList", PlayerList);
+app.component("StaffMemberForm", StaffMemberForm);
 app.component("TeamList", TeamList);
 app.component("TeamManagement", TeamManagement);
 app.component("TopBar", TopBar);

@@ -16,9 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch } from "vue";
-import PersonFields from "./PersonFields.vue";
-import FileUpload from "./FileUpload.vue";
+import { reactive, watch, ref } from "vue";
 
 interface StaffMemberData {
   name: string;
@@ -84,8 +82,6 @@ watch(
   },
   { deep: true }
 );
-
-import { ref } from "vue";
 </script>
 
 <style lang="scss" scoped>

@@ -81,7 +81,6 @@
 import { reactive, watchEffect } from "vue";
 import { isUnderAge } from "@/utils";
 import { TOURNAMENT } from "@/constants";
-import FileUpload from "./FileUpload.vue";
 
 interface PlayerFormData {
   name: string;

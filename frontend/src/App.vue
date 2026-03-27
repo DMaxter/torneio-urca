@@ -10,12 +10,9 @@
 </template>
 
 <script setup lang="ts">
-import { RouterView } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { setToast } from "@router/backend/api";
 import "@styles/global.css";
-import TopBar from "@components/TopBar.vue";
-import FooterBar from "@components/FooterBar.vue";
 
 const toast = useToast();
 setToast(toast);
@@ -35,5 +32,7 @@ html, body, #app {
 
 .main-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 </style>

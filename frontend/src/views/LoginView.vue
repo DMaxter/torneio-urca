@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-stone-100">
+  <div class="login-container">
     <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
       <h1 class="text-center mb-6 text-2xl font-bold text-stone-900">Iniciar Sessão</h1>
       <P-FloatLabel class="mt-4" variant="on">
@@ -56,4 +56,12 @@ async function handleLogin() {
 </script>
 
 <style scoped>
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  background: var(--p-surface-100);
+  padding: 1rem;
+}
 </style>

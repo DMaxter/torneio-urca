@@ -154,12 +154,6 @@ import { useRegistrationDeadline } from "@composables/useRegistrationDeadline";
 import PlayerForm from "@components/forms/PlayerForm.vue";
 import StaffMemberForm from "@components/forms/StaffMemberForm.vue";
 
-const { isOpen: isRegistrationOpen } = useRegistrationDeadline();
-
-const router = useRouter();
-const toast = useToast();
-const tournamentStore = useTournamentStore();
-
 interface PlayerFormData {
   name: string;
   birth_date: Date | null;
@@ -232,6 +226,8 @@ const staffForms = reactive<{
 });
 
 const playerForms = reactive<PlayerFormEntry[]>([]);
+
+const tournamentStore = useTournamentStore();
 
 const canProceed = computed(() => {
   if (currentStep.value === 0) {

@@ -23,6 +23,7 @@
   background: var(--p-surface-900);
   color: var(--p-surface-300);
   padding: 1rem 2rem;
+  margin-top: auto;
 }
 
 .footer-content {
