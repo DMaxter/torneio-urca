@@ -1,6 +1,6 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal header="Lista de Jogadores" :style="{ width: '900px' }">
-    <P-DataTable :value="playerStore.players" striped-rows size="small" paginator :rows="10" :rowsPerPageOptions="[5, 10, 20, 50]">
+  <P-Dialog v-model:visible="enabled" modal header="Lista de Jogadores" class="w-11/12 md:w-10/12 lg:w-8/12 xl:w-7/12">
+    <P-DataTable :value="playerStore.players" striped-rows size="small" paginator :rows="10" :rowsPerPageOptions="[5, 10, 20, 50]" responsiveLayout="scroll">
       <P-Column field="name" header="Nome">
         <template #body="{ data }">
           <div class="flex align-items-center gap-2">
@@ -9,25 +9,25 @@
           </div>
         </template>
       </P-Column>
-      <P-Column field="fiscal_number" header="NIF" style="width: 100px" />
-      <P-Column field="birth_date" header="Nascimento" style="width: 110px">
+      <P-Column field="fiscal_number" header="NIF" class="w-6rem md:w-auto" />
+      <P-Column field="birth_date" header="Nascimento" class="w-6rem md:w-auto">
         <template #body="{ data }">
           {{ new Date(data.birth_date).toLocaleDateString('pt-PT') }}
         </template>
       </P-Column>
-      <P-Column header="Federado" style="width: 90px">
+      <P-Column header="Federado" class="w-4rem md:w-auto">
         <template #body="{ data }">
           <span class="material-symbols-outlined" :class="data.is_federated ? 'status-success' : 'status-muted'">
             {{ data.is_federated ? 'check' : 'close' }}
           </span>
         </template>
       </P-Column>
-      <P-Column header="Estado" style="width: 110px">
+      <P-Column header="Estado" class="w-5rem md:w-auto">
         <template #body="{ data }">
           <P-Tag :severity="data.is_confirmed ? 'success' : 'warning'" :value="data.is_confirmed ? 'Confirmado' : 'Pendente'" />
         </template>
       </P-Column>
-      <P-Column header="Ações" style="width: 120px">
+      <P-Column header="Ações" class="w-6rem md:w-auto">
         <template #body="{ data }">
           <div class="flex gap-2 items-center">
             <span

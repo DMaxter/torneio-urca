@@ -1,6 +1,6 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal header="Lista de Equipas" :style="{ width: '700px' }">
-    <P-DataTable :value="teamStore.teams" striped-rows size="small" selectionMode="single" @rowSelect="onTeamSelect">
+  <P-Dialog v-model:visible="enabled" modal header="Lista de Equipas" class="w-11/12 md:w-8/12 lg:w-7/12 xl:w-6/12">
+    <P-DataTable :value="teamStore.teams" striped-rows size="small" selectionMode="single" @rowSelect="onTeamSelect" responsiveLayout="scroll">
       <P-Column field="name" header="Nome da Equipa">
         <template #body="{ data }">
           <div class="flex align-items-center gap-2">
@@ -19,7 +19,7 @@
           <P-Tag :value="`${data.players?.length || 0}`" severity="info" />
         </template>
       </P-Column>
-      <P-Column header="Ver Jogadores" style="width: 120px">
+      <P-Column header="Ver Jogadores" class="w-8rem">
         <template #body="{ data }">
           <P-Button size="small" severity="info" @click.stop="openTeamPlayers(data.id)">
             <span class="material-symbols-outlined">visibility</span>
@@ -35,19 +35,19 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="showTeamPlayers" modal :header="`Jogadores - ${selectedTeamName}`" :style="{ width: '900px' }">
+  <P-Dialog v-model:visible="showTeamPlayers" modal :header="`Jogadores - ${selectedTeamName}`" class="w-11/12 md:w-10/12 lg:w-8/12 xl:w-7/12">
     <P-DataTable :value="teamPlayers" striped-rows size="small">
       <P-Column field="name" header="Nome">
         <template #body="{ data }">
           <span class="font-medium">{{ data.name }}</span>
         </template>
       </P-Column>
-      <P-Column field="birth_date" header="Nascimento" style="width: 100px">
+      <P-Column field="birth_date" header="Nascimento" class="w-24rem md:w-auto">
         <template #body="{ data }">
           {{ new Date(data.birth_date).toLocaleDateString('pt-PT') }}
         </template>
       </P-Column>
-      <P-Column header="Cartão de Cidadão" style="width: 140px">
+      <P-Column header="Cartão" class="w-6rem md:w-auto">
         <template #body="{ data }">
           <P-Button 
             v-if="data.citizen_card_file_id" 
@@ -56,12 +56,12 @@
             @click="viewFile(data.citizen_card_file_id)"
           >
             <span class="material-symbols-outlined">picture_as_pdf</span>
-            Ver
+            <span class="hidden md:inline">Ver</span>
           </P-Button>
           <span v-else class="text-muted">N/A</span>
         </template>
       </P-Column>
-      <P-Column header="Comprovativo Residência" style="width: 180px">
+      <P-Column header="Residência" class="w-6rem md:w-auto">
         <template #body="{ data }">
           <P-Button 
             v-if="data.proof_of_residency_file_id" 
@@ -70,12 +70,12 @@
             @click="viewFile(data.proof_of_residency_file_id)"
           >
             <span class="material-symbols-outlined">picture_as_pdf</span>
-            Ver
+            <span class="hidden md:inline">Ver</span>
           </P-Button>
           <span v-else class="text-muted">N/A</span>
         </template>
       </P-Column>
-      <P-Column header="Autorização" style="width: 120px">
+      <P-Column header="Autoriz." class="w-5rem md:w-auto">
         <template #body="{ data }">
           <P-Button 
             v-if="data.authorization_file_id" 
@@ -84,17 +84,17 @@
             @click="viewFile(data.authorization_file_id)"
           >
             <span class="material-symbols-outlined">picture_as_pdf</span>
-            Ver
+            <span class="hidden md:inline">Ver</span>
           </P-Button>
           <span v-else class="text-muted">-</span>
         </template>
       </P-Column>
-      <P-Column header="Estado" style="width: 100px">
+      <P-Column header="Estado" class="w-5rem md:w-auto">
         <template #body="{ data }">
           <P-Tag :severity="data.is_confirmed ? 'success' : 'warning'" :value="data.is_confirmed ? 'Confirmado' : 'Pendente'" />
         </template>
       </P-Column>
-      <P-Column header="Ações" style="width: 100px">
+      <P-Column header="Ações" class="w-6rem md:w-auto">
         <template #body="{ data }">
           <div class="flex gap-1">
             <span
