@@ -33,14 +33,14 @@
             <span
               v-if="!data.is_confirmed"
               class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-green-600 hover:bg-green-50"
-              @click="confirmPlayer(data.id)"
+              @click="promptConfirmPlayer(data.id, data.name)"
               v-tooltip.top="'Confirmar jogador'"
             >
               check
             </span>
             <span
               class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
-              @click="removePlayer(data.id)"
+              @click="promptRemovePlayer(data.id, data.name)"
               v-tooltip.top="'Remover jogador'"
             >
               delete
@@ -56,34 +56,75 @@
       </P-Button>
     </template>
   </P-Dialog>
+
+  <P-Dialog v-model:visible="showConfirmPlayer" modal header="Confirmar Jogador" class="w-11/12 md:w-4/12">
+    <p>Tem a certeza que deseja confirmar o jogador <strong>{{ playerToAction?.name }}</strong>?</p>
+    <p class="text-orange-600 mt-2">Esta ação irá eliminar o Cartão de Cidadão, Comprovativo de Residência e o NIF do jogador.</p>
+    <template #footer>
+      <P-Button severity="secondary" @click="showConfirmPlayer = false">Cancelar</P-Button>
+      <P-Button severity="success" @click="confirmPlayerAction">Confirmar</P-Button>
+    </template>
+  </P-Dialog>
+
+  <P-Dialog v-model:visible="showRemovePlayer" modal header="Remover Jogador" class="w-11/12 md:w-4/12">
+    <p>Tem a certeza que deseja remover o jogador <strong>{{ playerToAction?.name }}</strong>?</p>
+    <p class="text-red-600 mt-2">Esta ação não pode ser desfeita.</p>
+    <template #footer>
+      <P-Button severity="secondary" @click="showRemovePlayer = false">Cancelar</P-Button>
+      <P-Button severity="danger" @click="confirmRemovePlayerAction">Remover</P-Button>
+    </template>
+  </P-Dialog>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { usePlayerStore } from "@stores/players";
+import { useTeamStore } from "@stores/teams";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
 const playerStore = usePlayerStore();
+const teamStore = useTeamStore();
+
+const showConfirmPlayer = ref(false);
+const showRemovePlayer = ref(false);
+const playerToAction = ref<{ id: string; name: string } | null>(null);
 
 onMounted(async () => {
   await playerStore.getPlayers();
 });
 
-async function confirmPlayer(playerId: string) {
-  const result = await playerStore.confirmPlayer(playerId);
+function promptConfirmPlayer(playerId: string, playerName: string) {
+  playerToAction.value = { id: playerId, name: playerName };
+  showConfirmPlayer.value = true;
+}
+
+async function confirmPlayerAction() {
+  if (!playerToAction.value) return;
+  const result = await playerStore.confirmPlayer(playerToAction.value.id);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador confirmado", life: 3000 });
   }
+  showConfirmPlayer.value = false;
+  playerToAction.value = null;
 }
 
-async function removePlayer(playerId: string) {
-  const result = await playerStore.deletePlayer(playerId);
+function promptRemovePlayer(playerId: string, playerName: string) {
+  playerToAction.value = { id: playerId, name: playerName };
+  showRemovePlayer.value = true;
+}
+
+async function confirmRemovePlayerAction() {
+  if (!playerToAction.value) return;
+  const result = await playerStore.deletePlayer(playerToAction.value.id);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador removido", life: 3000 });
+    await teamStore.getTeams();
   } else {
     toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível remover o jogador", life: 3000 });
   }
+  showRemovePlayer.value = false;
+  playerToAction.value = null;
 }
 </script>

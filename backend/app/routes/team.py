@@ -12,7 +12,7 @@ from app.schemas.schemas import CreateTeamDto, TeamDto, StaffType
 from app.error import Error
 from app.constants import MIN_PLAYERS, MIN_AGE
 from app.utils import calculate_age, get_logger
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, get_admin_user
 from datetime import datetime
 import json
 
@@ -288,6 +288,36 @@ async def register_team(
 async def get_teams():
     get_logger().info("Retrieving all teams")
     teams = await db.db[TEAMS_COLLECTION].find().to_list(1000)
+
+    for team in teams:
+        player_ids = team.get("players", [])
+        if player_ids:
+            valid_player_ids = []
+            for pid in player_ids:
+                if isinstance(pid, ObjectId):
+                    exists = await db.db[PLAYERS_COLLECTION].find_one({"_id": pid})
+                    if exists:
+                        valid_player_ids.append(pid)
+                elif isinstance(pid, str):
+                    try:
+                        pid_oid = ObjectId(pid)
+                        exists = await db.db[PLAYERS_COLLECTION].find_one(
+                            {"_id": pid_oid}
+                        )
+                        if exists:
+                            valid_player_ids.append(pid_oid)
+                    except Exception:
+                        pass
+
+            if len(valid_player_ids) != len(player_ids):
+                await db.db[TEAMS_COLLECTION].update_one(
+                    {"_id": team["_id"]}, {"$set": {"players": valid_player_ids}}
+                )
+                get_logger().info(
+                    f"Cleaned up team '{team.get('name')}': {len(player_ids)} -> {len(valid_player_ids)} players"
+                )
+                team["players"] = valid_player_ids
+
     get_logger().info(f"Retrieved {len(teams)} teams")
     return [team_to_dto(team) for team in teams]
 
@@ -354,3 +384,35 @@ async def get_team_players(team_id: str):
     from app.routes.player import player_to_dto
 
     return [player_to_dto(player) for player in players]
+
+
+@router.delete("/{team_id}", status_code=204)
+async def delete_team(team_id: str, current_user=Depends(get_admin_user)):
+    """Delete a team and all its players."""
+    get_logger().info(f"[{current_user['username']}] Deleting team '{team_id}'")
+    try:
+        team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    except Exception:
+        raise Error.invalid_id("team")
+    if not team:
+        raise Error.not_found("Team")
+
+    player_ids = team.get("players", [])
+    if player_ids:
+        player_ids_converted = []
+        for pid in player_ids:
+            if isinstance(pid, ObjectId):
+                player_ids_converted.append(pid)
+            elif isinstance(pid, str):
+                try:
+                    player_ids_converted.append(ObjectId(pid))
+                except Exception:
+                    pass
+        if player_ids_converted:
+            await db.db[PLAYERS_COLLECTION].delete_many(
+                {"_id": {"$in": player_ids_converted}}
+            )
+            get_logger().info(f"Deleted {len(player_ids_converted)} players")
+
+    await db.db[TEAMS_COLLECTION].delete_one({"_id": ObjectId(team_id)})
+    get_logger().info(f"Team '{team_id}' deleted successfully")

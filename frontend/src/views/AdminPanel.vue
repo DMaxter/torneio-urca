@@ -1,5 +1,5 @@
 <template>
-  <div class="admin-panel p-4 max-w-7xl mx-auto bg-stone-50 md:p-6 lg:p-8">
+  <div class="admin-panel p-4 w-full mx-auto bg-stone-50 md:p-6">
     <div class="mb-6 md:mb-8">
       <div class="flex justify-between items-start gap-4">
         <div>

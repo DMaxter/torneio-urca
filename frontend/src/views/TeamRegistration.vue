@@ -447,9 +447,31 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
 <style scoped>
 .team-registration {
   padding: 1rem;
-  max-width: 900px;
+  width: 100%;
+  max-width: 90%;
   margin: 0 auto;
   background: var(--bg-surface);
+}
+
+@media (min-width: 640px) {
+  .team-registration {
+    padding: 1.5rem;
+    max-width: 85%;
+  }
+}
+
+@media (min-width: 1024px) {
+  .team-registration {
+    padding: 2rem;
+    max-width: 80%;
+  }
+}
+
+@media (min-width: 1536px) {
+  .team-registration {
+    padding: 2rem;
+    max-width: 1400px;
+  }
 }
 
 .registration-header {
@@ -474,6 +496,20 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
   border: 1px solid var(--border-light);
   border-radius: 12px;
   padding: 1rem;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .form-card {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .form-card {
+    padding: 2rem;
+    border-radius: 16px;
+  }
 }
 
 .form-container {
@@ -521,9 +557,31 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
   gap: 0.75rem;
 }
 
+@media (min-width: 768px) {
+  .staff-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .staff-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 .player-fieldset {
   position: relative;
   margin-bottom: 0.75rem;
+  padding: 1rem;
+  background: var(--p-surface-50);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+}
+
+@media (min-width: 1024px) {
+  .player-fieldset {
+    padding: 1.5rem;
+  }
 }
 
 .add-player-btn {

@@ -20,3 +20,7 @@ export async function getTeamPlayers(teamId: string): Promise<AxiosResponse<Play
 export async function createTeam(team: CreateTeam): Promise<AxiosResponse<Team | Error>> {
   return await http.post("/teams", team);
 }
+
+export async function deleteTeam(teamId: string): Promise<AxiosResponse<void | Error>> {
+  return await http.delete(`/teams/${teamId}`);
+}

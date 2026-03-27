@@ -158,25 +158,55 @@ function checkUnderAge(): boolean {
 </script>
 
 <style lang="scss" scoped>
+.player-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .player-form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .player-form-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .player-form-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.player-files-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 768px) {
+  .player-files-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .player-files-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 fieldset {
   border: 1px solid var(--border-default);
   padding: 10px;
   margin-top: 15px;
   border-radius: 4px;
   position: relative;
-}
-
-.player-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-
-  legend {
-    font-weight: bold;
-    padding: 0 10px;
-    margin: 0;
-  }
 }
 
 .field {
@@ -190,14 +220,7 @@ fieldset {
   border-radius: 4px;
   background-color: var(--p-surface-ground);
   border: 1px solid var(--p-warn);
-}
-
-.player-fieldset {
-  border: 1px solid var(--border-default);
-  padding: 15px;
-  margin-top: 15px;
-  border-radius: 4px;
-  position: relative;
+  grid-column: 1 / -1;
 }
 
 .fieldset-header {
@@ -221,18 +244,5 @@ legend {
   padding: 4px;
   background: white !important;
   border-radius: 50%;
-}
-
-.field {
-  margin-top: 15px;
-  display: block;
-}
-
-.authorization-required {
-  margin-top: 15px;
-  padding: 10px;
-  border-radius: 4px;
-  background-color: var(--p-surface-ground);
-  border: 1px solid var(--p-warn);
 }
 </style>

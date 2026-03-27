@@ -1,25 +1,27 @@
 <template>
   <div class="login-container">
-    <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
-      <h1 class="text-center mb-6 text-2xl font-bold text-stone-900">Iniciar Sessão</h1>
-      <P-FloatLabel class="mt-4" variant="on">
-        <P-InputText id="username" v-model="credentials.username" fluid />
-        <label for="username">Nome de Utilizador</label>
-      </P-FloatLabel>
-      <P-FloatLabel class="mt-4" variant="on">
-        <P-InputText id="password" v-model="credentials.password" type="password" fluid />
-        <label for="password">Palavra-passe</label>
-      </P-FloatLabel>
-      <P-Button
-        class="mt-6 w-full"
-        @click="handleLogin"
-        :loading="loading"
-        fluid
-      >
-        <span class="material-symbols-outlined">login</span>
-        Entrar
-      </P-Button>
-    </div>
+    <form @submit.prevent="handleLogin" class="w-full max-w-md">
+      <div class="bg-white p-8 rounded-xl shadow-md w-full">
+        <h1 class="text-center mb-6 text-2xl font-bold text-stone-900">Iniciar Sessão</h1>
+        <P-FloatLabel class="mt-4" variant="on">
+          <P-InputText id="username" v-model="credentials.username" fluid />
+          <label for="username">Nome de Utilizador</label>
+        </P-FloatLabel>
+        <P-FloatLabel class="mt-4" variant="on">
+          <P-InputText id="password" v-model="credentials.password" type="password" fluid />
+          <label for="password">Palavra-passe</label>
+        </P-FloatLabel>
+        <P-Button
+          type="submit"
+          class="mt-6 w-full"
+          :loading="loading"
+          fluid
+        >
+          <span class="material-symbols-outlined">login</span>
+          Entrar
+        </P-Button>
+      </div>
+    </form>
   </div>
 </template>
 

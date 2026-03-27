@@ -9,14 +9,19 @@
           </div>
         </template>
       </P-Column>
-      <P-Column header="Responsável">
+      <P-Column header="Torneio" class="w-6rem md:w-auto">
+        <template #body="{ data }">
+          <span class="text-muted text-sm">{{ getTournamentName(data.tournament) }}</span>
+        </template>
+      </P-Column>
+      <P-Column header="Responsável" class="w-6rem md:w-auto">
         <template #body="{ data }">
           <span class="text-muted">{{ data.responsible_name }}</span>
         </template>
       </P-Column>
-      <P-Column header="Jogadores">
+      <P-Column header="Jogadores" class="w-5rem md:w-auto">
         <template #body="{ data }">
-          <P-Tag :value="`${data.players?.length || 0}`" severity="info" />
+          <P-Tag :value="`${data.players?.length || 0}`" :severity="(data.players?.length || 0) >= 5 ? 'success' : 'danger'" />
         </template>
       </P-Column>
       <P-Column header="Ver Jogadores" class="w-8rem">
@@ -26,12 +31,50 @@
           </P-Button>
         </template>
       </P-Column>
+      <P-Column header="Eliminar" class="w-5rem">
+        <template #body="{ data }">
+          <span
+            class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
+            @click.stop="deleteTeam(data.id, data.name)"
+            v-tooltip.top="'Eliminar equipa'"
+          >
+            delete
+          </span>
+        </template>
+      </P-Column>
     </P-DataTable>
     <template #footer>
       <P-Button @click="teamStore.getTeams()">
         <span class="material-symbols-outlined">sync</span>
         Atualizar
       </P-Button>
+    </template>
+  </P-Dialog>
+
+  <P-Dialog v-model:visible="showDeleteConfirm" modal header="Confirmar Eliminação" class="w-11/12 md:w-4/12">
+    <p>Tem a certeza que deseja eliminar a equipa <strong>{{ teamToDelete?.name }}</strong>?</p>
+    <p class="text-red-600 mt-2">Esta ação eliminará também todos os jogadores associados.</p>
+    <template #footer>
+      <P-Button severity="secondary" @click="showDeleteConfirm = false">Cancelar</P-Button>
+      <P-Button severity="danger" @click="confirmDeleteTeam">Eliminar</P-Button>
+    </template>
+  </P-Dialog>
+
+  <P-Dialog v-model:visible="showConfirmPlayer" modal header="Confirmar Jogador" class="w-11/12 md:w-4/12">
+    <p>Tem a certeza que deseja confirmar o jogador <strong>{{ playerToAction?.name }}</strong>?</p>
+    <p class="text-orange-600 mt-2">Esta ação irá eliminar o Cartão de Cidadão, Comprovativo de Residência e o NIF do jogador.</p>
+    <template #footer>
+      <P-Button severity="secondary" @click="showConfirmPlayer = false">Cancelar</P-Button>
+      <P-Button severity="success" @click="confirmPlayerAction">Confirmar</P-Button>
+    </template>
+  </P-Dialog>
+
+  <P-Dialog v-model:visible="showRemovePlayer" modal header="Remover Jogador" class="w-11/12 md:w-4/12">
+    <p>Tem a certeza que deseja remover o jogador <strong>{{ playerToAction?.name }}</strong>?</p>
+    <p class="text-red-600 mt-2">Esta ação não pode ser desfeita.</p>
+    <template #footer>
+      <P-Button severity="secondary" @click="showRemovePlayer = false">Cancelar</P-Button>
+      <P-Button severity="danger" @click="confirmRemovePlayerAction">Remover</P-Button>
     </template>
   </P-Dialog>
 
@@ -100,14 +143,14 @@
             <span
               v-if="!data.is_confirmed"
               class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-green-600 hover:bg-green-50"
-              @click="confirmPlayer(data.id)"
+              @click="promptConfirmPlayer(data.id, data.name)"
               v-tooltip.top="'Confirmar jogador'"
             >
               check
             </span>
             <span
               class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
-              @click="removePlayer(data.id)"
+              @click="promptRemovePlayer(data.id, data.name)"
               v-tooltip.top="'Remover jogador'"
             >
               delete
@@ -134,6 +177,7 @@ import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useTeamStore } from "@stores/teams";
 import { usePlayerStore } from "@stores/players";
+import { useTournamentStore } from "@stores/tournaments";
 import { getFileUrl } from "@router/backend/services/file";
 import * as teamService from "@router/backend/services/team";
 
@@ -141,13 +185,41 @@ const toast = useToast();
 const enabled = defineModel<boolean>();
 const teamStore = useTeamStore();
 const playerStore = usePlayerStore();
+const tournamentStore = useTournamentStore();
 
 const showTeamPlayers = ref(false);
 const showFileViewer = ref(false);
+const showDeleteConfirm = ref(false);
+const showConfirmPlayer = ref(false);
+const showRemovePlayer = ref(false);
 const selectedTeamId = ref("");
 const selectedTeamName = ref("");
 const teamPlayers = ref<any[]>([]);
 const fileUrl = ref("");
+const teamToDelete = ref<{ id: string; name: string } | null>(null);
+const playerToAction = ref<{ id: string; name: string } | null>(null);
+
+function getTournamentName(tournamentId: string): string {
+  const tournament = tournamentStore.tournaments.find(t => t.id === tournamentId);
+  return tournament?.name || "-";
+}
+
+function deleteTeam(teamId: string, teamName: string) {
+  teamToDelete.value = { id: teamId, name: teamName };
+  showDeleteConfirm.value = true;
+}
+
+async function confirmDeleteTeam() {
+  if (!teamToDelete.value) return;
+  const result = await teamStore.deleteTeam(teamToDelete.value.id);
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Equipa eliminada", life: 3000 });
+    showDeleteConfirm.value = false;
+    teamToDelete.value = null;
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível eliminar a equipa", life: 3000 });
+  }
+}
 
 function onTeamSelect(event: any) {
   openTeamPlayers(event.data.id);
@@ -174,18 +246,30 @@ function viewFile(fileId: string) {
   showFileViewer.value = true;
 }
 
-async function confirmPlayer(playerId: string) {
-  const result = await playerStore.confirmPlayer(playerId);
+function promptConfirmPlayer(playerId: string, playerName: string) {
+  playerToAction.value = { id: playerId, name: playerName };
+  showConfirmPlayer.value = true;
+}
+
+async function confirmPlayerAction() {
+  if (!playerToAction.value) return;
+  const result = await playerStore.confirmPlayer(playerToAction.value.id);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador confirmado", life: 3000 });
     await loadTeamPlayers();
   }
+  showConfirmPlayer.value = false;
+  playerToAction.value = null;
 }
 
-async function removePlayer(playerId: string) {
-  console.log("Removing player:", playerId);
-  const result = await playerStore.deletePlayer(playerId);
-  console.log("Delete result:", result);
+function promptRemovePlayer(playerId: string, playerName: string) {
+  playerToAction.value = { id: playerId, name: playerName };
+  showRemovePlayer.value = true;
+}
+
+async function confirmRemovePlayerAction() {
+  if (!playerToAction.value) return;
+  const result = await playerStore.deletePlayer(playerToAction.value.id);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador removido", life: 3000 });
     await loadTeamPlayers();
@@ -193,10 +277,13 @@ async function removePlayer(playerId: string) {
   } else {
     toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível remover o jogador", life: 3000 });
   }
+  showRemovePlayer.value = false;
+  playerToAction.value = null;
 }
 
 onMounted(async () => {
   await teamStore.getTeams();
+  await tournamentStore.getTournaments();
 });
 </script>
 

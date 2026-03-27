@@ -13,12 +13,27 @@ export const useTeamStore = defineStore("teamsStore", () => {
     create: teamService.createTeam,
   });
 
+  async function deleteTeam(teamId: string) {
+    try {
+      const { status } = await teamService.deleteTeam(teamId);
+      if (status === 204) {
+        base.remove(teamId);
+        return { success: true };
+      }
+      return { success: false };
+    } catch {
+      return { success: false };
+    }
+  }
+
   return {
     teams,
     getTeams: base.getAll,
     createTeam: base.create,
+    deleteTeam,
     init: base.init,
     add: base.add,
+    update: base.update,
     remove: base.remove,
   };
 });
