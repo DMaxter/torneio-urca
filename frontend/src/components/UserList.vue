@@ -1,5 +1,5 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal header="Lista de Utilizadores" :style="{ width: '400px' }">
+  <P-Dialog v-model:visible="enabled" modal header="Lista de Utilizadores" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-DataTable :value="userStore.users" striped-rows size="small">
       <P-Column field="username" header="Nome de Utilizador">
         <template #body="{ data }">
@@ -31,7 +31,7 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="deleteDialog" modal header="Confirmar" :style="{ width: '350px' }">
+  <P-Dialog v-model:visible="deleteDialog" modal header="Confirmar" class="w-11/12 md:w-8/12">
     <p>Tem a certeza que deseja eliminar o utilizador <strong>{{ userToDelete?.username }}</strong>?</p>
     <template #footer>
       <P-Button severity="danger" @click="handleDelete">

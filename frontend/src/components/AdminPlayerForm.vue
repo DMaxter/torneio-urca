@@ -1,5 +1,5 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal header="Criar Jogador" :style="{ width: '450px' }">
+  <P-Dialog v-model:visible="enabled" modal header="Criar Jogador" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-FloatLabel class="mt-4" variant="on">
       <P-InputText id="name" v-model="player.name" fluid />
       <label for="name">Nome</label>

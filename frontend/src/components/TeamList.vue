@@ -1,5 +1,5 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal header="Lista de Equipas" class="w-11/12 md:w-8/12 lg:w-7/12 xl:w-6/12">
+  <P-Dialog v-model:visible="enabled" modal header="Lista de Equipas" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-DataTable :value="teamStore.teams" striped-rows size="small" selectionMode="single" @rowSelect="onTeamSelect" responsiveLayout="scroll">
       <P-Column field="name" header="Nome da Equipa">
         <template #body="{ data }">
@@ -62,7 +62,7 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="showDeleteConfirm" modal header="Confirmar Eliminação" class="w-11/12 md:w-4/12">
+  <P-Dialog v-model:visible="showDeleteConfirm" modal header="Confirmar Eliminação" class="w-11/12 md:w-8/12">
     <p>Tem a certeza que deseja eliminar a equipa <strong>{{ teamToDelete?.name }}</strong>?</p>
     <p class="text-red-600 mt-2">Esta ação eliminará também todos os jogadores associados.</p>
     <template #footer>
@@ -73,7 +73,7 @@
 
   <TeamManagement v-model="showEditTeam" :team="editingTeam" />
 
-  <P-Dialog v-model:visible="showConfirmPlayer" modal header="Confirmar Jogador" class="w-11/12 md:w-4/12">
+  <P-Dialog v-model:visible="showConfirmPlayer" modal header="Confirmar Jogador" class="w-11/12 md:w-8/12">
     <p>Tem a certeza que deseja confirmar o jogador <strong>{{ playerToAction?.name }}</strong>?</p>
     <p class="text-orange-600 mt-2">Esta ação irá eliminar o Cartão de Cidadão, Comprovativo de Residência e o NIF do jogador.</p>
     <template #footer>
@@ -82,7 +82,7 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="showRemovePlayer" modal header="Remover Jogador" class="w-11/12 md:w-4/12">
+  <P-Dialog v-model:visible="showRemovePlayer" modal header="Remover Jogador" class="w-11/12 md:w-8/12">
     <p>Tem a certeza que deseja remover o jogador <strong>{{ playerToAction?.name }}</strong>?</p>
     <p class="text-red-600 mt-2">Esta ação não pode ser desfeita.</p>
     <template #footer>
@@ -91,7 +91,7 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="showTeamPlayers" modal :header="`Jogadores - ${selectedTeamName}`" class="w-11/12 md:w-10/12 lg:w-8/12 xl:w-7/12">
+  <P-Dialog v-model:visible="showTeamPlayers" modal :header="`Jogadores - ${selectedTeamName}`" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-DataTable :value="teamPlayers" striped-rows size="small">
       <P-Column field="name" header="Nome">
         <template #body="{ data }">
@@ -193,6 +193,7 @@ import { usePlayerStore } from "@stores/players";
 import { useTournamentStore } from "@stores/tournaments";
 import { getFileUrl } from "@router/backend/services/file";
 import * as teamService from "@router/backend/services/team";
+import type { Team } from "@router/backend/services/team/types";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
@@ -212,7 +213,7 @@ const teamPlayers = ref<any[]>([]);
 const fileUrl = ref("");
 const teamToDelete = ref<{ id: string; name: string } | null>(null);
 const playerToAction = ref<{ id: string; name: string } | null>(null);
-const editingTeam = ref<{ id: string; name: string; tournament: string; responsible_name: string; responsible_email: string; responsible_phone: string }>({ id: "", name: "", tournament: "", responsible_name: "", responsible_email: "", responsible_phone: "" });
+const editingTeam = ref<Team | undefined>(undefined);
 
 function getTournamentName(tournamentId: string): string {
   const tournament = tournamentStore.tournaments.find(t => t.id === tournamentId);
@@ -236,27 +237,9 @@ async function confirmDeleteTeam() {
   }
 }
 
-function promptEditTeam(team: any) {
+function promptEditTeam(team: Team) {
   editingTeam.value = team;
   showEditTeam.value = true;
-}
-
-async function saveEditTeam() {
-  const result = await teamStore.updateTeam(editingTeam.value.id, {
-    name: editingTeam.value.name,
-    tournament: editingTeam.value.tournament,
-    responsible_name: editingTeam.value.responsible_name,
-    responsible_email: editingTeam.value.responsible_email,
-    responsible_phone: editingTeam.value.responsible_phone,
-    players: []
-  } as any);
-  if (result.success) {
-    toast.add({ severity: "success", summary: "Sucesso", detail: "Equipa atualizada", life: 3000 });
-    showEditTeam.value = false;
-    await teamStore.getTeams();
-  } else {
-    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível atualizar a equipa", life: 3000 });
-  }
 }
 
 function onTeamSelect(event: any) {

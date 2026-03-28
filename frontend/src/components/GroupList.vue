@@ -1,5 +1,5 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal header="Lista de Grupos" class="w-11/12 md:w-8/12 lg:w-6/12">
+  <P-Dialog v-model:visible="enabled" modal header="Lista de Grupos" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-DataTable :value="groupStore.groups" striped-rows size="small" responsiveLayout="scroll" selectionMode="single" @rowSelect="viewGroupTeams">
       <P-Column field="name" header="Nome do Grupo">
         <template #body="{ data }">
@@ -50,7 +50,7 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="showViewTeams" modal :header="`Equipas - ${selectedGroupName}`" class="w-11/12 md:w-8/12 lg:w-6/12">
+  <P-Dialog v-model:visible="showViewTeams" modal :header="`Equipas - ${selectedGroupName}`" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-DataTable :value="groupTeams" striped-rows size="small" responsiveLayout="scroll">
       <P-Column field="name" header="Nome da Equipa">
         <template #body="{ data }">
@@ -78,7 +78,7 @@
 
   <GroupManagement v-model="showEditDialog" :group="editingGroup" />
 
-  <P-Dialog v-model:visible="showDeleteDialog" modal header="Confirmar Eliminação" class="w-11/12 md:w-4/12">
+  <P-Dialog v-model:visible="showDeleteDialog" modal header="Confirmar Eliminação" class="w-11/12 md:w-8/12">
     <p>Tem a certeza que deseja eliminar o grupo <strong>{{ groupToDelete?.name }}</strong>?</p>
     <template #footer>
       <P-Button severity="secondary" @click="showDeleteDialog = false">Cancelar</P-Button>
@@ -88,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
@@ -148,9 +148,3 @@ async function confirmDeleteGroup() {
   }
 }
 </script>
-
-<style scoped>
-.field {
-  margin-top: 0.5rem;
-}
-</style>

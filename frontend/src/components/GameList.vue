@@ -1,5 +1,5 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal header="Lista de Jogos" :style="{ width: '800px' }">
+  <P-Dialog v-model:visible="enabled" modal header="Lista de Jogos" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-DataTable :value="gameStore.games" striped-rows size="small">
       <P-Column header="Data" style="width: 150px">
         <template #body="{ data }">

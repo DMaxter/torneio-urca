@@ -1,5 +1,5 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Equipa' : 'Editar Equipa'">
+  <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Equipa' : 'Editar Equipa'" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-FloatLabel class="field" variant="on">
       <P-InputText id="name" v-model="team.name" fluid />
       <label for="name">Nome</label>

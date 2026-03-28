@@ -1,5 +1,5 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Torneio' : 'Editar Torneio'">
+  <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Torneio' : 'Editar Torneio'" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-FloatLabel id="firstLabel" variant="on">
       <P-InputText id="name" v-model="name" fluid />
       <label for="name">Nome</label>

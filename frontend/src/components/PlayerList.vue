@@ -1,5 +1,5 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal header="Lista de Jogadores" class="w-11/12 md:w-10/12 lg:w-8/12 xl:w-7/12">
+  <P-Dialog v-model:visible="enabled" modal header="Lista de Jogadores" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-DataTable :value="playerStore.players" striped-rows size="small" paginator :rows="10" :rowsPerPageOptions="[5, 10, 20, 50]" responsiveLayout="scroll">
       <P-Column field="name" header="Nome">
         <template #body="{ data }">
@@ -31,23 +31,16 @@
         <template #body="{ data }">
           <div class="flex gap-2 items-center">
             <span
-              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-blue-600 hover:bg-blue-50"
-              @click="promptEditPlayer(data)"
-              v-tooltip.top="'Editar jogador'"
-            >
-              edit
-            </span>
-            <span
               v-if="!data.is_confirmed"
               class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-green-600 hover:bg-green-50"
-              @click="promptConfirmPlayer(data.id, data.name)"
+              @click.stop="promptConfirmPlayer(data.id, data.name)"
               v-tooltip.top="'Confirmar jogador'"
             >
               check
             </span>
             <span
               class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
-              @click="promptRemovePlayer(data.id, data.name)"
+              @click.stop="promptRemovePlayer(data.id, data.name)"
               v-tooltip.top="'Remover jogador'"
             >
               delete
@@ -64,7 +57,7 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="showConfirmPlayer" modal header="Confirmar Jogador" class="w-11/12 md:w-4/12">
+  <P-Dialog v-model:visible="showConfirmPlayer" modal header="Confirmar Jogador" class="w-11/12 md:w-8/12">
     <p>Tem a certeza que deseja confirmar o jogador <strong>{{ playerToAction?.name }}</strong>?</p>
     <p class="text-orange-600 mt-2">Esta ação irá eliminar o Cartão de Cidadão, Comprovativo de Residência e o NIF do jogador.</p>
     <template #footer>
@@ -73,48 +66,7 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="showEditPlayer" modal header="Editar Jogador" class="w-11/12 md:w-8/12 lg:w-6/12">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <P-FloatLabel class="field" variant="on">
-        <P-InputText id="editPlayerName" v-model="editingPlayer.name" fluid />
-        <label for="editPlayerName">Nome</label>
-      </P-FloatLabel>
-      <P-FloatLabel class="field" variant="on">
-        <P-DatePicker id="editPlayerBirthDate" v-model="editingPlayer.birth_date" fluid dateFormat="dd/mm/yy" />
-        <label for="editPlayerBirthDate">Data de Nascimento</label>
-      </P-FloatLabel>
-      <P-FloatLabel class="field" variant="on">
-        <P-InputText id="editPlayerAddress" v-model="editingPlayer.address" fluid />
-        <label for="editPlayerAddress">Morada</label>
-      </P-FloatLabel>
-      <P-FloatLabel class="field" variant="on">
-        <P-InputText id="editPlayerPlaceOfBirth" v-model="editingPlayer.place_of_birth" fluid />
-        <label for="editPlayerPlaceOfBirth">Local de Nascimento</label>
-      </P-FloatLabel>
-      <P-FloatLabel class="field" variant="on">
-        <P-InputText id="editPlayerFiscalNumber" v-model="editingPlayer.fiscal_number" fluid />
-        <label for="editPlayerFiscalNumber">NIF</label>
-      </P-FloatLabel>
-      <div class="field flex items-center gap-2 mt-4">
-        <P-Checkbox v-model="editingPlayer.is_federated" :binary="true" inputId="editPlayerFederated" />
-        <label for="editPlayerFederated">É federado?</label>
-      </div>
-      <P-FloatLabel v-if="editingPlayer.is_federated" class="field" variant="on">
-        <P-InputText id="editPlayerFederationTeam" v-model="editingPlayer.federation_team" fluid />
-        <label for="editPlayerFederationTeam">Equipa Federada</label>
-      </P-FloatLabel>
-      <div v-if="editingPlayer.is_federated" class="field flex items-center gap-2 mt-4">
-        <P-Checkbox v-model="editingPlayer.federation_exams_up_to_date" :binary="true" inputId="editPlayerExams" />
-        <label for="editPlayerExams">Exames em dia?</label>
-      </div>
-    </div>
-    <template #footer>
-      <P-Button severity="secondary" @click="showEditPlayer = false">Cancelar</P-Button>
-      <P-Button @click="saveEditPlayer">Guardar</P-Button>
-    </template>
-  </P-Dialog>
-
-  <P-Dialog v-model:visible="showRemovePlayer" modal header="Remover Jogador" class="w-11/12 md:w-4/12">
+  <P-Dialog v-model:visible="showRemovePlayer" modal header="Remover Jogador" class="w-11/12 md:w-8/12">
     <p>Tem a certeza que deseja remover o jogador <strong>{{ playerToAction?.name }}</strong>?</p>
     <p class="text-red-600 mt-2">Esta ação não pode ser desfeita.</p>
     <template #footer>
@@ -137,48 +89,11 @@ const teamStore = useTeamStore();
 
 const showConfirmPlayer = ref(false);
 const showRemovePlayer = ref(false);
-const showEditPlayer = ref(false);
 const playerToAction = ref<{ id: string; name: string } | null>(null);
-const editingPlayer = ref<{ id: string; name: string; birth_date: Date | null; address: string; place_of_birth: string; fiscal_number: string; is_federated: boolean; federation_team: string; federation_exams_up_to_date: boolean }>({ id: "", name: "", birth_date: null, address: "", place_of_birth: "", fiscal_number: "", is_federated: false, federation_team: "", federation_exams_up_to_date: false });
 
 onMounted(async () => {
   await playerStore.getPlayers();
 });
-
-function promptEditPlayer(player: any) {
-  editingPlayer.value = {
-    id: player.id,
-    name: player.name,
-    birth_date: player.birth_date ? new Date(player.birth_date) : null,
-    address: player.address || "",
-    place_of_birth: player.place_of_birth || "",
-    fiscal_number: player.fiscal_number || "",
-    is_federated: player.is_federated || false,
-    federation_team: player.federation_team || "",
-    federation_exams_up_to_date: player.federation_exams_up_to_date || false
-  };
-  showEditPlayer.value = true;
-}
-
-async function saveEditPlayer() {
-  const result = await playerStore.updatePlayer(editingPlayer.value.id, {
-    name: editingPlayer.value.name,
-    birth_date: editingPlayer.value.birth_date,
-    address: editingPlayer.value.address,
-    place_of_birth: editingPlayer.value.place_of_birth,
-    fiscal_number: editingPlayer.value.fiscal_number,
-    is_federated: editingPlayer.value.is_federated,
-    federation_team: editingPlayer.value.federation_team,
-    federation_exams_up_to_date: editingPlayer.value.federation_exams_up_to_date
-  } as any);
-  if (result.success) {
-    toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador atualizado", life: 3000 });
-    showEditPlayer.value = false;
-    await playerStore.getPlayers();
-  } else {
-    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível atualizar o jogador", life: 3000 });
-  }
-}
 
 function promptConfirmPlayer(playerId: string, playerName: string) {
   playerToAction.value = { id: playerId, name: playerName };
@@ -206,16 +121,8 @@ async function confirmRemovePlayerAction() {
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador removido", life: 3000 });
     await teamStore.getTeams();
-  } else {
-    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível remover o jogador", life: 3000 });
   }
   showRemovePlayer.value = false;
   playerToAction.value = null;
 }
 </script>
-
-<style scoped>
-.field {
-  margin-top: 0.5rem;
-}
-</style>
