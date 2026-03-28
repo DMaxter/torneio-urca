@@ -131,19 +131,45 @@ async def add_team(team: CreateTeamDto, current_user=Depends(get_current_user)):
     tournament = await get_tournament(team.tournament)
     team_dict = team.model_dump()
     team_dict["tournament"] = ObjectId(team.tournament)
-    team_dict["main_coach"] = ObjectId(team.main_coach) if team.main_coach else None
-    team_dict["assistant_coach"] = (
-        ObjectId(team.assistant_coach) if team.assistant_coach else None
+    team_dict["main_coach"] = (
+        ObjectId(team.main_coach)
+        if team.main_coach
+        and team.main_coach not in (None, "None", "")
+        and team.main_coach.strip()
+        else None
     )
-    team_dict["players"] = [ObjectId(p) for p in team.players] if team.players else []
+    team_dict["assistant_coach"] = (
+        ObjectId(team.assistant_coach)
+        if team.assistant_coach
+        and team.assistant_coach not in (None, "None", "")
+        and team.assistant_coach.strip()
+        else None
+    )
+    team_dict["players"] = (
+        [ObjectId(p) for p in team.players if p and p not in (None, "None", "")]
+        if team.players
+        else []
+    )
     team_dict["physiotherapist"] = (
-        ObjectId(team.physiotherapist) if team.physiotherapist else None
+        ObjectId(team.physiotherapist)
+        if team.physiotherapist
+        and team.physiotherapist not in (None, "None", "")
+        and team.physiotherapist.strip()
+        else None
     )
     team_dict["first_deputy"] = (
-        ObjectId(team.first_deputy) if team.first_deputy else None
+        ObjectId(team.first_deputy)
+        if team.first_deputy
+        and team.first_deputy not in (None, "None", "")
+        and team.first_deputy.strip()
+        else None
     )
     team_dict["second_deputy"] = (
-        ObjectId(team.second_deputy) if team.second_deputy else None
+        ObjectId(team.second_deputy)
+        if team.second_deputy
+        and team.second_deputy not in (None, "None", "")
+        and team.second_deputy.strip()
+        else None
     )
     team_dict["valid"] = False
 
@@ -435,13 +461,31 @@ async def update_team(
 
     team_dict = team.model_dump()
     team_dict["tournament"] = ObjectId(team.tournament)
-    team_dict["main_coach"] = ObjectId(team.main_coach) if team.main_coach else None
-    team_dict["assistant_coach"] = (
-        ObjectId(team.assistant_coach) if team.assistant_coach else None
+    team_dict["main_coach"] = (
+        ObjectId(team.main_coach)
+        if team.main_coach
+        and team.main_coach not in (None, "None", "")
+        and team.main_coach.strip()
+        else None
     )
-    team_dict["players"] = [ObjectId(p) for p in team.players] if team.players else []
+    team_dict["assistant_coach"] = (
+        ObjectId(team.assistant_coach)
+        if team.assistant_coach
+        and team.assistant_coach not in (None, "None", "")
+        and team.assistant_coach.strip()
+        else None
+    )
+    team_dict["players"] = (
+        [ObjectId(p) for p in team.players if p and p not in (None, "None", "")]
+        if team.players
+        else []
+    )
     team_dict["physiotherapist"] = (
-        ObjectId(team.physiotherapist) if team.physiotherapist else None
+        ObjectId(team.physiotherapist)
+        if team.physiotherapist
+        and team.physiotherapist not in (None, "None", "")
+        and team.physiotherapist.strip()
+        else None
     )
 
     await db.db[TEAMS_COLLECTION].update_one(

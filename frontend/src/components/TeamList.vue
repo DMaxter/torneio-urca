@@ -71,35 +71,7 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="showEditTeam" modal header="Editar Equipa" class="w-11/12 md:w-8/12 lg:w-6/12">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-      <P-FloatLabel class="field" variant="on">
-        <P-InputText id="editTeamName" v-model="editingTeam.name" fluid />
-        <label for="editTeamName">Nome</label>
-      </P-FloatLabel>
-      <P-FloatLabel class="field" variant="on">
-        <P-Select id="editTeamTournament" v-model="editingTeam.tournament" :options="tournamentStore.tournaments"
-          optionLabel="name" optionValue="id" fluid />
-        <label for="editTeamTournament">Torneio</label>
-      </P-FloatLabel>
-      <P-FloatLabel class="field" variant="on">
-        <P-InputText id="editResponsibleName" v-model="editingTeam.responsible_name" fluid />
-        <label for="editResponsibleName">Responsável</label>
-      </P-FloatLabel>
-      <P-FloatLabel class="field" variant="on">
-        <P-InputText id="editResponsibleEmail" v-model="editingTeam.responsible_email" type="email" fluid />
-        <label for="editResponsibleEmail">Email</label>
-      </P-FloatLabel>
-      <P-FloatLabel class="field" variant="on">
-        <P-InputText id="editResponsiblePhone" v-model="editingTeam.responsible_phone" fluid />
-        <label for="editResponsiblePhone">Telemóvel</label>
-      </P-FloatLabel>
-    </div>
-    <template #footer>
-      <P-Button severity="secondary" @click="showEditTeam = false">Cancelar</P-Button>
-      <P-Button @click="saveEditTeam">Guardar</P-Button>
-    </template>
-  </P-Dialog>
+  <TeamManagement v-model="showEditTeam" :team="editingTeam" />
 
   <P-Dialog v-model:visible="showConfirmPlayer" modal header="Confirmar Jogador" class="w-11/12 md:w-4/12">
     <p>Tem a certeza que deseja confirmar o jogador <strong>{{ playerToAction?.name }}</strong>?</p>
@@ -265,14 +237,7 @@ async function confirmDeleteTeam() {
 }
 
 function promptEditTeam(team: any) {
-  editingTeam.value = {
-    id: team.id,
-    name: team.name,
-    tournament: team.tournament,
-    responsible_name: team.responsible_name,
-    responsible_email: team.responsible_email,
-    responsible_phone: team.responsible_phone
-  };
+  editingTeam.value = team;
   showEditTeam.value = true;
 }
 

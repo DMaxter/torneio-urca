@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useToast } from "primevue/usetoast";
 
 import { CreateTeam, type Team } from "@router/backend/services/team/types";
@@ -50,6 +50,14 @@ const props = defineProps<{
 const creating = computed(() => props.team === undefined);
 
 const team = ref<Team | CreateTeam>(new CreateTeam());
+
+watch(() => props.team, (newTeam) => {
+  if (newTeam) {
+    team.value = newTeam;
+  } else {
+    team.value = new CreateTeam();
+  }
+});
 
 onMounted(() => {
   if (!creating.value) {

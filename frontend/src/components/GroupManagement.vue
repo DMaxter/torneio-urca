@@ -6,12 +6,12 @@
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
       <P-Select v-model="group.tournament" id="tournament" :options="tournamentStore.tournaments"
-        optionLabel="name" optionValue="id" fluid />
+        optionLabel="name" optionValue="id" fluid @change="onTournamentChange" />
       <label for="tournament">Torneio</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
       <P-MultiSelect id="teams" v-model="group.teams" :showToggleAll="false" filter
-        :options="teamStore.teams" optionLabel="name" optionValue="id" fluid />
+        :options="getFilteredTeams()" optionLabel="name" optionValue="id" fluid />
       <label for="teams">Equipas</label>
     </P-FloatLabel>
     <template #footer>
@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useToast } from "primevue/usetoast";
 
 import { CreateGroup, type Group } from "@router/backend/services/group/types";
@@ -45,6 +45,14 @@ const creating = computed(() => props.group === undefined);
 
 const group = ref<Group | CreateGroup>(new CreateGroup());
 
+watch(() => props.group, (newGroup) => {
+  if (newGroup) {
+    group.value = newGroup;
+  } else {
+    group.value = new CreateGroup();
+  }
+});
+
 onMounted(() => {
   if (!creating.value) {
     group.value = props.group!
@@ -54,6 +62,15 @@ onMounted(() => {
 const groupStore = useGroupStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
+
+function getFilteredTeams() {
+  if (!group.value.tournament) return [];
+  return teamStore.teams.filter(t => t.tournament === group.value.tournament);
+}
+
+function onTournamentChange() {
+  group.value.teams = [];
+}
 
 async function createOrUpdate() {
   if (creating.value) {

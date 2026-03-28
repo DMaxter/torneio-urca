@@ -76,21 +76,7 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="showEditDialog" modal header="Editar Grupo" class="w-11/12 md:w-6/12">
-    <P-FloatLabel class="field" variant="on">
-      <P-InputText id="editName" v-model="editingGroup.name" fluid />
-      <label for="editName">Nome</label>
-    </P-FloatLabel>
-    <P-FloatLabel class="field mt-4" variant="on">
-      <P-MultiSelect id="editTeams" v-model="editingGroup.teams" :showToggleAll="false" filter
-        :options="teamStore.teams" optionLabel="name" optionValue="id" fluid />
-      <label for="editTeams">Equipas</label>
-    </P-FloatLabel>
-    <template #footer>
-      <P-Button severity="secondary" @click="showEditDialog = false">Cancelar</P-Button>
-      <P-Button @click="saveEditGroup">Guardar</P-Button>
-    </template>
-  </P-Dialog>
+  <GroupManagement v-model="showEditDialog" :group="editingGroup" />
 
   <P-Dialog v-model:visible="showDeleteDialog" modal header="Confirmar Eliminação" class="w-11/12 md:w-4/12">
     <p>Tem a certeza que deseja eliminar o grupo <strong>{{ groupToDelete?.name }}</strong>?</p>
@@ -102,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
@@ -118,7 +104,7 @@ const tournamentStore = useTournamentStore();
 const showEditDialog = ref(false);
 const showDeleteDialog = ref(false);
 const showViewTeams = ref(false);
-const editingGroup = ref<{ id: string; name: string; tournament: string; teams: string[] }>({ id: "", name: "", tournament: "", teams: [] });
+const editingGroup = ref<Group | undefined>(undefined);
 const groupToDelete = ref<{ id: string; name: string } | null>(null);
 const selectedGroupName = ref("");
 const groupTeams = ref<any[]>([]);
@@ -143,25 +129,8 @@ function viewGroupTeams(event: any) {
 }
 
 function promptEditGroup(group: Group) {
-  editingGroup.value = {
-    id: group.id,
-    name: group.name,
-    tournament: group.tournament,
-    teams: group.teams || []
-  };
+  editingGroup.value = group;
   showEditDialog.value = true;
-}
-
-async function saveEditGroup() {
-  const result = await groupStore.updateGroup(editingGroup.value.id, {
-    name: editingGroup.value.name,
-    tournament: editingGroup.value.tournament,
-    teams: editingGroup.value.teams
-  });
-  if (result.success) {
-    toast.add({ severity: "success", summary: "Sucesso", detail: "Grupo atualizado", life: 3000 });
-    showEditDialog.value = false;
-  }
 }
 
 function promptDeleteGroup(groupId: string, groupName: string) {
