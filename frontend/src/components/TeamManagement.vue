@@ -77,7 +77,13 @@ async function create() {
 }
 
 async function update() {
-  toast.add({ severity: "warn", summary: "Em desenvolvimento", detail: "Funcionalidade de edição ainda não disponível", life: 3000 });
+  const result = await teamStore.updateTeam(props.team!.id, team.value as CreateTeam);
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Equipa atualizada com sucesso", life: 3000 });
+    close();
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível atualizar a equipa", life: 3000 });
+  }
 }
 
 function close() {

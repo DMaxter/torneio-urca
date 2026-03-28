@@ -27,3 +27,7 @@ export async function confirmPlayer(playerId: string): Promise<AxiosResponse<Pla
 export async function deletePlayer(playerId: string): Promise<AxiosResponse<Player | Error>> {
   return await http.delete(`/players/${playerId}`);
 }
+
+export async function updatePlayer(playerId: string, player: CreatePlayer): Promise<AxiosResponse<Player | Error>> {
+  return await http.put(`/players/${playerId}`, player);
+}

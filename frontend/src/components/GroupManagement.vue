@@ -72,7 +72,13 @@ async function create() {
 }
 
 async function update() {
-  toast.add({ severity: "warn", summary: "Em desenvolvimento", detail: "Funcionalidade de edição ainda não disponível", life: 3000 });
+  const result = await groupStore.updateGroup(props.group!.id, group.value);
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Grupo atualizado com sucesso", life: 3000 });
+    close();
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível atualizar o grupo", life: 3000 });
+  }
 }
 
 function close() {

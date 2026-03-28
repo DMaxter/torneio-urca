@@ -168,6 +168,33 @@ async def delete_player(player_id: str, current_user=Depends(get_admin_user)):
     )
 
 
+@router.put("/{player_id}", response_model=PlayerDto)
+async def update_player(
+    player_id: str, player_data: CreatePlayerDto, current_user=Depends(get_admin_user)
+):
+    get_logger().info(f"[{current_user['username']}] Updating player '{player_id}'")
+    try:
+        existing_player = await db.db[PLAYERS_COLLECTION].find_one(
+            {"_id": ObjectId(player_id)}
+        )
+    except Exception:
+        raise Error.invalid_id("player")
+    if not existing_player:
+        raise Error.not_found("Player")
+
+    player_dict = player_data.model_dump()
+    await db.db[PLAYERS_COLLECTION].update_one(
+        {"_id": ObjectId(player_id)}, {"$set": player_dict}
+    )
+
+    updated_player = await db.db[PLAYERS_COLLECTION].find_one(
+        {"_id": ObjectId(player_id)}
+    )
+    get_logger().info(f"Player '{player_id}' updated successfully")
+
+    return player_to_dto(updated_player)
+
+
 async def get_player(player_id: str) -> dict:
     try:
         player = await db.db[PLAYERS_COLLECTION].find_one({"_id": ObjectId(player_id)})

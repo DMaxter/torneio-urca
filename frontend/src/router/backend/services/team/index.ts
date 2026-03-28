@@ -24,3 +24,7 @@ export async function createTeam(team: CreateTeam): Promise<AxiosResponse<Team |
 export async function deleteTeam(teamId: string): Promise<AxiosResponse<void | Error>> {
   return await http.delete(`/teams/${teamId}`);
 }
+
+export async function updateTeam(teamId: string, team: CreateTeam): Promise<AxiosResponse<Team | Error>> {
+  return await http.put(`/teams/${teamId}`, team);
+}

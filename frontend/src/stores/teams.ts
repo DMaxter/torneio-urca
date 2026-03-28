@@ -26,11 +26,25 @@ export const useTeamStore = defineStore("teamsStore", () => {
     }
   }
 
+  async function updateTeam(teamId: string, team: CreateTeam) {
+    try {
+      const { status, data } = await teamService.updateTeam(teamId, team);
+      if (status === 200) {
+        base.update(data as Team);
+        return { success: true };
+      }
+      return { success: false };
+    } catch {
+      return { success: false };
+    }
+  }
+
   return {
     teams,
     getTeams: base.getAll,
     createTeam: base.create,
     deleteTeam,
+    updateTeam,
     init: base.init,
     add: base.add,
     update: base.update,

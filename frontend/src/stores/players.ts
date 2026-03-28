@@ -51,6 +51,19 @@ export const usePlayerStore = defineStore("playersStore", () => {
     }
   }
 
+  async function updatePlayer(playerId: string, player: CreatePlayer) {
+    try {
+      const { status, data } = await playerService.updatePlayer(playerId, player);
+      if (status === 200) {
+        base.update(data as Player);
+        return { success: true, content: null };
+      }
+      return { success: false, content: null };
+    } catch {
+      return { success: false, content: null };
+    }
+  }
+
   return {
     players,
     getPlayers: base.getAll,
@@ -58,6 +71,7 @@ export const usePlayerStore = defineStore("playersStore", () => {
     createAdminPlayer,
     confirmPlayer,
     deletePlayer,
+    updatePlayer,
     init: base.init,
     add: base.add,
     update: base.update,

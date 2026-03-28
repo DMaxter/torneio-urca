@@ -11,3 +11,11 @@ export async function getGroups(): Promise<AxiosResponse<Group[] | Error>> {
 export async function createGroup(group: CreateGroup): Promise<AxiosResponse<Group | Error>> {
   return await http.post("/groups", group);
 }
+
+export async function updateGroup(groupId: string, group: CreateGroup): Promise<AxiosResponse<Group | Error>> {
+  return await http.put(`/groups/${groupId}`, group);
+}
+
+export async function deleteGroup(groupId: string): Promise<AxiosResponse<void | Error>> {
+  return await http.delete(`/groups/${groupId}`);
+}

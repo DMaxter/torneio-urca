@@ -31,6 +31,17 @@
           </P-Button>
         </template>
       </P-Column>
+      <P-Column header="Editar" class="w-3rem">
+        <template #body="{ data }">
+          <span
+            class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-blue-600 hover:bg-blue-50"
+            @click.stop="promptEditTeam(data)"
+            v-tooltip.top="'Editar equipa'"
+          >
+            edit
+          </span>
+        </template>
+      </P-Column>
       <P-Column header="Eliminar" class="w-5rem">
         <template #body="{ data }">
           <span
@@ -57,6 +68,36 @@
     <template #footer>
       <P-Button severity="secondary" @click="showDeleteConfirm = false">Cancelar</P-Button>
       <P-Button severity="danger" @click="confirmDeleteTeam">Eliminar</P-Button>
+    </template>
+  </P-Dialog>
+
+  <P-Dialog v-model:visible="showEditTeam" modal header="Editar Equipa" class="w-11/12 md:w-8/12 lg:w-6/12">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+      <P-FloatLabel class="field" variant="on">
+        <P-InputText id="editTeamName" v-model="editingTeam.name" fluid />
+        <label for="editTeamName">Nome</label>
+      </P-FloatLabel>
+      <P-FloatLabel class="field" variant="on">
+        <P-Select id="editTeamTournament" v-model="editingTeam.tournament" :options="tournamentStore.tournaments"
+          optionLabel="name" optionValue="id" fluid />
+        <label for="editTeamTournament">Torneio</label>
+      </P-FloatLabel>
+      <P-FloatLabel class="field" variant="on">
+        <P-InputText id="editResponsibleName" v-model="editingTeam.responsible_name" fluid />
+        <label for="editResponsibleName">Responsável</label>
+      </P-FloatLabel>
+      <P-FloatLabel class="field" variant="on">
+        <P-InputText id="editResponsibleEmail" v-model="editingTeam.responsible_email" type="email" fluid />
+        <label for="editResponsibleEmail">Email</label>
+      </P-FloatLabel>
+      <P-FloatLabel class="field" variant="on">
+        <P-InputText id="editResponsiblePhone" v-model="editingTeam.responsible_phone" fluid />
+        <label for="editResponsiblePhone">Telemóvel</label>
+      </P-FloatLabel>
+    </div>
+    <template #footer>
+      <P-Button severity="secondary" @click="showEditTeam = false">Cancelar</P-Button>
+      <P-Button @click="saveEditTeam">Guardar</P-Button>
     </template>
   </P-Dialog>
 
@@ -192,12 +233,14 @@ const showFileViewer = ref(false);
 const showDeleteConfirm = ref(false);
 const showConfirmPlayer = ref(false);
 const showRemovePlayer = ref(false);
+const showEditTeam = ref(false);
 const selectedTeamId = ref("");
 const selectedTeamName = ref("");
 const teamPlayers = ref<any[]>([]);
 const fileUrl = ref("");
 const teamToDelete = ref<{ id: string; name: string } | null>(null);
 const playerToAction = ref<{ id: string; name: string } | null>(null);
+const editingTeam = ref<{ id: string; name: string; tournament: string; responsible_name: string; responsible_email: string; responsible_phone: string }>({ id: "", name: "", tournament: "", responsible_name: "", responsible_email: "", responsible_phone: "" });
 
 function getTournamentName(tournamentId: string): string {
   const tournament = tournamentStore.tournaments.find(t => t.id === tournamentId);
@@ -218,6 +261,36 @@ async function confirmDeleteTeam() {
     teamToDelete.value = null;
   } else {
     toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível eliminar a equipa", life: 3000 });
+  }
+}
+
+function promptEditTeam(team: any) {
+  editingTeam.value = {
+    id: team.id,
+    name: team.name,
+    tournament: team.tournament,
+    responsible_name: team.responsible_name,
+    responsible_email: team.responsible_email,
+    responsible_phone: team.responsible_phone
+  };
+  showEditTeam.value = true;
+}
+
+async function saveEditTeam() {
+  const result = await teamStore.updateTeam(editingTeam.value.id, {
+    name: editingTeam.value.name,
+    tournament: editingTeam.value.tournament,
+    responsible_name: editingTeam.value.responsible_name,
+    responsible_email: editingTeam.value.responsible_email,
+    responsible_phone: editingTeam.value.responsible_phone,
+    players: []
+  } as any);
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Equipa atualizada", life: 3000 });
+    showEditTeam.value = false;
+    await teamStore.getTeams();
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível atualizar a equipa", life: 3000 });
   }
 }
 

@@ -416,3 +416,39 @@ async def delete_team(team_id: str, current_user=Depends(get_admin_user)):
 
     await db.db[TEAMS_COLLECTION].delete_one({"_id": ObjectId(team_id)})
     get_logger().info(f"Team '{team_id}' deleted successfully")
+
+
+@router.put("/{team_id}", response_model=TeamDto)
+async def update_team(
+    team_id: str, team: CreateTeamDto, current_user=Depends(get_admin_user)
+):
+    """Update a team."""
+    get_logger().info(f"[{current_user['username']}] Updating team '{team_id}'")
+    try:
+        existing_team = await db.db[TEAMS_COLLECTION].find_one(
+            {"_id": ObjectId(team_id)}
+        )
+    except Exception:
+        raise Error.invalid_id("team")
+    if not existing_team:
+        raise Error.not_found("Team")
+
+    team_dict = team.model_dump()
+    team_dict["tournament"] = ObjectId(team.tournament)
+    team_dict["main_coach"] = ObjectId(team.main_coach) if team.main_coach else None
+    team_dict["assistant_coach"] = (
+        ObjectId(team.assistant_coach) if team.assistant_coach else None
+    )
+    team_dict["players"] = [ObjectId(p) for p in team.players] if team.players else []
+    team_dict["physiotherapist"] = (
+        ObjectId(team.physiotherapist) if team.physiotherapist else None
+    )
+
+    await db.db[TEAMS_COLLECTION].update_one(
+        {"_id": ObjectId(team_id)}, {"$set": team_dict}
+    )
+
+    updated_team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    get_logger().info(f"Team '{team_id}' updated successfully")
+
+    return team_to_dto(updated_team)
