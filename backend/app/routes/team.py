@@ -12,7 +12,7 @@ from app.schemas.schemas import CreateTeamDto, TeamDto, StaffType
 from app.error import Error
 from app.constants import MIN_PLAYERS, MIN_AGE
 from app.utils import calculate_age, get_logger
-from app.utils.auth import get_current_user, get_admin_user
+from app.utils.auth import get_current_user
 from datetime import datetime
 import json
 
@@ -413,7 +413,7 @@ async def get_team_players(team_id: str):
 
 
 @router.delete("/{team_id}", status_code=204)
-async def delete_team(team_id: str, current_user=Depends(get_admin_user)):
+async def delete_team(team_id: str, current_user=Depends(get_current_user)):
     """Delete a team and all its players."""
     get_logger().info(f"[{current_user['username']}] Deleting team '{team_id}'")
     try:
@@ -446,7 +446,7 @@ async def delete_team(team_id: str, current_user=Depends(get_admin_user)):
 
 @router.put("/{team_id}", response_model=TeamDto)
 async def update_team(
-    team_id: str, team: CreateTeamDto, current_user=Depends(get_admin_user)
+    team_id: str, team: CreateTeamDto, current_user=Depends(get_current_user)
 ):
     """Update a team."""
     get_logger().info(f"[{current_user['username']}] Updating team '{team_id}'")

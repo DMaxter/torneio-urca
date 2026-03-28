@@ -6,9 +6,13 @@
           <h1 class="text-xl font-bold text-stone-900 mb-1 md:text-2xl">Painel de Administração</h1>
           <p class="text-stone-500 text-sm md:text-base">Gerir torneios, equipas, jogadores e muito mais</p>
         </div>
+        <P-Button severity="secondary" @click="changePassword = true">
+          <span class="material-symbols-outlined">lock</span>
+          <span class="hidden sm:inline">Alterar Palavra-passe</span>
+        </P-Button>
         <P-Button severity="secondary" @click="handleLogout">
           <span class="material-symbols-outlined">logout</span>
-          Sair
+          <span class="hidden sm:inline">Sair</span>
         </P-Button>
       </div>
     </div>
@@ -47,6 +51,7 @@
     <TournamentManagement v-model="manageTournament" />
     <UserList v-model="listUsers" />
     <UserManagement v-model="manageUser" />
+    <ChangePasswordDialog v-model="changePassword" />
   </div>
 </template>
 
@@ -67,6 +72,7 @@ const listUsers = ref(false);
 const manageUser = ref(false);
 const listTeams = ref(false);
 const manageTeam = ref(false);
+const changePassword = ref(false);
 const listPlayers = ref(false);
 const createPlayer = ref(false);
 const listGroups = ref(false);

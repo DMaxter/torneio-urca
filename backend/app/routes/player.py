@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from database import db, PLAYERS_COLLECTION
 from app.schemas.schemas import CreatePlayerDto, CreateAdminPlayerDto, PlayerDto
 from app.error import Error
-from app.utils.auth import get_current_user, get_admin_user
+from app.utils.auth import get_current_user
 from app.utils import get_logger
 
 router = APIRouter(prefix="/players", tags=["Players"])
@@ -43,7 +43,7 @@ async def add_player(player: CreatePlayerDto, current_user=Depends(get_current_u
 @router.post("/admin", response_model=PlayerDto, status_code=201)
 async def add_player_admin(
     player_data: CreateAdminPlayerDto,
-    current_user=Depends(get_admin_user),
+    current_user=Depends(get_current_user),
 ):
     get_logger().info(
         f"[{current_user['username']}] Creating player '{player_data.name}' for team '{player_data.team}'"
@@ -144,7 +144,7 @@ async def confirm_player(player_id: str, current_user=Depends(get_current_user))
 
 
 @router.delete("/{player_id}", status_code=204)
-async def delete_player(player_id: str, current_user=Depends(get_admin_user)):
+async def delete_player(player_id: str, current_user=Depends(get_current_user)):
     get_logger().info(f"[{current_user['username']}] Deleting player '{player_id}'")
     try:
         result = await db.db[PLAYERS_COLLECTION].delete_one(
@@ -170,7 +170,7 @@ async def delete_player(player_id: str, current_user=Depends(get_admin_user)):
 
 @router.put("/{player_id}", response_model=PlayerDto)
 async def update_player(
-    player_id: str, player_data: CreatePlayerDto, current_user=Depends(get_admin_user)
+    player_id: str, player_data: CreatePlayerDto, current_user=Depends(get_current_user)
 ):
     get_logger().info(f"[{current_user['username']}] Updating player '{player_id}'")
     try:

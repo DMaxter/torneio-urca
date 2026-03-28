@@ -70,6 +70,7 @@ app.directive("tooltip", Tooltip);
 
 // Custom components
 import AdminPlayerForm from "@components/AdminPlayerForm.vue";
+import ChangePasswordDialog from "@components/ChangePasswordDialog.vue";
 import CustomFileUpload from "@components/forms/FileUpload.vue";
 import FooterBar from "@components/FooterBar.vue";
 import GameList from "@components/GameList.vue";
@@ -89,6 +90,7 @@ import UserList from "@components/UserList.vue";
 import UserManagement from "@components/UserManagement.vue";
 
 app.component("AdminPlayerForm", AdminPlayerForm);
+app.component("ChangePasswordDialog", ChangePasswordDialog);
 app.component("FileUpload", CustomFileUpload);
 app.component("FooterBar", FooterBar);
 app.component("GameList", GameList);
