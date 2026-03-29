@@ -62,12 +62,6 @@ def registar_equipa(
     responsavel: str,
     email: str,
     telefone: str,
-    treinador: str,
-    treinador_dn: str,
-    fisiatra: str,
-    fisiatra_dn: str,
-    delegado: str,
-    delegado_dn: str,
     jogadores: list[dict],
 ) -> str:
     print(f"  A registar equipa '{nome}'...")
@@ -80,12 +74,6 @@ def registar_equipa(
         "responsible_name": responsavel,
         "responsible_email": email,
         "responsible_phone": telefone,
-        "main_coach_name": treinador,
-        "main_coach_birth_date": treinador_dn,
-        "physiotherapist_name": fisiatra,
-        "physiotherapist_birth_date": fisiatra_dn,
-        "first_deputy_name": delegado,
-        "first_deputy_birth_date": delegado_dn,
         "players_json": players_json,
     }
 
@@ -166,12 +154,6 @@ EQUIPAS = [
         "responsavel": "Carlos Silva",
         "email": "carlos@fcportodemos.pt",
         "telefone": "912345678",
-        "treinador": "António Ferreira",
-        "treinador_dn": "1975-06-15T00:00:00",
-        "fisiatra": "Rui Costa",
-        "fisiatra_dn": "1980-03-20T00:00:00",
-        "delegado": "João Matos",
-        "delegado_dn": "1978-11-05T00:00:00",
         "jogadores": [
             {"name": "Miguel Rodrigues",   "birth_date": "1998-04-10T00:00:00", "fiscal_number": "123456001"},
             {"name": "Diogo Alves",        "birth_date": "2000-07-22T00:00:00", "fiscal_number": "123456002"},
@@ -188,12 +170,6 @@ EQUIPAS = [
         "responsavel": "Manuel Correia",
         "email": "manuel@gdbatalha.pt",
         "telefone": "913456789",
-        "treinador": "Luís Marques",
-        "treinador_dn": "1972-09-08T00:00:00",
-        "fisiatra": "Paulo Lopes",
-        "fisiatra_dn": "1983-07-14T00:00:00",
-        "delegado": "Sérgio Nunes",
-        "delegado_dn": "1979-04-30T00:00:00",
         "jogadores": [
             {"name": "Filipe Sousa",       "birth_date": "1999-03-05T00:00:00", "fiscal_number": "223456001"},
             {"name": "Bernardo Lima",      "birth_date": "2001-11-19T00:00:00", "fiscal_number": "223456002"},
@@ -210,12 +186,6 @@ EQUIPAS = [
         "responsavel": "Fernando Dias",
         "email": "fernando@adadm.pt",
         "telefone": "914567890",
-        "treinador": "Ricardo Teixeira",
-        "treinador_dn": "1974-02-18T00:00:00",
-        "fisiatra": "Bruno Vieira",
-        "fisiatra_dn": "1985-05-25T00:00:00",
-        "delegado": "Álvaro Brito",
-        "delegado_dn": "1977-08-12T00:00:00",
         "jogadores": [
             {"name": "Leandro Mendes",     "birth_date": "1998-09-14T00:00:00", "fiscal_number": "323456001"},
             {"name": "Renato Esteves",     "birth_date": "2000-03-31T00:00:00", "fiscal_number": "323456002"},
@@ -232,12 +202,6 @@ EQUIPAS = [
         "responsavel": "Joaquim Faria",
         "email": "joaquim@scleiria.pt",
         "telefone": "915678901",
-        "treinador": "Sílvio Cardoso",
-        "treinador_dn": "1973-11-03T00:00:00",
-        "fisiatra": "Dário Freitas",
-        "fisiatra_dn": "1982-04-17T00:00:00",
-        "delegado": "Edmundo Ramos",
-        "delegado_dn": "1976-09-28T00:00:00",
         "jogadores": [
             {"name": "Cláudio Machado",    "birth_date": "1999-02-19T00:00:00", "fiscal_number": "423456001"},
             {"name": "Nélson Borges",      "birth_date": "2000-06-07T00:00:00", "fiscal_number": "423456002"},
@@ -289,9 +253,6 @@ def main():
             eid = registar_equipa(
                 client, token, torneio_id,
                 e["nome"], e["responsavel"], e["email"], e["telefone"],
-                e["treinador"], e["treinador_dn"],
-                e["fisiatra"], e["fisiatra_dn"],
-                e["delegado"], e["delegado_dn"],
                 e["jogadores"],
             )
             equipa_ids.append(eid)
