@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 import jwt
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Response
 from database import db, USERS_COLLECTION
 from app.routes.user import verify_password
 from app.config import get_settings
@@ -12,6 +12,7 @@ settings = get_settings()
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
+COOKIE_NAME = "auth_token"
 
 
 class LoginDto(BaseModel):
@@ -32,7 +33,7 @@ def create_access_token(data: dict) -> str:
 
 
 @router.post("/login", response_model=TokenDto)
-async def login(credentials: LoginDto):
+async def login(credentials: LoginDto, response: Response):
     get_logger().info(f"Login attempt for user '{credentials.username}'")
     user = await db.db[USERS_COLLECTION].find_one({"username": credentials.username})
     if not user or not verify_password(credentials.password, user["password"]):
@@ -44,4 +45,19 @@ async def login(credentials: LoginDto):
         )
     token = create_access_token({"sub": user["username"], "user_id": str(user["_id"])})
     get_logger().info(f"User '{credentials.username}' logged in successfully")
+
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        expires=datetime.now(timezone.utc)
+        + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+    )
     return TokenDto(access_token=token)
+
+
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie(key=COOKIE_NAME)
+    return {"message": "Logged out"}

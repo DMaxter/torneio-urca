@@ -1,28 +1,22 @@
 import axios from "axios";
 
-const TOKEN_KEY = "auth_token";
-
 export const http = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL
+  baseURL: import.meta.env.VITE_BACKEND_URL,
+  withCredentials: true,
 });
 
 let toast: any = null;
+let lastErrorMessage = "";
+let lastErrorTime = 0;
 
 export function setToast(toastInstance: any) {
   toast = toastInstance;
 }
 
-http.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 http.interceptors.response.use(
   (response) => response,
   (error) => {
+    const now = Date.now();
     let message = "Erro ao comunicar com o servidor";
     
     const responseData = error.response?.data;
@@ -34,8 +28,10 @@ http.interceptors.response.use(
         message = data.message;
       }
     }
-    
-    if (toast) {
+
+    if (toast && (message !== lastErrorMessage || now - lastErrorTime > 500)) {
+      lastErrorMessage = message;
+      lastErrorTime = now;
       toast.add({ severity: "error", summary: "Erro", detail: message, life: 5000 });
     }
     return Promise.reject(error);

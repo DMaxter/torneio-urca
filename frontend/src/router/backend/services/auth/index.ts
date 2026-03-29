@@ -7,3 +7,7 @@ import type { LoginCredentials, Token } from "@router/backend/services/auth/type
 export async function login(credentials: LoginCredentials): Promise<AxiosResponse<Token | Error>> {
   return await http.post("/auth/login", credentials);
 }
+
+export async function logout(): Promise<AxiosResponse<void | Error>> {
+  return await http.post("/auth/logout");
+}

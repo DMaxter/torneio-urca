@@ -5,23 +5,33 @@ import { useRouter } from "vue-router";
 import type { LoginCredentials } from "@router/backend/services/auth/types";
 import * as authService from "@router/backend/services/auth";
 
-const TOKEN_KEY = "auth_token";
+const COOKIE_NAME = "auth_token";
+
+function getCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  return match ? match[2] : null;
+}
+
+function decodeToken(tokenStr: string): { user_id: string | null; username: string | null } {
+  try {
+    const parts = tokenStr.split(".");
+    if (parts.length !== 3) return { user_id: null, username: null };
+    const payload = JSON.parse(atob(parts[1]));
+    return {
+      user_id: payload.user_id || null,
+      username: payload.sub || null,
+    };
+  } catch {
+    return { user_id: null, username: null };
+  }
+}
+
+const storedToken = getCookie(COOKIE_NAME);
+const initialDecoded = storedToken
+  ? decodeToken(storedToken)
+  : { user_id: null, username: null };
 
 export const useAuthStore = defineStore("auth", () => {
-  const storedToken = localStorage.getItem(TOKEN_KEY);
-  const initialDecoded = storedToken
-    ? (() => {
-        try {
-          const parts = storedToken.split(".");
-          if (parts.length !== 3) return { user_id: null, username: null };
-          const payload = JSON.parse(atob(parts[1]));
-          return { user_id: payload.user_id || null, username: payload.sub || null };
-        } catch {
-          return { user_id: null, username: null };
-        }
-      })()
-    : { user_id: null, username: null };
-
   const token = ref<string | null>(storedToken);
   const username = ref<string | null>(initialDecoded.username);
   const userId = ref<string | null>(initialDecoded.user_id);
@@ -29,23 +39,8 @@ export const useAuthStore = defineStore("auth", () => {
 
   const isAuthenticated = computed(() => !!token.value);
 
-  function decodeToken(tokenStr: string): { user_id: string | null; username: string | null } {
-    try {
-      const parts = tokenStr.split(".");
-      if (parts.length !== 3) return { user_id: null, username: null };
-      const payload = JSON.parse(atob(parts[1]));
-      return {
-        user_id: payload.user_id || null,
-        username: payload.sub || null,
-      };
-    } catch {
-      return { user_id: null, username: null };
-    }
-  }
-
   function setToken(newToken: string) {
     token.value = newToken;
-    localStorage.setItem(TOKEN_KEY, newToken);
     const decoded = decodeToken(newToken);
     userId.value = decoded.user_id;
     username.value = decoded.username;
@@ -55,7 +50,6 @@ export const useAuthStore = defineStore("auth", () => {
     token.value = null;
     username.value = null;
     userId.value = null;
-    localStorage.removeItem(TOKEN_KEY);
   }
 
   async function login(credentials: LoginCredentials): Promise<{ success: boolean; content?: string }> {
@@ -71,7 +65,11 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  function logout() {
+  async function logout() {
+    try {
+      await authService.logout();
+    } catch {
+    }
     clearToken();
     router.push("/login");
   }

@@ -1,11 +1,20 @@
 from typing import List
 from bson import ObjectId
 from fastapi import APIRouter, Depends
-from database import db, GROUPS_COLLECTION, TOURNAMENTS_COLLECTION
+from pydantic import BaseModel
+from database import (
+    db,
+    GROUPS_COLLECTION,
+    TOURNAMENTS_COLLECTION,
+    GAMES_COLLECTION,
+    GAME_CALLS_COLLECTION,
+    TEAMS_COLLECTION,
+)
 from app.schemas.schemas import CreateGroupDto, GroupDto
 from app.error import Error
 from app.utils.auth import get_current_user
 from app.utils import get_logger
+from app.models.models import GameStatus
 
 router = APIRouter(prefix="/groups", tags=["Groups"])
 
@@ -144,4 +153,139 @@ async def delete_group(group_id: str, current_user=Depends(get_current_user)):
     await db.db[GROUPS_COLLECTION].delete_one({"_id": ObjectId(group_id)})
     get_logger().info(
         f"[{current_user['username']}] Group '{group_id}' deleted successfully"
+    )
+
+
+class TeamStanding(BaseModel):
+    team_id: str
+    team_name: str
+    points: int
+    games: int
+    wins: int
+    ties: int
+    losses: int
+    goals_scored: int
+    goals_suffered: int
+    goal_difference: int
+
+
+class ClassificationDto(BaseModel):
+    group_id: str
+    group_name: str
+    standings: List[TeamStanding]
+
+
+@router.get("/{group_id}/classification", response_model=ClassificationDto)
+async def get_classification(group_id: str):
+    try:
+        group = await db.db[GROUPS_COLLECTION].find_one({"_id": ObjectId(group_id)})
+    except Exception:
+        raise Error.invalid_id("group")
+    if not group:
+        raise Error.not_found("Group")
+
+    team_ids = [str(t) for t in group.get("teams", [])]
+
+    if not team_ids:
+        return ClassificationDto(
+            group_id=group_id, group_name=group["name"], standings=[]
+        )
+
+    teams = (
+        await db.db[TEAMS_COLLECTION]
+        .find({"_id": {"$in": [ObjectId(t) for t in team_ids]}})
+        .to_list(100)
+    )
+    teams_map = {str(t["_id"]): t["name"] for t in teams}
+
+    games = (
+        await db.db[GAMES_COLLECTION]
+        .find({"tournament": group["tournament"], "status": GameStatus.Finished})
+        .to_list(1000)
+    )
+
+    calls = await db.db[GAME_CALLS_COLLECTION].find().to_list(1000)
+    calls_map = {str(c["_id"]): c for c in calls}
+
+    standings = {
+        team_id: {
+            "team_id": team_id,
+            "team_name": teams_map.get(team_id, "Unknown"),
+            "points": 0,
+            "games": 0,
+            "wins": 0,
+            "ties": 0,
+            "losses": 0,
+            "goals_scored": 0,
+            "goals_suffered": 0,
+        }
+        for team_id in team_ids
+    }
+
+    for game in games:
+        home_call = calls_map.get(str(game.get("home_call")))
+        away_call = calls_map.get(str(game.get("away_call")))
+        if not home_call or not away_call:
+            continue
+
+        home_team_id = str(home_call.get("team"))
+        away_team_id = str(away_call.get("team"))
+
+        if home_team_id not in team_ids or away_team_id not in team_ids:
+            continue
+
+        home_goals = 0
+        away_goals = 0
+        for event in game.get("events", []):
+            if event.get("type") == "Goal":
+                event_team = str(event.get("team_id"))
+                if event_team == home_team_id:
+                    home_goals += 1
+                elif event_team == away_team_id:
+                    away_goals += 1
+
+        standings[home_team_id]["games"] += 1
+        standings[away_team_id]["games"] += 1
+        standings[home_team_id]["goals_scored"] += home_goals
+        standings[home_team_id]["goals_suffered"] += away_goals
+        standings[away_team_id]["goals_scored"] += away_goals
+        standings[away_team_id]["goals_suffered"] += home_goals
+
+        if home_goals > away_goals:
+            standings[home_team_id]["wins"] += 1
+            standings[home_team_id]["points"] += 3
+            standings[away_team_id]["losses"] += 1
+        elif home_goals < away_goals:
+            standings[away_team_id]["wins"] += 1
+            standings[away_team_id]["points"] += 3
+            standings[home_team_id]["losses"] += 1
+        else:
+            standings[home_team_id]["ties"] += 1
+            standings[away_team_id]["ties"] += 1
+            standings[home_team_id]["points"] += 1
+            standings[away_team_id]["points"] += 1
+
+    result = []
+    for s in standings.values():
+        goal_diff = int(s["goals_scored"]) - int(s["goals_suffered"])
+        result.append(
+            TeamStanding(
+                team_id=s["team_id"],
+                team_name=s["team_name"],
+                points=int(s["points"]),
+                games=int(s["games"]),
+                wins=int(s["wins"]),
+                ties=int(s["ties"]),
+                losses=int(s["losses"]),
+                goals_scored=int(s["goals_scored"]),
+                goals_suffered=int(s["goals_suffered"]),
+                goal_difference=goal_diff,
+            )
+        )
+
+    result.sort(key=lambda x: (-x.points, -x.goal_difference, -x.goals_scored))
+
+    get_logger().info(f"Retrieved classification for group '{group_id}'")
+    return ClassificationDto(
+        group_id=group_id, group_name=group["name"], standings=result
     )
