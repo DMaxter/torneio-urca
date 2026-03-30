@@ -1,11 +1,11 @@
 from pydantic import BaseModel
 import jwt
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, HTTPException, status, Response
+from fastapi import APIRouter, HTTPException, status, Response, Request
 from database import db, USERS_COLLECTION
 from app.routes.user import verify_password
 from app.config import get_settings
-from app.utils import get_logger
+from app.utils import get_logger, decode_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 settings = get_settings()
@@ -23,6 +23,11 @@ class LoginDto(BaseModel):
 class TokenDto(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class CurrentUserDto(BaseModel):
+    username: str
+    user_id: str
 
 
 def create_access_token(data: dict) -> str:
@@ -46,18 +51,42 @@ async def login(credentials: LoginDto, response: Response):
     token = create_access_token({"sub": user["username"], "user_id": str(user["_id"])})
     get_logger().info(f"User '{credentials.username}' logged in successfully")
 
-    response.set_cookie(
-        key=COOKIE_NAME,
-        value=token,
-        httponly=True,
-        samesite="lax",
-        expires=datetime.now(timezone.utc)
-        + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
+    cookie_params = {
+        "key": COOKIE_NAME,
+        "value": token,
+        "httponly": True,
+        "max_age": 60 * 60 * 24,
+    }
+    if settings.production:
+        cookie_params["secure"] = True
+        cookie_params["samesite"] = "none"
+    else:
+        cookie_params["samesite"] = "lax"
+
+    response.set_cookie(**cookie_params)
     return TokenDto(access_token=token)
 
 
 @router.post("/logout")
 async def logout(response: Response):
-    response.delete_cookie(key=COOKIE_NAME)
+    cookie_params = {"key": COOKIE_NAME}
+    if settings.production:
+        cookie_params["secure"] = True
+        cookie_params["samesite"] = "none"
+    else:
+        cookie_params["samesite"] = "lax"
+    response.delete_cookie(**cookie_params)
     return {"message": "Logged out"}
+
+
+@router.get("/me", response_model=CurrentUserDto | None)
+async def get_current_user(request: Request):
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        return None
+    payload = decode_token(token, settings.jwt_secret)
+    if not payload:
+        return None
+    return CurrentUserDto(
+        username=payload.get("sub", ""), user_id=payload.get("user_id", "")
+    )

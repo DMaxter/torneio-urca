@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory } from "vue-router"
+import { createRouter, createWebHistory } from "vue-router";
+import { useAuthStore } from "@stores/auth";
 
 const routes = [
   {
@@ -53,30 +54,14 @@ const router = createRouter({
   routes: routes,
 })
 
-function isTokenExpired(token: string): boolean {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return true;
-    const payload = JSON.parse(atob(parts[1]));
-    if (!payload.exp) return true;
-    return Date.now() >= payload.exp * 1000;
-  } catch {
-    return true;
+router.beforeEach(async (to, _from, next) => {
+  const authStore = useAuthStore();
+  await authStore.init();
+  
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    return next("/login");
   }
-}
-
-function getCookie(name: string): string | null {
-  const match = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
-  return match ? match[2] : null;
-}
-
-router.beforeEach((to, _from, next) => {
-  const token = getCookie("auth_token");
-  if (to.meta.requiresAuth && (!token || isTokenExpired(token))) {
-    next("/login");
-  } else {
-    next();
-  }
+  return next();
 });
 
 export default router

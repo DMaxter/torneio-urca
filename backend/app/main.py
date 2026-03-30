@@ -26,7 +26,21 @@ LOGGING_FORMAT = (
 )
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-logging.basicConfig(level=logging.INFO, format=LOGGING_FORMAT, datefmt=DATE_FORMAT)
+
+class RequestIdFormatter(logging.Formatter):
+    def format(self, record):
+        record.request_id = REQUEST_ID.get("-")
+        return super().format(record)
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format=LOGGING_FORMAT,
+    datefmt=DATE_FORMAT,
+    handlers=[logging.StreamHandler()],
+)
+for handler in logging.root.handlers:
+    handler.setFormatter(RequestIdFormatter(LOGGING_FORMAT))
 logger = logging.getLogger(__name__)
 
 
@@ -54,7 +68,7 @@ app = FastAPI(title="URCA Tournament API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

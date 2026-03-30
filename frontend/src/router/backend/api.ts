@@ -16,6 +16,8 @@ export function setToast(toastInstance: any) {
 http.interceptors.response.use(
   (response) => response,
   (error) => {
+    const url = error.config?.url || "";
+    const status = error.response?.status;
     const now = Date.now();
     let message = "Erro ao comunicar com o servidor";
     
@@ -27,6 +29,11 @@ http.interceptors.response.use(
       } else if (data?.message) {
         message = data.message;
       }
+    }
+
+    const isAuthEndpoint = url.includes("/auth/me");
+    if (isAuthEndpoint && status === 200 && !responseData) {
+      return Promise.resolve({ data: null } as any);
     }
 
     if (toast && (message !== lastErrorMessage || now - lastErrorTime > 500)) {

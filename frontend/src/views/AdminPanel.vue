@@ -63,14 +63,16 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 
 import { useAuthStore } from "@stores/auth";
 import type { Game } from "@router/backend/services/game/types";
 
+const router = useRouter();
 const authStore = useAuthStore();
 
 function handleLogout() {
-  authStore.logout();
+  authStore.logout(router);
 }
 
 function onRegisterGame(_game: Game) {

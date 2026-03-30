@@ -47,12 +47,11 @@ async function handleLogin() {
   }
 
   loading.value = true;
-  const result = await authStore.login(credentials.value);
+  const result = await authStore.login(credentials.value, router);
   loading.value = false;
 
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Sessão iniciada", life: 2000 });
-    router.push("/admin");
   }
 }
 </script>
