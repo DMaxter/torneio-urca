@@ -39,10 +39,13 @@
       </div>
     </div>
 
+    <GameDaysDialog v-model="gameDays" />
     <GameList v-model="listGames" />
     <GameManagement v-model="manageGame" />
     <GroupList v-model="listGroups" />
     <GroupManagement v-model="manageGroup" />
+    <GenerateGroupsDialog v-model="generateGroups" />
+    <GroupView v-model="viewGroups" />
     <TeamList v-model="listTeams" />
     <TeamManagement v-model="manageTeam" />
     <PlayerList v-model="listPlayers" />
@@ -77,8 +80,11 @@ const listPlayers = ref(false);
 const createPlayer = ref(false);
 const listGroups = ref(false);
 const manageGroup = ref(false);
+const generateGroups = ref(false);
+const viewGroups = ref(false);
 const listGames = ref(false);
 const manageGame = ref(false);
+const gameDays = ref(false);
 
 interface Action {
   label: string;
@@ -131,6 +137,8 @@ const sections: Section[] = [
     icon: "📋",
     actions: [
       { label: "Criar", icon: "add", severity: "success", handler: () => manageGroup.value = true },
+      { label: "Gerar", icon: "auto_awesome", severity: "info", handler: () => generateGroups.value = true },
+      { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGroups.value = true },
       { label: "Listar", icon: "list", handler: () => listGroups.value = true }
     ]
   },
@@ -139,6 +147,7 @@ const sections: Section[] = [
     icon: "🎮",
     actions: [
       { label: "Criar", icon: "add", severity: "success", handler: () => manageGame.value = true },
+      { label: "Dias de Jogo", icon: "calendar_month", severity: "info", handler: () => gameDays.value = true },
       { label: "Listar", icon: "list", handler: () => listGames.value = true }
     ]
   }
