@@ -118,7 +118,7 @@ class CreateGameCallDto(BaseModel):
 
 class CreateGameDto(BaseModel):
     tournament: str
-    scheduled_date: datetime
+    scheduled_date: Optional[datetime] = None
     home_call: CreateGameCallDto
     away_call: CreateGameCallDto
 
@@ -137,7 +137,8 @@ class GameEventDto(BaseModel):
 
 class GameDto(BaseModel):
     id: str
-    scheduled_date: datetime
+    tournament: str
+    scheduled_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     finish_date: Optional[datetime] = None
     status: GameStatus
@@ -157,6 +158,21 @@ class GroupDto(BaseModel):
     tournament: str
     name: str
     teams: List[str]
+
+
+class CreateGameDayDto(BaseModel):
+    tournament: str
+    date: str
+    num_games: int
+    start_time: str
+
+
+class GameDayDto(BaseModel):
+    id: str
+    tournament: str
+    date: str
+    num_games: int
+    start_time: str
 
 
 class AssignGoalDto(BaseModel):

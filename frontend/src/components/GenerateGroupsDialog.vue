@@ -1,67 +1,92 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal header="Gerar Grupos" class="w-11/12 md:w-8/12 lg:w-6/12">
     <div class="flex flex-col gap-4">
-      <P-FloatLabel variant="on">
-        <P-Select
-          id="tournament"
-          v-model="selectedTournament"
-          :options="availableTournaments"
-          optionLabel="name"
-          optionValue="id"
-          optionDisabled="disabled"
-          fluid
-          @change="onTournamentChange"
-        />
-        <label for="tournament">Torneio</label>
-      </P-FloatLabel>
+      <template v-if="!finalGroups.length">
+        <P-FloatLabel variant="on">
+          <P-Select
+            id="tournament"
+            v-model="selectedTournament"
+            :options="availableTournaments"
+            optionLabel="name"
+            optionValue="id"
+            optionDisabled="disabled"
+            fluid
+            @change="onTournamentChange"
+          />
+          <label for="tournament">Torneio</label>
+        </P-FloatLabel>
 
-      <P-FloatLabel variant="on">
-        <P-Select
-          id="numGroups"
-          v-model="numGroups"
-          :options="groupOptions"
-          optionLabel="label"
-          optionValue="value"
-          fluid
-          :disabled="!selectedTournament"
-          @change="computePreview"
-        />
-        <label for="numGroups">Número de Grupos</label>
-      </P-FloatLabel>
+        <P-FloatLabel variant="on">
+          <P-Select
+            id="numGroups"
+            v-model="numGroups"
+            :options="groupOptions"
+            optionLabel="label"
+            optionValue="value"
+            fluid
+            :disabled="!selectedTournament"
+            @change="computePreview"
+          />
+          <label for="numGroups">Número de Grupos</label>
+        </P-FloatLabel>
 
-      <div v-if="preview.length > 0" class="border border-stone-200 rounded-lg overflow-hidden">
-        <div class="bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600">
-          Pré-visualização — {{ tournamentTeams.length }} equipas distribuídas por {{ numGroups }} grupo{{ numGroups > 1 ? 's' : '' }}
-        </div>
-        <div class="grid gap-px bg-stone-200" :class="gridCols">
-          <div v-for="group in preview" :key="group.name" class="bg-white p-3">
-            <p class="font-semibold text-stone-800 mb-2 text-sm">{{ group.name }} <span class="text-stone-400 font-normal">({{ group.teams.length }})</span></p>
-            <ul class="space-y-1">
-              <li v-for="team in group.teams" :key="team.id" class="text-xs text-stone-600 truncate">
-                {{ team.name }}
-              </li>
-            </ul>
+        <div v-if="preview.length > 0" class="border border-stone-200 rounded-lg overflow-hidden">
+          <div class="bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600">
+            Pré-visualização — {{ tournamentTeams.length }} equipas distribuídas por {{ numGroups }} grupo{{ numGroups > 1 ? 's' : '' }}
+          </div>
+          <div class="grid gap-px bg-stone-200" :class="gridCols(preview.length)">
+            <div v-for="group in preview" :key="group.name" class="bg-white p-3">
+              <p class="font-semibold text-stone-800 mb-2 text-sm">{{ group.name }} <span class="text-stone-400 font-normal">({{ group.teams.length }})</span></p>
+              <ul class="space-y-1">
+                <li v-for="team in group.teams" :key="team.id" class="text-xs text-stone-600 truncate">
+                  {{ team.name }}
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-      </div>
 
-      <p v-if="selectedTournament && tournamentTeams.length === 0" class="text-sm text-stone-400 text-center py-2">
-        Nenhuma equipa encontrada para este torneio.
-      </p>
+        <p v-if="selectedTournament && tournamentTeams.length === 0" class="text-sm text-stone-400 text-center py-2">
+          Nenhuma equipa encontrada para este torneio.
+        </p>
+      </template>
+
+      <template v-else>
+        <div class="border border-green-200 rounded-lg overflow-hidden">
+          <div class="bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
+            {{ finalGroups.length }} grupos criados com sucesso
+          </div>
+          <div class="grid gap-px bg-stone-200" :class="gridCols(finalGroups.length)">
+            <div v-for="group in finalGroups" :key="group.name" class="bg-white p-3">
+              <p class="font-semibold text-stone-800 mb-2 text-sm">{{ group.name }} <span class="text-stone-400 font-normal">({{ group.teams.length }})</span></p>
+              <ul class="space-y-1">
+                <li v-for="team in group.teams" :key="team.id" class="text-xs text-stone-600 truncate">
+                  {{ team.name }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
 
     <template #footer>
-      <P-Button severity="secondary" @click="close">
+      <P-Button v-if="!finalGroups.length" severity="secondary" @click="close">
         <span class="material-symbols-outlined">close</span>
         Cancelar
       </P-Button>
       <P-Button
+        v-if="!finalGroups.length"
         :disabled="preview.length === 0 || loading"
         :loading="loading"
         @click="generate"
       >
         <span class="material-symbols-outlined">auto_awesome</span>
         Gerar Grupos
+      </P-Button>
+      <P-Button v-else @click="close">
+        <span class="material-symbols-outlined">check</span>
+        Fechar
       </P-Button>
     </template>
   </P-Dialog>
@@ -116,29 +141,20 @@ interface PreviewGroup {
 }
 
 const preview = ref<PreviewGroup[]>([]);
+const finalGroups = ref<PreviewGroup[]>([]);
 
-const gridCols = computed(() => {
-  const n = preview.value.length;
+function gridCols(n: number) {
   if (n <= 2) return "grid-cols-2";
-  if (n <= 4) return "grid-cols-4";
   return "grid-cols-4";
-});
+}
 
 function onTournamentChange() {
   computePreview();
 }
 
-function computePreview() {
-  const teams = tournamentTeams.value;
-  if (!teams.length || !numGroups.value) {
-    preview.value = [];
-    return;
-  }
-
-  const n = numGroups.value;
+function distribute(teams: { id: string; name: string }[], n: number): PreviewGroup[] {
   const base = Math.floor(teams.length / n);
   const extra = teams.length % n;
-
   const groups: PreviewGroup[] = [];
   let cursor = 0;
 
@@ -146,19 +162,40 @@ function computePreview() {
     const size = base + (i >= n - extra ? 1 : 0);
     groups.push({
       name: GROUP_NAMES[i],
-      teams: teams.slice(cursor, cursor + size).map(t => ({ id: t.id, name: t.name })),
+      teams: teams.slice(cursor, cursor + size),
     });
     cursor += size;
   }
 
-  preview.value = groups;
+  return groups;
+}
+
+function computePreview() {
+  const count = tournamentTeams.value.length;
+  if (!count || !numGroups.value) {
+    preview.value = [];
+    return;
+  }
+
+  const dummyTeams = Array.from({ length: count }, (_, i) => ({
+    id: `dummy-${i}`,
+    name: `Equipa ${i + 1}`,
+  }));
+
+  preview.value = distribute(dummyTeams, numGroups.value);
 }
 
 async function generate() {
   loading.value = true;
   let allOk = true;
 
-  for (const group of preview.value) {
+  const shuffled = [...tournamentTeams.value].sort(() => Math.random() - 0.5);
+  const groups = distribute(
+    shuffled.map(t => ({ id: t.id, name: t.name })),
+    numGroups.value
+  );
+
+  for (const group of groups) {
     const dto = new CreateGroup();
     dto.tournament = selectedTournament.value;
     dto.name = group.name;
@@ -174,14 +211,14 @@ async function generate() {
   loading.value = false;
 
   if (allOk) {
-    toast.add({ severity: "success", summary: "Sucesso", detail: `${preview.value.length} grupos criados com sucesso`, life: 3000 });
-    close();
+    finalGroups.value = groups;
   }
 }
 
 function close() {
   enabled.value = false;
   preview.value = [];
+  finalGroups.value = [];
   selectedTournament.value = "";
   numGroups.value = 2;
 }

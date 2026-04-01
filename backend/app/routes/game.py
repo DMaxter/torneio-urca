@@ -30,7 +30,8 @@ def game_call_to_dto(call: dict) -> GameCallDto:
 def game_to_dto(game: dict, home_call: dict, away_call: dict) -> GameDto:
     return GameDto(
         id=str(game["_id"]),
-        scheduled_date=game["scheduled_date"],
+        tournament=str(game["tournament"]),
+        scheduled_date=game.get("scheduled_date"),
         start_date=game.get("start_date"),
         finish_date=game.get("finish_date"),
         status=game.get("status", GameStatus.NotStarted),
@@ -113,6 +114,19 @@ async def get_games():
 
     get_logger().info(f"Retrieved {len(result)} games")
     return result
+
+
+@router.delete("/{game_id}", status_code=204)
+async def delete_game(game_id: str, current_user=Depends(get_current_user)):
+    game = await get_game(game_id)
+    await db.db[GAME_CALLS_COLLECTION].delete_many(
+        {"_id": {"$in": [game.get("home_call"), game.get("away_call")]}}
+    )
+    await db.db[TOURNAMENTS_COLLECTION].update_one(
+        {"_id": game["tournament"]}, {"$pull": {"games": game["_id"]}}
+    )
+    await db.db[GAMES_COLLECTION].delete_one({"_id": game["_id"]})
+    get_logger().info(f"[{current_user['username']}] Deleted game '{game_id}'")
 
 
 async def get_game(game_id: str) -> dict:
