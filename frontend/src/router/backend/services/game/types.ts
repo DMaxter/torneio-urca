@@ -68,7 +68,7 @@ export type Resume = {
 export type Game = {
   id: string,
   tournament: string,
-  scheduled_date: Date,
+  scheduled_date: Date | null,
   start_date: Date | null,
   finish_date: Date | null,
   status: GameStatus,

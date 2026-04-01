@@ -133,7 +133,7 @@ class Game(BaseModel):
 
     id: Optional[str] = Field(None, alias="_id")
     tournament: str
-    scheduled_date: datetime
+    scheduled_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     finish_date: Optional[datetime] = None
     status: GameStatus = GameStatus.NotStarted
@@ -150,6 +150,16 @@ class Group(BaseModel):
     tournament: str
     name: str
     teams: List[str] = []
+
+
+class GameDay(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: Optional[str] = Field(None, alias="_id")
+    tournament: str
+    date: str        # "YYYY-MM-DD"
+    num_games: int
+    start_time: str  # "HH:MM"
 
 
 class Goal(BaseModel):
