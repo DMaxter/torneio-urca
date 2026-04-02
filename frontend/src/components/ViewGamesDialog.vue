@@ -6,8 +6,19 @@
       </p>
 
       <div v-for="tournament in byTournament" :key="tournament.id" class="border border-stone-200 rounded-lg overflow-hidden">
-        <div class="bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-700">
-          {{ tournament.name }}
+        <div class="bg-stone-100 px-3 py-2 flex items-center justify-between">
+          <span class="text-sm font-semibold text-stone-700">{{ tournament.name }}</span>
+          <span
+            v-if="!tournamentHasScheduledGames(tournament.id)"
+            class="material-symbols-outlined text-base cursor-pointer text-red-500 hover:text-red-700"
+            v-tooltip.left="'Eliminar todos os jogos deste torneio'"
+            @click="promptDelete(tournament.id, tournament.name)"
+          >delete_sweep</span>
+          <span
+            v-else
+            class="material-symbols-outlined text-base text-stone-300 cursor-not-allowed"
+            v-tooltip.left="'Não é possível eliminar jogos com agendamentos'"
+          >delete_sweep</span>
         </div>
         <div class="divide-y divide-stone-100">
           <div v-for="group in tournament.groups" :key="group.name" class="p-3">
@@ -34,21 +45,36 @@
       </P-Button>
     </template>
   </P-Dialog>
+
+  <P-Dialog v-model:visible="showDeleteConfirm" modal header="Confirmar Eliminação" class="w-11/12 md:w-6/12">
+    <p>Tem a certeza que deseja eliminar <strong>todos os jogos</strong> do torneio <strong>{{ tournamentToDelete?.name }}</strong>?</p>
+    <p class="text-red-600 mt-2 text-sm">Esta ação não pode ser desfeita.</p>
+    <template #footer>
+      <P-Button severity="secondary" @click="showDeleteConfirm = false">Cancelar</P-Button>
+      <P-Button severity="danger" :loading="deleting" @click="confirmDeleteAll">Eliminar todos</P-Button>
+    </template>
+  </P-Dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useToast } from "primevue/usetoast";
 import { useGameStore } from "@stores/games";
 import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 
 const enabled = defineModel<boolean>();
+const toast = useToast();
 
 const gameStore = useGameStore();
 const groupStore = useGroupStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
+
+const showDeleteConfirm = ref(false);
+const deleting = ref(false);
+const tournamentToDelete = ref<{ id: string; name: string } | null>(null);
 
 function getTeamName(id: string) {
   return teamStore.teams.find(t => t.id === id)?.name ?? id;
@@ -60,6 +86,36 @@ function findGroup(tournamentId: string, homeTeamId: string, awayTeamId: string)
   );
 }
 
+function tournamentHasScheduledGames(tournamentId: string): boolean {
+  return gameStore.games.some(g => g.tournament === tournamentId && g.scheduled_date);
+}
+
+function promptDelete(id: string, name: string) {
+  tournamentToDelete.value = { id, name };
+  showDeleteConfirm.value = true;
+}
+
+async function confirmDeleteAll() {
+  if (!tournamentToDelete.value) return;
+  deleting.value = true;
+  let allOk = true;
+
+  const games = gameStore.games.filter(g => g.tournament === tournamentToDelete.value!.id);
+  for (const game of games) {
+    const result = await gameStore.deleteGame(game.id);
+    if (!result.success) allOk = false;
+  }
+
+  deleting.value = false;
+  showDeleteConfirm.value = false;
+  tournamentToDelete.value = null;
+
+  if (allOk) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Todos os jogos eliminados", life: 3000 });
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Alguns jogos não foram eliminados", life: 3000 });
+  }
+}
 
 interface MatchEntry {
   home: string;
@@ -87,13 +143,7 @@ const byTournament = computed(() => {
         const homeId = game.home_call?.team ?? "";
         const awayId = game.away_call?.team ?? "";
         const group = findGroup(tournament.id, homeId, awayId);
-        const entry: MatchEntry = {
-          homeId,
-          awayId,
-          home: getTeamName(homeId),
-          away: getTeamName(awayId),
-          status: game.status,
-        };
+        const entry: MatchEntry = { homeId, awayId, home: getTeamName(homeId), away: getTeamName(awayId), status: game.status };
         if (group) {
           groupMap[group.id].matches.push(entry);
         } else {

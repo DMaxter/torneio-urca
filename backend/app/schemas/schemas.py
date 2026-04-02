@@ -160,6 +160,10 @@ class GroupDto(BaseModel):
     teams: List[str]
 
 
+class UpdateGameDto(BaseModel):
+    scheduled_date: Optional[datetime] = None
+
+
 class CreateGameDayDto(BaseModel):
     tournament: str
     date: str
