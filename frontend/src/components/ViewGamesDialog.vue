@@ -20,6 +20,8 @@
             v-tooltip.left="'Não é possível eliminar jogos com agendamentos'"
           >delete_sweep</span>
         </div>
+
+        <!-- Group stage -->
         <div class="divide-y divide-stone-100">
           <div v-for="group in tournament.groups" :key="group.name" class="p-3">
             <p class="font-semibold text-stone-700 text-sm mb-2">{{ group.name }}</p>
@@ -32,6 +34,21 @@
                   <span class="truncate">{{ match.away }}</span>
                 </li>
               </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Knockout phase -->
+        <div v-if="tournament.knockout.length > 0">
+          <div class="bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 border-t border-stone-200">
+            Fase a Eliminar
+          </div>
+          <div class="divide-y divide-stone-100">
+            <div v-for="game in tournament.knockout" :key="game.id" class="px-3 py-2 flex items-center gap-3">
+              <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
+              <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.home)"></span>
+              <span class="text-xs text-stone-400 shrink-0">vs</span>
+              <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.away)"></span>
             </div>
           </div>
         </div>
@@ -117,6 +134,27 @@ async function confirmDeleteAll() {
   }
 }
 
+function formatPlaceholder(text: string): string {
+  return text.replace(
+    /^(\d+º)\s+(Classificado)\s+(.+)$/,
+    '<strong>$1</strong> $2 — <strong>$3</strong>'
+  );
+}
+
+const KNOCKOUT_PHASE_ORDER: Record<string, number> = {
+  quarter_final: 0,
+  semi_final: 1,
+  third_place: 2,
+  final: 3,
+};
+
+const KNOCKOUT_PHASE_LABEL: Record<string, string> = {
+  quarter_final: "Quartos",
+  semi_final: "Meias",
+  third_place: "3º e 4º",
+  final: "Final",
+};
+
 interface MatchEntry {
   home: string;
   away: string;
@@ -125,21 +163,30 @@ interface MatchEntry {
   status: number;
 }
 
+interface KnockoutEntry {
+  id: string;
+  label: string;
+  home: string;
+  away: string;
+}
+
 const byTournament = computed(() => {
   return tournamentStore.tournaments
     .map(tournament => {
       const tournamentGames = gameStore.games.filter(g => g.tournament === tournament.id);
       if (!tournamentGames.length) return null;
 
-      const groups = groupStore.groups.filter(g => g.tournament === tournament.id);
+      const groupGames = tournamentGames.filter(g => g.phase === "group");
+      const knockoutGames = tournamentGames.filter(g => g.phase !== "group");
 
+      const groups = groupStore.groups.filter(g => g.tournament === tournament.id);
       const groupMap: Record<string, { name: string; matches: MatchEntry[] }> = {};
       for (const group of groups) {
         groupMap[group.id] = { name: group.name, matches: [] };
       }
       const ungrouped: MatchEntry[] = [];
 
-      for (const game of tournamentGames) {
+      for (const game of groupGames) {
         const homeId = game.home_call?.team ?? "";
         const awayId = game.away_call?.team ?? "";
         const group = findGroup(tournament.id, homeId, awayId);
@@ -159,7 +206,19 @@ const byTournament = computed(() => {
         groupsWithRounds.push({ name: "Sem grupo", rounds: [ungrouped] });
       }
 
-      return { id: tournament.id, name: tournament.name, groups: groupsWithRounds };
+      // Build knockout list ordered by phase
+      const knockout: KnockoutEntry[] = knockoutGames
+        .sort((a, b) => (KNOCKOUT_PHASE_ORDER[a.phase] ?? 99) - (KNOCKOUT_PHASE_ORDER[b.phase] ?? 99))
+        .map(g => ({
+          id: g.id,
+          label: g.home_placeholder?.startsWith("Vencedor Quarto") || g.home_placeholder?.startsWith("Perdedor")
+            ? (KNOCKOUT_PHASE_LABEL[g.phase] ?? g.phase)
+            : (KNOCKOUT_PHASE_LABEL[g.phase] ?? g.phase),
+          home: g.home_placeholder ?? getTeamName(g.home_call?.team ?? ""),
+          away: g.away_placeholder ?? getTeamName(g.away_call?.team ?? ""),
+        }));
+
+      return { id: tournament.id, name: tournament.name, groups: groupsWithRounds, knockout };
     })
     .filter(t => t !== null);
 });

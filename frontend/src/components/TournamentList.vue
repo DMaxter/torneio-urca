@@ -19,6 +19,15 @@
           <P-Tag :value="`${data.games?.length || 0}`" severity="success" />
         </template>
       </P-Column>
+      <P-Column header="Eliminar" class="w-5rem">
+        <template #body="{ data }">
+          <span
+            class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
+            @click.stop="promptDelete(data)"
+            v-tooltip.top="'Eliminar torneio'"
+          >delete</span>
+        </template>
+      </P-Column>
     </P-DataTable>
     <template #footer>
       <P-Button @click="tournamentStore.getTournaments()">
@@ -27,16 +36,63 @@
       </P-Button>
     </template>
   </P-Dialog>
+
+  <P-Dialog v-model:visible="showDeleteConfirm" modal header="Confirmar Eliminação" class="w-11/12 md:w-6/12">
+    <p>Tem a certeza que deseja eliminar o torneio <strong>{{ tournamentToDelete?.name }}</strong>?</p>
+    <p class="text-red-600 mt-2 text-sm">Esta ação não pode ser desfeita.</p>
+    <template #footer>
+      <P-Button severity="secondary" @click="showDeleteConfirm = false">Cancelar</P-Button>
+      <P-Button severity="danger" :loading="deleting" @click="confirmDelete">Eliminar</P-Button>
+    </template>
+  </P-Dialog>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
+import { useToast } from "primevue/usetoast";
 import { useTournamentStore } from "@stores/tournaments";
+import { useTeamStore } from "@stores/teams";
 
 const enabled = defineModel<boolean>();
+const toast = useToast();
 const tournamentStore = useTournamentStore();
+const teamStore = useTeamStore();
+
+const showDeleteConfirm = ref(false);
+const deleting = ref(false);
+const tournamentToDelete = ref<{ id: string; name: string } | null>(null);
+
+function promptDelete(data: { id: string; name: string }) {
+  const hasPlayers = teamStore.teams
+    .filter(t => t.tournament === data.id)
+    .some(t => t.players.length > 0);
+
+  if (hasPlayers) {
+    toast.add({ severity: "warn", summary: "Não permitido", detail: "Não é possível eliminar um torneio que já tem jogadores associados.", life: 4000 });
+    return;
+  }
+  tournamentToDelete.value = data;
+  showDeleteConfirm.value = true;
+}
+
+async function confirmDelete() {
+  if (!tournamentToDelete.value) return;
+  deleting.value = true;
+  const result = await tournamentStore.deleteTournament(tournamentToDelete.value.id);
+  deleting.value = false;
+  showDeleteConfirm.value = false;
+  tournamentToDelete.value = null;
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Torneio eliminado", life: 3000 });
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível eliminar o torneio", life: 3000 });
+  }
+}
 
 onMounted(async () => {
-  await tournamentStore.getTournaments();
+  await Promise.all([
+    tournamentStore.getTournaments(),
+    teamStore.getTeams(),
+  ]);
 });
 </script>

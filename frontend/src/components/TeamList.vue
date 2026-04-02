@@ -190,6 +190,7 @@ import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useTeamStore } from "@stores/teams";
 import { usePlayerStore } from "@stores/players";
+import { useGroupStore } from "@stores/groups";
 import { useTournamentStore } from "@stores/tournaments";
 import { getFileUrl } from "@router/backend/services/file";
 import * as teamService from "@router/backend/services/team";
@@ -199,6 +200,7 @@ const toast = useToast();
 const enabled = defineModel<boolean>();
 const teamStore = useTeamStore();
 const playerStore = usePlayerStore();
+const groupStore = useGroupStore();
 const tournamentStore = useTournamentStore();
 
 const showTeamPlayers = ref(false);
@@ -221,6 +223,11 @@ function getTournamentName(tournamentId: string): string {
 }
 
 function deleteTeam(teamId: string, teamName: string) {
+  const team = teamStore.teams.find(t => t.id === teamId);
+  if (team && groupStore.groups.some(g => g.tournament === team.tournament)) {
+    toast.add({ severity: "warn", summary: "Não permitido", detail: "Não é possível eliminar equipas quando já existem grupos criados.", life: 4000 });
+    return;
+  }
   teamToDelete.value = { id: teamId, name: teamName };
   showDeleteConfirm.value = true;
 }
@@ -303,8 +310,11 @@ async function confirmRemovePlayerAction() {
 }
 
 onMounted(async () => {
-  await teamStore.getTeams();
-  await tournamentStore.getTournaments();
+  await Promise.all([
+    teamStore.getTeams(),
+    groupStore.getGroups(),
+    tournamentStore.getTournaments(),
+  ]);
 });
 </script>
 
