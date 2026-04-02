@@ -16,9 +16,10 @@
           <label for="tournament">Torneio</label>
         </P-FloatLabel>
 
+        <!-- Group stage preview -->
         <div v-if="preview.length > 0" class="border border-stone-200 rounded-lg overflow-hidden">
           <div class="bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600">
-            {{ totalGames }} jogo{{ totalGames !== 1 ? 's' : '' }} a gerar em {{ preview.length }} grupo{{ preview.length !== 1 ? 's' : '' }}
+            Fase de Grupos — {{ totalGroupGames }} jogo{{ totalGroupGames !== 1 ? 's' : '' }} em {{ preview.length }} grupo{{ preview.length !== 1 ? 's' : '' }}
           </div>
           <div class="divide-y divide-stone-100">
             <div v-for="group in preview" :key="group.name" class="p-3">
@@ -37,15 +38,33 @@
           </div>
         </div>
 
+        <!-- Knockout phase preview -->
+        <div v-if="knockoutPreview.length > 0" class="border border-amber-200 rounded-lg overflow-hidden">
+          <div class="bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
+            Fase a Eliminar — {{ knockoutPreview.length }} jogos
+          </div>
+          <div class="divide-y divide-stone-100">
+            <div v-for="game in knockoutPreview" :key="game.label" class="px-3 py-2 flex items-center gap-3">
+              <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
+              <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.home)"></span>
+              <span class="text-xs text-stone-400 shrink-0">vs</span>
+              <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.away)"></span>
+            </div>
+          </div>
+        </div>
+
         <p v-if="selectedTournament && preview.length === 0" class="text-sm text-stone-400 text-center py-2">
           Nenhum grupo encontrado para este torneio.
+        </p>
+        <p v-if="selectedTournament && preview.length > 0 && knockoutPreview.length === 0" class="text-xs text-stone-400 text-center">
+          São necessários 4 grupos para gerar a fase a eliminar.
         </p>
       </template>
 
       <template v-else>
         <div class="border border-green-200 rounded-lg overflow-hidden">
           <div class="bg-green-50 px-3 py-2 text-sm font-semibold text-green-700">
-            {{ getTournamentName(selectedTournament) }} — {{ totalGames }} jogos gerados com sucesso
+            {{ getTournamentName(selectedTournament) }} — {{ totalGroupGames + knockoutPreview.length }} jogos gerados com sucesso
           </div>
           <div class="divide-y divide-stone-100">
             <div v-for="group in preview" :key="group.name" class="p-3">
@@ -60,6 +79,15 @@
                   </li>
                 </ul>
               </div>
+            </div>
+          </div>
+          <div v-if="knockoutPreview.length > 0">
+            <div class="bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">Fase a Eliminar</div>
+            <div v-for="game in knockoutPreview" :key="game.label" class="px-3 py-2 flex items-center gap-3 border-t border-stone-100">
+              <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
+              <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.home)"></span>
+              <span class="text-xs text-stone-400 shrink-0">vs</span>
+              <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.away)"></span>
             </div>
           </div>
         </div>
@@ -93,6 +121,7 @@ import { ref, computed, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 
 import { CreateGame, CreateGameCall } from "@router/backend/services/game/types";
+import type { GamePhase } from "@router/backend/services/game/types";
 import { useGameStore } from "@stores/games";
 import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
@@ -122,9 +151,17 @@ interface GroupPreview {
   rounds: MatchPreview[][];
 }
 
-const preview = ref<GroupPreview[]>([]);
+interface KnockoutGamePreview {
+  label: string;
+  home: string;
+  away: string;
+  phase: GamePhase;
+}
 
-const totalGames = computed(() =>
+const preview = ref<GroupPreview[]>([]);
+const knockoutPreview = ref<KnockoutGamePreview[]>([]);
+
+const totalGroupGames = computed(() =>
   preview.value.reduce((sum, g) => sum + g.rounds.reduce((s, r) => s + r.length, 0), 0)
 );
 
@@ -144,7 +181,6 @@ function getTournamentName(id: string) {
 }
 
 function buildRounds(teamIds: string[]): MatchPreview[][] {
-  // Classic round-robin: fix first team, rotate the rest
   const teams = teamIds.length % 2 === 1 ? [...teamIds, "bye"] : [...teamIds];
   const n = teams.length;
   const rounds: MatchPreview[][] = [];
@@ -164,17 +200,46 @@ function buildRounds(teamIds: string[]): MatchPreview[][] {
       }
     }
     rounds.push(round);
-    // Rotate: keep teams[0] fixed, rotate the rest
     teams.splice(1, 0, teams.pop()!);
   }
 
   return rounds;
 }
 
+// "1º Classificado Grupo A" → "<b>1º</b> Classificado — <b>Grupo A</b>"
+function formatPlaceholder(text: string): string {
+  return text.replace(
+    /^(\d+º)\s+(Classificado)\s+(.+)$/,
+    '<strong>$1</strong> $2 — <strong>$3</strong>'
+  );
+}
+
+function computeKnockoutPreview(groups: { name: string }[]) {
+  if (groups.length < 4) {
+    knockoutPreview.value = [];
+    return;
+  }
+
+  const sorted = [...groups].sort((a, b) => a.name.localeCompare(b.name));
+  const [A, B, C, D] = sorted.map(g => g.name);
+
+  knockoutPreview.value = [
+    { label: "Quartos de Final - Jogo 1", phase: "quarter_final", home: `1º Classificado ${A}`, away: `2º Classificado ${B}` },
+    { label: "Quartos de Final - Jogo 2", phase: "quarter_final", home: `1º Classificado ${C}`, away: `2º Classificado ${D}` },
+    { label: "Quartos de Final - Jogo 3", phase: "quarter_final", home: `2º Classificado ${C}`, away: `1º Classificado ${D}` },
+    { label: "Quartos de Final - Jogo 4", phase: "quarter_final", home: `2º Classificado ${A}`, away: `1º Classificado ${B}` },
+    { label: "Meia Final - Jogo 1",       phase: "semi_final",    home: "Vencedor Quartos de Final - Jogo 1", away: "Vencedor Quartos de Final - Jogo 2" },
+    { label: "Meia Final - Jogo 2",       phase: "semi_final",    home: "Vencedor Quartos de Final - Jogo 3", away: "Vencedor Quartos de Final - Jogo 4" },
+    { label: "3º e 4º Lugar",           phase: "third_place",   home: "Perdedor Meia Final - Jogo 1",       away: "Perdedor Meia Final - Jogo 2" },
+    { label: "Final",                   phase: "final",         home: "Vencedor Meia Final - Jogo 1",       away: "Vencedor Meia Final - Jogo 2" },
+  ];
+}
+
 function computePreview() {
   const groups = groupStore.groups.filter(g => g.tournament === selectedTournament.value);
   if (!groups.length) {
     preview.value = [];
+    knockoutPreview.value = [];
     return;
   }
 
@@ -182,6 +247,8 @@ function computePreview() {
     name: group.name,
     rounds: buildRounds(group.teams),
   }));
+
+  computeKnockoutPreview(groups);
 }
 
 async function generate() {
@@ -197,6 +264,7 @@ async function generate() {
         dto.home_call.team = match.homeId;
         dto.away_call = new CreateGameCall();
         dto.away_call.team = match.awayId;
+        dto.phase = "group";
 
         const result = await gameStore.createGame(dto);
         if (!result.success) {
@@ -204,6 +272,22 @@ async function generate() {
           toast.add({ severity: "error", summary: "Erro", detail: `Falha ao criar jogo ${match.home} vs ${match.away}`, life: 4000 });
         }
       }
+    }
+  }
+
+  for (const ko of knockoutPreview.value) {
+    const dto = new CreateGame();
+    dto.tournament = selectedTournament.value;
+    dto.home_call = null;
+    dto.away_call = null;
+    dto.phase = ko.phase;
+    dto.home_placeholder = ko.home;
+    dto.away_placeholder = ko.away;
+
+    const result = await gameStore.createGame(dto);
+    if (!result.success) {
+      allOk = false;
+      toast.add({ severity: "error", summary: "Erro", detail: `Falha ao criar jogo ${ko.label}`, life: 4000 });
     }
   }
 
@@ -217,11 +301,17 @@ async function generate() {
 function close() {
   enabled.value = false;
   preview.value = [];
+  knockoutPreview.value = [];
   selectedTournament.value = "";
   generated.value = false;
 }
 
 onMounted(async () => {
-  await gameStore.getGames();
+  await Promise.all([
+    gameStore.getGames(),
+    groupStore.getGroups(),
+    teamStore.getTeams(),
+    tournamentStore.getTournaments(),
+  ]);
 });
 </script>

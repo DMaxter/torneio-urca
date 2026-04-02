@@ -65,6 +65,8 @@ export type Resume = {
   timestamp: Date,
 }
 
+export type GamePhase = "group" | "quarter_final" | "semi_final" | "final" | "third_place";
+
 export type Game = {
   id: string,
   tournament: string,
@@ -72,8 +74,11 @@ export type Game = {
   start_date: Date | null,
   finish_date: Date | null,
   status: GameStatus,
-  home_call: GameCall,
-  away_call: GameCall,
+  phase: GamePhase,
+  home_placeholder: string | null,
+  away_placeholder: string | null,
+  home_call: GameCall | null,
+  away_call: GameCall | null,
   events: GameEvent[],
 }
 
@@ -84,6 +89,9 @@ export class CreateGameCall {
 export class CreateGame {
   tournament: string = "";
   scheduled_date: Date | null = null;
-  home_call: CreateGameCall = new CreateGameCall();
-  away_call: CreateGameCall = new CreateGameCall();
+  home_call: CreateGameCall | null = new CreateGameCall();
+  away_call: CreateGameCall | null = new CreateGameCall();
+  phase: GamePhase = "group";
+  home_placeholder: string | null = null;
+  away_placeholder: string | null = null;
 }

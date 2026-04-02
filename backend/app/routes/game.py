@@ -9,7 +9,7 @@ from database import (
     TOURNAMENTS_COLLECTION,
 )
 from app.schemas.schemas import CreateGameDto, GameDto, GameCallDto, UpdateGameDto
-from app.models.models import GameStatus
+from app.models.models import GameStatus, GamePhase
 from app.error import Error
 from app.utils.auth import get_current_user
 from app.utils import get_logger
@@ -27,7 +27,7 @@ def game_call_to_dto(call: dict) -> GameCallDto:
     )
 
 
-def game_to_dto(game: dict, home_call: dict, away_call: dict) -> GameDto:
+def game_to_dto(game: dict, home_call: dict | None, away_call: dict | None) -> GameDto:
     return GameDto(
         id=str(game["_id"]),
         tournament=str(game["tournament"]),
@@ -35,8 +35,11 @@ def game_to_dto(game: dict, home_call: dict, away_call: dict) -> GameDto:
         start_date=game.get("start_date"),
         finish_date=game.get("finish_date"),
         status=game.get("status", GameStatus.NotStarted),
-        home_call=game_call_to_dto(home_call),
-        away_call=game_call_to_dto(away_call),
+        phase=game.get("phase", GamePhase.Group),
+        home_placeholder=game.get("home_placeholder"),
+        away_placeholder=game.get("away_placeholder"),
+        home_call=game_call_to_dto(home_call) if home_call else None,
+        away_call=game_call_to_dto(away_call) if away_call else None,
         events=game.get("events", []),
     )
 
@@ -50,49 +53,58 @@ async def add_game(game: CreateGameDto, current_user=Depends(get_current_user)):
     )
     tournament = await get_tournament(game.tournament)
 
-    home_call_dict = {
-        "team": ObjectId(game.home_call.team),
-        "players": [],
-        "deputy": None,
-    }
-    away_call_dict = {
-        "team": ObjectId(game.away_call.team),
-        "players": [],
-        "deputy": None,
-    }
-
-    get_logger().info("Creating game calls for home and away teams")
-    home_result = await db.db[GAME_CALLS_COLLECTION].insert_one(home_call_dict)
-    away_result = await db.db[GAME_CALLS_COLLECTION].insert_one(away_call_dict)
-
     game_dict = {
         "tournament": ObjectId(game.tournament),
         "scheduled_date": game.scheduled_date,
         "status": GameStatus.NotStarted,
-        "home_call": home_result.inserted_id,
-        "away_call": away_result.inserted_id,
+        "phase": game.phase,
+        "home_placeholder": game.home_placeholder,
+        "away_placeholder": game.away_placeholder,
         "current_period": 0,
         "events": [],
     }
 
+    home_call_dict = None
+    away_call_dict = None
+
+    if game.home_call and game.away_call:
+        home_call_dict = {
+            "team": ObjectId(game.home_call.team),
+            "players": [],
+            "deputy": None,
+        }
+        away_call_dict = {
+            "team": ObjectId(game.away_call.team),
+            "players": [],
+            "deputy": None,
+        }
+
+        get_logger().info("Creating game calls for home and away teams")
+        home_result = await db.db[GAME_CALLS_COLLECTION].insert_one(home_call_dict)
+        away_result = await db.db[GAME_CALLS_COLLECTION].insert_one(away_call_dict)
+
+        game_dict["home_call"] = home_result.inserted_id
+        game_dict["away_call"] = away_result.inserted_id
+
     result = await db.db[GAMES_COLLECTION].insert_one(game_dict)
 
-    get_logger().info("Linking game calls to game")
-    await db.db[GAME_CALLS_COLLECTION].update_many(
-        {"_id": {"$in": [home_result.inserted_id, away_result.inserted_id]}},
-        {"$set": {"game": result.inserted_id}},
-    )
+    if home_call_dict and away_call_dict:
+        get_logger().info("Linking game calls to game")
+        await db.db[GAME_CALLS_COLLECTION].update_many(
+            {"_id": {"$in": [game_dict["home_call"], game_dict["away_call"]]}},
+            {"$set": {"game": result.inserted_id}},
+        )
+        home_call_dict["_id"] = game_dict["home_call"]
+        away_call_dict["_id"] = game_dict["away_call"]
+        home_call_dict["game"] = result.inserted_id
+        away_call_dict["game"] = result.inserted_id
 
     get_logger().info(f"Adding game to tournament '{tournament['name']}'")
     await db.db[TOURNAMENTS_COLLECTION].update_one(
         {"_id": tournament["_id"]}, {"$push": {"games": result.inserted_id}}
     )
 
-    home_call_dict["_id"] = home_result.inserted_id
-    away_call_dict["_id"] = away_result.inserted_id
-    home_call_dict["game"] = result.inserted_id
-    away_call_dict["game"] = result.inserted_id
-
+    game_dict["_id"] = result.inserted_id
     get_logger().info(f"[{current_user['username']}] Game created successfully")
     return game_to_dto(game_dict, home_call_dict, away_call_dict)
 
@@ -107,10 +119,14 @@ async def get_games():
 
     result = []
     for game in games:
-        home_call = calls_map.get(str(game.get("home_call")))
-        away_call = calls_map.get(str(game.get("away_call")))
-        if home_call and away_call:
-            result.append(game_to_dto(game, home_call, away_call))
+        phase = game.get("phase", GamePhase.Group)
+        if phase == GamePhase.Group:
+            home_call = calls_map.get(str(game.get("home_call")))
+            away_call = calls_map.get(str(game.get("away_call")))
+            if home_call and away_call:
+                result.append(game_to_dto(game, home_call, away_call))
+        else:
+            result.append(game_to_dto(game, None, None))
 
     get_logger().info(f"Retrieved {len(result)} games")
     return result
@@ -124,8 +140,12 @@ async def update_game(game_id: str, body: UpdateGameDto, current_user=Depends(ge
         {"$set": {"scheduled_date": body.scheduled_date}},
     )
     game["scheduled_date"] = body.scheduled_date
-    home_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("home_call")})
-    away_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("away_call")})
+    phase = game.get("phase", GamePhase.Group)
+    if phase == GamePhase.Group:
+        home_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("home_call")})
+        away_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("away_call")})
+    else:
+        home_call, away_call = None, None
     return game_to_dto(game, home_call, away_call)
 
 

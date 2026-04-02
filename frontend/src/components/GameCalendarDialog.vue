@@ -27,7 +27,7 @@
       <div v-if="selectedGame" class="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-sm text-blue-700">
         <span class="material-symbols-outlined text-base">info</span>
         <span>
-          <strong>{{ getTeamName(selectedGame.home_call.team) }} vs {{ getTeamName(selectedGame.away_call.team) }}</strong>
+          <strong>{{ getGameLabel(selectedGame) }}</strong>
           selecionado — clica numa slot vazia ou noutro jogo para trocar.
         </span>
         <span class="material-symbols-outlined text-base cursor-pointer ml-auto" @click="selectedGame = null">close</span>
@@ -62,9 +62,9 @@
               </div>
               <template v-if="slot.game">
                 <p class="text-xs font-medium text-stone-700 truncate leading-tight">
-                  {{ getTeamName(slot.game.home_call.team) }} vs {{ getTeamName(slot.game.away_call.team) }}
+                  {{ getGameLabel(slot.game) }}
                 </p>
-                <p class="text-xs text-stone-400">{{ getGroupName(slot.game) }}, {{ getRoundName(slot.game) }}</p>
+                <p class="text-xs text-stone-400">{{ getGameInfo(slot.game) }}</p>
               </template>
               <template v-else>
                 <p class="text-xs text-stone-300 italic">livre</p>
@@ -99,10 +99,10 @@
             class="border rounded-lg px-2 py-1 text-xs cursor-pointer transition-colors"
             :class="selectedGame?.id === game.id
               ? 'bg-blue-100 border-blue-400 text-blue-700'
-              : 'bg-white border-stone-200 text-stone-600 hover:border-blue-300'"
+              : getPhaseChipClass(game)"
             @click="onUnscheduledClick(game)"
           >
-            {{ getTeamName(game.home_call.team) }} vs {{ getTeamName(game.away_call.team) }}
+            {{ getGameLabel(game) }}
             <span class="opacity-50 ml-1">{{ getGameBadge(game) }}</span>
           </div>
         </div>
@@ -191,19 +191,21 @@ function getTeamName(id: string) {
 }
 
 function getGroupName(game: Game): string {
+  if (!game.home_call || !game.away_call) return "";
   const group = groupStore.groups.find(
     g => g.tournament === game.tournament &&
-         g.teams.includes(game.home_call?.team) &&
-         g.teams.includes(game.away_call?.team)
+         g.teams.includes(game.home_call!.team) &&
+         g.teams.includes(game.away_call!.team)
   );
   return group?.name ?? "";
 }
 
 function getRoundName(game: Game): string {
+  if (!game.home_call || !game.away_call) return "";
   const group = groupStore.groups.find(
     g => g.tournament === game.tournament &&
-         g.teams.includes(game.home_call?.team) &&
-         g.teams.includes(game.away_call?.team)
+         g.teams.includes(game.home_call!.team) &&
+         g.teams.includes(game.away_call!.team)
   );
   if (!group) return "";
   const teams = group.teams.length % 2 === 1 ? [...group.teams, "bye"] : [...group.teams];
@@ -212,14 +214,35 @@ function getRoundName(game: Game): string {
     for (let i = 0; i < n / 2; i++) {
       const home = teams[i];
       const away = teams[n - 1 - i];
-      if ((home === game.home_call?.team && away === game.away_call?.team) ||
-          (home === game.away_call?.team && away === game.home_call?.team)) {
+      if ((home === game.home_call!.team && away === game.away_call!.team) ||
+          (home === game.away_call!.team && away === game.home_call!.team)) {
         return `Jornada ${r + 1}`;
       }
     }
     teams.splice(1, 0, teams.pop()!);
   }
   return "";
+}
+
+function getGameLabel(game: Game): string {
+  if (game.home_call && game.away_call) {
+    return `${getTeamName(game.home_call.team)} vs ${getTeamName(game.away_call.team)}`;
+  }
+  return `${game.home_placeholder ?? "?"} vs ${game.away_placeholder ?? "?"}`;
+}
+
+const PHASE_LABEL: Record<string, string> = {
+  quarter_final: "Quartos de Final",
+  semi_final: "Meias Finais",
+  third_place: "3º e 4º Lugar",
+  final: "Final",
+};
+
+function getGameInfo(game: Game): string {
+  if (game.phase !== "group") {
+    return PHASE_LABEL[game.phase] ?? game.phase;
+  }
+  return [getGroupName(game), getRoundName(game)].filter(Boolean).join(", ");
 }
 
 function getGameBadge(game: Game): string {
@@ -242,7 +265,7 @@ function formatGameLabel(game: Game, datetime?: Date): string {
   const group = getGroupName(game);
   const round = getRoundName(game);
   const groupRound = [group, round].filter(Boolean).join(" · ");
-  const teams = `<strong>${getTeamName(game.home_call.team)} vs ${getTeamName(game.away_call.team)}</strong>`;
+  const teams = `<strong>${getGameLabel(game)}</strong>`;
   const groupRoundPart = groupRound ? ` <em class="text-xs opacity-75">${groupRound}</em>` : "";
   const datePart2 = datePart ? ` <em class="text-xs opacity-75"><strong>${datePart}</strong></em>` : "";
   return `${teams}${groupRoundPart}${datePart2}`;
@@ -300,10 +323,27 @@ function loadCalendar(preserveAction = false) {
   });
 }
 
+function getPhaseSlotClass(phase: string): string {
+  if (phase === "quarter_final") return "bg-sky-50 hover:bg-sky-100";
+  if (phase === "semi_final")    return "bg-emerald-50 hover:bg-emerald-100";
+  if (phase === "third_place")   return "bg-violet-50 hover:bg-violet-100";
+  if (phase === "final")         return "bg-violet-50 hover:bg-violet-100";
+  return "hover:bg-stone-50";
+}
+
+function getPhaseChipClass(game: Game): string {
+  if (game.phase === "quarter_final") return "bg-sky-50 border-sky-300 text-sky-700 hover:border-sky-400";
+  if (game.phase === "semi_final")    return "bg-emerald-50 border-emerald-300 text-emerald-700 hover:border-emerald-400";
+  if (game.phase === "third_place")   return "bg-violet-50 border-violet-300 text-violet-700 hover:border-violet-400";
+  if (game.phase === "final")         return "bg-violet-50 border-violet-300 text-violet-700 hover:border-violet-400";
+  return "bg-white border-stone-200 text-stone-600 hover:border-blue-300";
+}
+
 function getSlotClass(slot: Slot) {
   if (slot.game && selectedGame.value?.id === slot.game.id) {
     return "bg-blue-50 border-l-2 border-blue-400";
   }
+  if (slot.game && slot.game.phase !== "group") return getPhaseSlotClass(slot.game.phase);
   if (slot.game) return "hover:bg-stone-50";
   if (selectedGame.value) return "hover:bg-green-50 border-l-2 border-dashed border-green-300";
   return "";
@@ -383,6 +423,16 @@ function buildOrderedGames(): GameEntry[] {
       if (gr[i]) result.push(gr[i]);
     }
   }
+
+  // Append knockout games in phase order after all group games
+  const phaseOrder: Record<string, number> = { quarter_final: 0, semi_final: 1, third_place: 2, final: 3 };
+  const knockoutGames = tournamentGames
+    .filter(g => g.phase !== "group")
+    .sort((a, b) => (phaseOrder[a.phase] ?? 99) - (phaseOrder[b.phase] ?? 99));
+  for (const g of knockoutGames) {
+    result.push({ ...g, groupName: "", round: 0 });
+  }
+
   return result;
 }
 

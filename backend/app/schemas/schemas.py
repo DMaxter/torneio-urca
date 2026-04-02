@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List, Any
 from datetime import datetime
 
-from app.models.models import GameStatus, CardType, StaffType
+from app.models.models import GameStatus, GamePhase, CardType, StaffType
 
 
 class CreateUserDto(BaseModel):
@@ -119,8 +119,11 @@ class CreateGameCallDto(BaseModel):
 class CreateGameDto(BaseModel):
     tournament: str
     scheduled_date: Optional[datetime] = None
-    home_call: CreateGameCallDto
-    away_call: CreateGameCallDto
+    home_call: Optional[CreateGameCallDto] = None
+    away_call: Optional[CreateGameCallDto] = None
+    phase: GamePhase = GamePhase.Group
+    home_placeholder: Optional[str] = None
+    away_placeholder: Optional[str] = None
 
 
 class GameCallDto(BaseModel):
@@ -142,8 +145,11 @@ class GameDto(BaseModel):
     start_date: Optional[datetime] = None
     finish_date: Optional[datetime] = None
     status: GameStatus
-    home_call: GameCallDto
-    away_call: GameCallDto
+    phase: GamePhase = GamePhase.Group
+    home_placeholder: Optional[str] = None
+    away_placeholder: Optional[str] = None
+    home_call: Optional[GameCallDto] = None
+    away_call: Optional[GameCallDto] = None
     events: List[Any] = []
 
 

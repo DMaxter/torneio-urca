@@ -11,12 +11,13 @@ export async function getGames(): Promise<AxiosResponse<Game[] | Error>> {
 export async function createGame(game: CreateGame): Promise<AxiosResponse<Game | Error>> {
   const body: Record<string, any> = {
     tournament: game.tournament,
-    home_call: game.home_call,
-    away_call: game.away_call,
+    phase: game.phase,
   };
-  if (game.scheduled_date != null) {
-    body.scheduled_date = game.scheduled_date;
-  }
+  if (game.home_call) body.home_call = game.home_call;
+  if (game.away_call) body.away_call = game.away_call;
+  if (game.scheduled_date != null) body.scheduled_date = game.scheduled_date;
+  if (game.home_placeholder) body.home_placeholder = game.home_placeholder;
+  if (game.away_placeholder) body.away_placeholder = game.away_placeholder;
   return await http.post("/games", body);
 }
 

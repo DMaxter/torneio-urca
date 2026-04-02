@@ -11,3 +11,7 @@ export async function getTournaments(): Promise<AxiosResponse<Tournament[] | Err
 export async function createTournament(tournament: CreateTournament): Promise<AxiosResponse<Tournament | Error>> {
   return await http.post("/tournaments", tournament);
 }
+
+export async function deleteTournament(tournamentId: string): Promise<AxiosResponse<void | Error>> {
+  return await http.delete(`/tournaments/${tournamentId}`);
+}

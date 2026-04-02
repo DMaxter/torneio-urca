@@ -128,6 +128,14 @@ class GameEvent(BaseModel):
     pass
 
 
+class GamePhase(str, Enum):
+    Group = "group"
+    QuarterFinal = "quarter_final"
+    SemiFinal = "semi_final"
+    Final = "final"
+    ThirdPlace = "third_place"
+
+
 class Game(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -139,6 +147,9 @@ class Game(BaseModel):
     status: GameStatus = GameStatus.NotStarted
     home_call: Optional[str] = None
     away_call: Optional[str] = None
+    phase: GamePhase = GamePhase.Group
+    home_placeholder: Optional[str] = None
+    away_placeholder: Optional[str] = None
     current_period: int = 0
     events: List[Any] = []
 
