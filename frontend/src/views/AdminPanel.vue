@@ -41,6 +41,7 @@
 
     <GameDaysDialog v-model="gameDays" />
     <GenerateGamesDialog v-model="generateGames" />
+    <GameCalendarDialog v-model="gameCalendar" />
     <ViewGamesDialog v-model="viewGames" />
     <GameList v-model="listGames" />
     <GameManagement v-model="manageGame" />
@@ -88,6 +89,7 @@ const listGames = ref(false);
 const manageGame = ref(false);
 const gameDays = ref(false);
 const generateGames = ref(false);
+const gameCalendar = ref(false);
 const viewGames = ref(false);
 
 interface Action {
@@ -150,9 +152,9 @@ const sections: Section[] = [
     icon: "🎮",
     actions: [
       { label: "Gerar", icon: "sports_soccer", severity: "success", handler: () => generateGames.value = true },
-      { label: "Ver", icon: "grid_view", severity: "info", handler: () => viewGames.value = true },
-      { label: "Dias de Jogo", icon: "calendar_month", severity: "secondary", handler: () => gameDays.value = true },
-      { label: "Listar", icon: "list", handler: () => listGames.value = true }
+      { label: "Calendário", icon: "calendar_month", severity: "info", handler: () => gameCalendar.value = true },
+      { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGames.value = true },
+      { label: "Dias de Jogo", icon: "edit_calendar", severity: "secondary", handler: () => gameDays.value = true }
     ]
   }
 ];

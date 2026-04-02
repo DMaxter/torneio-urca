@@ -3,6 +3,7 @@ import { ref } from "vue";
 
 import { type Game } from "@router/backend/services/game/types";
 import * as gameService from "@router/backend/services/game";
+
 import { createGenericStore } from "@stores/base";
 
 export const useGameStore = defineStore("gamesStore", () => {
@@ -12,6 +13,20 @@ export const useGameStore = defineStore("gamesStore", () => {
     getAll: gameService.getGames,
     create: gameService.createGame,
   });
+
+  async function updateGame(gameId: string, scheduledDate: Date | null) {
+    try {
+      const { status, data } = await gameService.updateGame(gameId, scheduledDate);
+      if (status === 200) {
+        const idx = games.value.findIndex(g => g.id === gameId);
+        if (idx !== -1) games.value[idx] = data as Game;
+        return { success: true };
+      }
+      return { success: false };
+    } catch {
+      return { success: false };
+    }
+  }
 
   async function deleteGame(gameId: string) {
     try {
@@ -30,6 +45,7 @@ export const useGameStore = defineStore("gamesStore", () => {
     games,
     getGames: base.getAll,
     createGame: base.create,
+    updateGame,
     deleteGame,
     init: base.init,
     add: base.add,

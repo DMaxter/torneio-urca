@@ -8,7 +8,7 @@ from database import (
     GAME_CALLS_COLLECTION,
     TOURNAMENTS_COLLECTION,
 )
-from app.schemas.schemas import CreateGameDto, GameDto, GameCallDto
+from app.schemas.schemas import CreateGameDto, GameDto, GameCallDto, UpdateGameDto
 from app.models.models import GameStatus
 from app.error import Error
 from app.utils.auth import get_current_user
@@ -114,6 +114,19 @@ async def get_games():
 
     get_logger().info(f"Retrieved {len(result)} games")
     return result
+
+
+@router.patch("/{game_id}", response_model=GameDto)
+async def update_game(game_id: str, body: UpdateGameDto, current_user=Depends(get_current_user)):
+    game = await get_game(game_id)
+    await db.db[GAMES_COLLECTION].update_one(
+        {"_id": game["_id"]},
+        {"$set": {"scheduled_date": body.scheduled_date}},
+    )
+    game["scheduled_date"] = body.scheduled_date
+    home_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("home_call")})
+    away_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("away_call")})
+    return game_to_dto(game, home_call, away_call)
 
 
 @router.delete("/{game_id}", status_code=204)

@@ -20,6 +20,10 @@ export async function createGame(game: CreateGame): Promise<AxiosResponse<Game |
   return await http.post("/games", body);
 }
 
+export async function updateGame(gameId: string, scheduledDate: Date | null): Promise<AxiosResponse<Game | Error>> {
+  return await http.patch(`/games/${gameId}`, { scheduled_date: scheduledDate });
+}
+
 export async function deleteGame(gameId: string): Promise<AxiosResponse<void | Error>> {
   return await http.delete(`/games/${gameId}`);
 }

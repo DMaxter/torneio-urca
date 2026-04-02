@@ -30,9 +30,15 @@
       <P-Column header="Eliminar todos" style="width: 110px">
         <template #body="{ data }">
           <span
+            v-if="!tournamentHasScheduledGames(data.tournament)"
             class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
             @click="promptDeleteTournamentGames(data.tournament)"
             v-tooltip.top="'Eliminar todos os jogos deste torneio'"
+          >delete_sweep</span>
+          <span
+            v-else
+            class="material-symbols-outlined text-xl p-1 text-stone-300 cursor-not-allowed"
+            v-tooltip.top="'Não é possível eliminar jogos com agendamentos'"
           >delete_sweep</span>
         </template>
       </P-Column>
@@ -76,6 +82,10 @@ const deleting = ref(false);
 const tournamentGamesToDelete = computed(() =>
   gameStore.games.filter(g => g.tournament === tournamentToDelete.value)
 );
+
+function tournamentHasScheduledGames(tournamentId: string): boolean {
+  return gameStore.games.some(g => g.tournament === tournamentId && g.scheduled_date);
+}
 
 function getTeamName(teamId: string): string {
   return teamStore.teams.find(t => t.id === teamId)?.name ?? "N/A";
