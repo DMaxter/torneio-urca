@@ -119,14 +119,14 @@ async def get_games():
 
     result = []
     for game in games:
-        phase = game.get("phase", GamePhase.Group)
-        if phase == GamePhase.Group:
-            home_call = calls_map.get(str(game.get("home_call")))
-            away_call = calls_map.get(str(game.get("away_call")))
-            if home_call and away_call:
-                result.append(game_to_dto(game, home_call, away_call))
-        else:
-            result.append(game_to_dto(game, None, None))
+        phase = game.get("phase") or GamePhase.Group
+        home_call = calls_map.get(str(game.get("home_call"))) if game.get("home_call") else None
+        away_call = calls_map.get(str(game.get("away_call"))) if game.get("away_call") else None
+        # Only skip group games where calls exist in DB but can't be found (broken refs)
+        # Games without calls (knockout phase) or with valid calls are always included
+        if phase == GamePhase.Group and game.get("home_call") and not (home_call and away_call):
+            continue
+        result.append(game_to_dto(game, home_call, away_call))
 
     get_logger().info(f"Retrieved {len(result)} games")
     return result
@@ -140,12 +140,8 @@ async def update_game(game_id: str, body: UpdateGameDto, current_user=Depends(ge
         {"$set": {"scheduled_date": body.scheduled_date}},
     )
     game["scheduled_date"] = body.scheduled_date
-    phase = game.get("phase", GamePhase.Group)
-    if phase == GamePhase.Group:
-        home_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("home_call")})
-        away_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("away_call")})
-    else:
-        home_call, away_call = None, None
+    home_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("home_call")}) if game.get("home_call") else None
+    away_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("away_call")}) if game.get("away_call") else None
     return game_to_dto(game, home_call, away_call)
 
 

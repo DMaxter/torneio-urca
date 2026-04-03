@@ -9,6 +9,11 @@
           </div>
         </template>
       </P-Column>
+      <P-Column header="Equipa" class="w-6rem md:w-auto">
+        <template #body="{ data }">
+          {{ getTeamName(data.id) }}
+        </template>
+      </P-Column>
       <P-Column field="fiscal_number" header="NIF" class="w-6rem md:w-auto" />
       <P-Column field="birth_date" header="Nascimento" class="w-6rem md:w-auto">
         <template #body="{ data }">
@@ -91,8 +96,12 @@ const showConfirmPlayer = ref(false);
 const showRemovePlayer = ref(false);
 const playerToAction = ref<{ id: string; name: string } | null>(null);
 
+function getTeamName(playerId: string): string {
+  return teamStore.teams.find(t => t.players.includes(playerId))?.name ?? "—";
+}
+
 onMounted(async () => {
-  await playerStore.getPlayers();
+  await Promise.all([playerStore.getPlayers(), teamStore.getTeams()]);
 });
 
 function promptConfirmPlayer(playerId: string, playerName: string) {

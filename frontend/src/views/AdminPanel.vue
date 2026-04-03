@@ -41,7 +41,7 @@
 
     <GameDaysDialog v-model="gameDays" />
     <GenerateGamesDialog v-model="generateGames" />
-    <GameCalendarDialog v-model="gameCalendar" />
+    <GameCalendarDialog v-model="gameCalendar" @register-game="onRegisterGame" />
     <ViewGamesDialog v-model="viewGames" />
     <GameList v-model="listGames" />
     <GameManagement v-model="manageGame" />
@@ -65,11 +65,16 @@
 import { ref } from "vue";
 
 import { useAuthStore } from "@stores/auth";
+import type { Game } from "@router/backend/services/game/types";
 
 const authStore = useAuthStore();
 
 function handleLogout() {
   authStore.logout();
+}
+
+function onRegisterGame(_game: Game) {
+  // TODO: abrir o diálogo de gestão do jogo ao vivo
 }
 
 const listTournaments = ref(false);
