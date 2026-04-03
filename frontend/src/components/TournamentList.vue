@@ -3,9 +3,23 @@
     <P-DataTable :value="tournamentStore.tournaments" striped-rows size="small">
       <P-Column field="name" header="Nome">
         <template #body="{ data }">
-          <div class="flex align-items-center gap-2">
+          <div class="flex items-center gap-2">
             <span>🏆</span>
             <span class="font-medium">{{ data.name }}</span>
+          </div>
+        </template>
+      </P-Column>
+      <P-Column header="Cor" class="w-24">
+        <template #body="{ data }">
+          <div class="flex items-center gap-1">
+            <button
+              v-for="c in TOURNAMENT_COLORS"
+              :key="c.value"
+              class="w-4 h-4 rounded-full border-2 transition-transform hover:scale-125"
+              :class="[c.dot, getColor(data.id).value === c.value ? 'border-stone-700 scale-125' : 'border-transparent']"
+              v-tooltip.top="c.label"
+              @click="setColor(data.id, c.value)"
+            />
           </div>
         </template>
       </P-Column>
@@ -52,6 +66,9 @@ import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useTournamentStore } from "@stores/tournaments";
 import { useTeamStore } from "@stores/teams";
+import { useTournamentColors } from "@/composables/useTournamentColors";
+
+const { getColor, setColor, TOURNAMENT_COLORS } = useTournamentColors();
 
 const enabled = defineModel<boolean>();
 const toast = useToast();

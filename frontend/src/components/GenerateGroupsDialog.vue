@@ -38,11 +38,22 @@
             <div v-for="group in preview" :key="group.name" class="bg-white p-3">
               <p class="font-semibold text-stone-800 mb-2 text-sm">{{ group.name }} <span class="text-stone-400 font-normal">({{ group.teams.length }})</span></p>
               <ul class="space-y-1">
-                <li v-for="team in group.teams" :key="team.id" class="text-xs text-stone-600 truncate">
+                <li v-for="team in group.teams" :key="team.id" class="text-xs truncate flex items-center gap-1"
+                  :class="getPlayerCount(team.id) < MIN_PLAYERS ? 'text-red-600' : 'text-stone-600'">
+                  <span v-if="getPlayerCount(team.id) < MIN_PLAYERS" class="material-symbols-outlined text-xs leading-none">warning</span>
                   {{ team.name }}
+                  <span class="opacity-60">({{ getPlayerCount(team.id) }} jog.)</span>
                 </li>
               </ul>
             </div>
+          </div>
+          <div v-if="teamsWithoutMinPlayers.length > 0" class="bg-red-50 border-t border-red-200 px-3 py-2 text-xs text-red-700 flex items-start gap-2">
+            <span class="material-symbols-outlined text-sm shrink-0 mt-0.5">error</span>
+            <span>
+              As seguintes equipas têm menos de {{ MIN_PLAYERS }} jogadores e não podem ser incluídas:
+              <strong>{{ teamsWithoutMinPlayers.map(t => t.name).join(", ") }}</strong>.
+              Adiciona jogadores antes de gerar os grupos.
+            </span>
           </div>
         </div>
 
@@ -77,7 +88,7 @@
       </P-Button>
       <P-Button
         v-if="!finalGroups.length"
-        :disabled="preview.length === 0 || loading"
+        :disabled="preview.length === 0 || loading || teamsWithoutMinPlayers.length > 0"
         :loading="loading"
         @click="generate"
       >
@@ -131,8 +142,18 @@ const groupOptions = [
   { label: "7 Grupos", value: 7 },
 ];
 
+const MIN_PLAYERS = 5;
+
 const tournamentTeams = computed(() =>
   teamStore.teams.filter(t => t.tournament === selectedTournament.value)
+);
+
+function getPlayerCount(teamId: string): number {
+  return teamStore.teams.find(t => t.id === teamId)?.players.length ?? 0;
+}
+
+const teamsWithoutMinPlayers = computed(() =>
+  tournamentTeams.value.filter(t => t.players.length < MIN_PLAYERS)
 );
 
 interface PreviewGroup {
@@ -171,18 +192,15 @@ function distribute(teams: { id: string; name: string }[], n: number): PreviewGr
 }
 
 function computePreview() {
-  const count = tournamentTeams.value.length;
-  if (!count || !numGroups.value) {
+  const teams = tournamentTeams.value;
+  if (!teams.length || !numGroups.value) {
     preview.value = [];
     return;
   }
-
-  const dummyTeams = Array.from({ length: count }, (_, i) => ({
-    id: `dummy-${i}`,
-    name: `Equipa ${i + 1}`,
-  }));
-
-  preview.value = distribute(dummyTeams, numGroups.value);
+  preview.value = distribute(
+    teams.map(t => ({ id: t.id, name: t.name })),
+    numGroups.value
+  );
 }
 
 async function generate() {

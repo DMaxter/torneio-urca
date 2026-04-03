@@ -197,7 +197,46 @@ function toDateKey(d: Date): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function getSlotMinutes(startTime: string, numGames: number): number[] {
+  const [h, m] = startTime.split(":").map(Number);
+  const result: number[] = [];
+  for (let i = 0; i < numGames; i++) {
+    result.push(h * 60 + m + i * 60);
+  }
+  return result;
+}
+
+function checkOverlap(day: typeof pendingDays.value[0]): string | null {
+  // Other tournaments' game days on the same date (excluding current tournament)
+  const others = gameDayStore.gameDays.filter(
+    d => d.tournament !== selectedTournament.value && d.date === day.date
+  );
+  if (others.length === 0) return null;
+
+  const newSlots = new Set(getSlotMinutes(day.startTime, day.numGames));
+  for (const other of others) {
+    const otherSlots = getSlotMinutes(other.start_time, other.num_games);
+    const conflict = otherSlots.find(s => newSlots.has(s));
+    if (conflict !== undefined) {
+      const hh = String(Math.floor(conflict / 60)).padStart(2, "0");
+      const mm = String(conflict % 60).padStart(2, "0");
+      const otherName = tournamentStore.tournaments.find(t => t.id === other.tournament)?.name ?? "outro torneio";
+      return `Sobreposição às ${hh}:${mm} com "${otherName}". Ajusta a hora de início ou o número de jogos.`;
+    }
+  }
+  return null;
+}
+
 async function save() {
+  // Validate overlaps before persisting anything
+  for (const day of pendingDays.value) {
+    const error = checkOverlap(day);
+    if (error) {
+      toast.add({ severity: "warn", summary: "Sobreposição de horários", detail: error, life: 6000 });
+      return;
+    }
+  }
+
   saving.value = true;
 
   const existing = gameDayStore.gameDays.filter(d => d.tournament === selectedTournament.value);
