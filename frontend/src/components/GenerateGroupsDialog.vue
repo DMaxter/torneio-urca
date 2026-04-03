@@ -16,19 +16,39 @@
           <label for="tournament">Torneio</label>
         </P-FloatLabel>
 
-        <P-FloatLabel variant="on">
-          <P-Select
-            id="numGroups"
-            v-model="numGroups"
-            :options="groupOptions"
-            optionLabel="label"
-            optionValue="value"
-            fluid
-            :disabled="!selectedTournament"
-            @change="computePreview"
-          />
-          <label for="numGroups">Número de Grupos</label>
-        </P-FloatLabel>
+        <div class="flex items-center gap-3">
+          <label for="numGroups" class="text-sm font-medium text-stone-700 whitespace-nowrap">Número de Grupos</label>
+          <div class="flex items-center gap-1">
+            <P-Button
+              severity="secondary"
+              size="small"
+              :disabled="numGroups <= 1 || !selectedTournament"
+              @click="numGroups--; computePreview()"
+              outlined
+            >
+              <span class="material-symbols-outlined">remove</span>
+            </P-Button>
+            <P-InputText
+              id="numGroups"
+              v-model="numGroups"
+              type="number"
+              class="w-16 text-center num-input-no-spin"
+              :min="1"
+              :max="7"
+              :disabled="!selectedTournament"
+              @input="computePreview"
+            />
+            <P-Button
+              severity="secondary"
+              size="small"
+              :disabled="numGroups >= 7 || !selectedTournament"
+              @click="numGroups++; computePreview()"
+              outlined
+            >
+              <span class="material-symbols-outlined">add</span>
+            </P-Button>
+          </div>
+        </div>
 
         <div v-if="preview.length > 0" class="border border-stone-200 rounded-lg overflow-hidden">
           <div class="bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600">
@@ -132,16 +152,6 @@ const availableTournaments = computed(() =>
 
 const GROUP_NAMES = ["Grupo A", "Grupo B", "Grupo C", "Grupo D", "Grupo E", "Grupo F", "Grupo G"];
 
-const groupOptions = [
-  { label: "1 Grupo", value: 1 },
-  { label: "2 Grupos", value: 2 },
-  { label: "3 Grupos", value: 3 },
-  { label: "4 Grupos", value: 4 },
-  { label: "5 Grupos", value: 5 },
-  { label: "6 Grupos", value: 6 },
-  { label: "7 Grupos", value: 7 },
-];
-
 const MIN_PLAYERS = 5;
 
 const tournamentTeams = computed(() =>
@@ -241,3 +251,14 @@ function close() {
   numGroups.value = 2;
 }
 </script>
+
+<style scoped>
+.num-input-no-spin::-webkit-outer-spin-button,
+.num-input-no-spin::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.num-input-no-spin[type="number"] {
+  -moz-appearance: textfield;
+}
+</style>

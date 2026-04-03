@@ -19,28 +19,18 @@
           <P-Tag :value="`${data.teams?.length || 0}`" severity="info" />
         </template>
       </P-Column>
-
-      <P-Column header="Eliminar todos" class="w-5rem">
-        <template #body="{ data }">
-          <span
-            v-if="!tournamentHasGames(data.tournament)"
-            class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
-            @click.stop="promptDeleteTournamentGroups(data.tournament)"
-            v-tooltip.top="'Eliminar todos os grupos deste torneio'"
-          >delete_sweep</span>
-          <span
-            v-else
-            class="material-symbols-outlined text-xl p-1 text-stone-300 cursor-not-allowed"
-            v-tooltip.top="'Não é possível eliminar grupos com jogos associados'"
-          >delete_sweep</span>
-        </template>
-      </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button @click="groupStore.getGroups()">
-        <span class="material-symbols-outlined">sync</span>
-        Atualizar
-      </P-Button>
+      <div class="flex gap-2">
+        <P-Button severity="danger" @click="showDeleteAllDialog = true">
+          <span class="material-symbols-outlined">delete_sweep</span>
+          Eliminar tudo
+        </P-Button>
+        <P-Button @click="groupStore.getGroups()">
+          <span class="material-symbols-outlined">sync</span>
+          Atualizar
+        </P-Button>
+      </div>
     </template>
   </P-Dialog>
 
@@ -70,21 +60,19 @@
     </template>
   </P-Dialog>
 
-
-  <P-Dialog v-model:visible="showDeleteDialog" modal header="Confirmar Eliminação" class="w-11/12 md:w-8/12">
-    <p>Tem a certeza que deseja eliminar <strong>todos os {{ tournamentGroupsToDelete.length }} grupos</strong> do torneio <strong>{{ getTournamentName(tournamentToDelete) }}</strong>?</p>
+  <P-Dialog v-model:visible="showDeleteAllDialog" modal header="Confirmar Eliminação" class="w-11/12 md:w-8/12">
+    <p>Tem a certeza que deseja eliminar <strong>todos os grupos</strong> do sistema?</p>
     <p class="text-red-600 mt-2 text-sm">Esta ação não pode ser desfeita.</p>
     <template #footer>
-      <P-Button severity="secondary" @click="showDeleteDialog = false">Cancelar</P-Button>
-      <P-Button severity="danger" :loading="deleting" @click="confirmDeleteAll">Eliminar todos</P-Button>
+      <P-Button severity="secondary" @click="showDeleteAllDialog = false">Cancelar</P-Button>
+      <P-Button severity="danger" :loading="deleting" @click="confirmDeleteAllGroups">Eliminar todos</P-Button>
     </template>
   </P-Dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
-import { useGameStore } from "@stores/games";
 import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
@@ -92,36 +80,25 @@ import type { Group } from "@router/backend/services/group/types";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
-const gameStore = useGameStore();
 const groupStore = useGroupStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
 
 
-const showDeleteDialog = ref(false);
+const showDeleteAllDialog = ref(false);
 const showViewTeams = ref(false);
 
-const tournamentToDelete = ref("");
 const deleting = ref(false);
 const selectedGroupName = ref("");
 const groupTeams = ref<any[]>([]);
 
-const tournamentGroupsToDelete = computed(() =>
-  groupStore.groups.filter(g => g.tournament === tournamentToDelete.value)
-);
-
 onMounted(async () => {
   await Promise.all([
     groupStore.getGroups(),
-    gameStore.getGames(),
     teamStore.getTeams(),
     tournamentStore.getTournaments(),
   ]);
 });
-
-function tournamentHasGames(tournamentId: string): boolean {
-  return gameStore.games.some(g => g.tournament === tournamentId);
-}
 
 function getTournamentName(tournamentId: string): string {
   return tournamentStore.tournaments.find(t => t.id === tournamentId)?.name ?? "-";
@@ -135,25 +112,20 @@ function viewGroupTeams(event: any) {
 }
 
 
-function promptDeleteTournamentGroups(tournamentId: string) {
-  tournamentToDelete.value = tournamentId;
-  showDeleteDialog.value = true;
-}
-
-async function confirmDeleteAll() {
+async function confirmDeleteAllGroups() {
   deleting.value = true;
   let allOk = true;
 
-  for (const group of tournamentGroupsToDelete.value) {
+  for (const group of groupStore.groups) {
     const result = await groupStore.deleteGroup(group.id);
     if (!result.success) allOk = false;
   }
 
   deleting.value = false;
-  showDeleteDialog.value = false;
-  tournamentToDelete.value = "";
+  showDeleteAllDialog.value = false;
 
   if (allOk) {
+    await groupStore.getGroups();
     toast.add({ severity: "success", summary: "Sucesso", detail: "Todos os grupos eliminados", life: 3000 });
   } else {
     toast.add({ severity: "error", summary: "Erro", detail: "Alguns grupos não foram eliminados", life: 3000 });
