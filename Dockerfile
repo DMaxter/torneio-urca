@@ -1,0 +1,26 @@
+FROM node:22-alpine AS frontend-builder
+
+WORKDIR /frontend
+
+COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
+RUN pnpm install --frozen-lockfile
+
+COPY frontend/ ./
+RUN pnpm run build-only
+
+
+FROM ghcr.io/astral-sh/uv:0.5.17-slim AS backend-builder
+
+WORKDIR /backend
+
+COPY backend/pyproject.toml backend/uv.lock* ./
+RUN uv sync --frozen --no-dev
+
+COPY backend/ ./
+
+COPY --from=frontend-builder /frontend/dist /backend/static
+
+EXPOSE 8000
+
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

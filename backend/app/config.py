@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     database_name: str = "pm_tournament"
     jwt_secret: str
     production: bool = True
+    cors_origins: str = "*"
 
     class Config:
         env_file = ".env"

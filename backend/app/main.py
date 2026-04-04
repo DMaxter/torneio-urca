@@ -4,8 +4,9 @@ import uuid
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from database import db
 from app.routes.auth import router as auth_router
@@ -19,6 +20,7 @@ from app.routes.goal import router as goal_router
 from app.routes.card import router as card_router
 from app.routes.game_day import router as game_day_router
 from app.routes.file import router as file_router
+from app.config import get_settings
 from app.utils import REQUEST_ID, get_logger
 
 LOGGING_FORMAT = (
@@ -66,9 +68,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="URCA Tournament API", lifespan=lifespan)
 
+settings = get_settings()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=settings.cors_origins.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -119,6 +123,7 @@ api_router.include_router(file_router)
 api_router.include_router(game_day_router)
 
 app.mount("/api", api_router)
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 
 @app.get("/")
