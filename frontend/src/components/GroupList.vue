@@ -22,7 +22,7 @@
     </P-DataTable>
     <template #footer>
       <div class="flex gap-2">
-        <P-Button severity="danger" @click="showDeleteAllDialog = true">
+        <P-Button severity="danger" @click="showDeleteAllDialog = true" :disabled="groupStore.groups.length === 0 || deleting">
           <span class="material-symbols-outlined">delete_sweep</span>
           Eliminar tudo
         </P-Button>
@@ -116,7 +116,8 @@ async function confirmDeleteAllGroups() {
   deleting.value = true;
   let allOk = true;
 
-  for (const group of groupStore.groups) {
+  const groupsToDelete = [...groupStore.groups];
+  for (const group of groupsToDelete) {
     const result = await groupStore.deleteGroup(group.id);
     if (!result.success) allOk = false;
   }
