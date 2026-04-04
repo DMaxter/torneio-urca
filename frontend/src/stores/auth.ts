@@ -31,6 +31,7 @@ export const useAuthStore = defineStore("auth", () => {
     try {
       const response = await authService.login(credentials);
       if (response.status === 200 && response.data && "access_token" in response.data) {
+        initialized.value = false;
         await init();
         router.push("/admin");
         return { success: true };
