@@ -10,7 +10,8 @@ COPY frontend/ ./
 RUN pnpm run build-only
 
 
-FROM ghcr.io/astral-sh/uv:0.5.17-slim AS backend-builder
+FROM python:3.14-alpine
+COPY --from=docker.io/astral/uv:0.11 /uv /uvx /bin
 
 WORKDIR /backend
 
