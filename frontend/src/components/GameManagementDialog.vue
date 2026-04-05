@@ -1,26 +1,26 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal header="Gestão de Jogos" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <div class="flex flex-col gap-4">
-      <div class="flex flex-wrap gap-2 items-center">
-        <P-Dropdown
-          v-model="selectedTournamentId"
-          :options="tournaments"
-          optionLabel="name"
-          optionValue="id"
-          placeholder="Filtrar por torneio..."
-          class="w-full sm:w-64"
-          showClear
-        />
-        <P-Dropdown
-          v-model="selectedStatusFilter"
-          :options="statusFilterOptions"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Estado..."
-          class="w-full sm:w-40"
-          showClear
-        />
-      </div>
+       <div class="flex flex-wrap gap-2 items-center">
+         <P-Select
+           v-model="selectedTournamentId"
+           :options="tournaments"
+           optionLabel="name"
+           optionValue="id"
+           placeholder="Filtrar por torneio..."
+           class="w-full sm:w-64"
+           showClear
+         />
+         <P-Select
+           v-model="selectedStatusFilter"
+           :options="statusFilterOptions"
+           optionLabel="label"
+           optionValue="value"
+           placeholder="Estado..."
+           class="w-full sm:w-40"
+           showClear
+         />
+       </div>
 
       <P-DataTable :value="sortedGames" striped-rows size="small" responsiveLayout="scroll" :loading="loading">
         <P-Column>
@@ -318,7 +318,8 @@ function goToGameCallsForGame(game: Game) {
 }
 
 function viewLiveGame(gameId: string) {
-  toast.add({ severity: "info", summary: "Em desenvolvimento", detail: "Funcionalidadecoming soon", life: 3000 });
+  enabled.value = false;
+  router.push(`/admin/live-game/${gameId}`);
 }
 
 function viewGameLog(gameId: string) {

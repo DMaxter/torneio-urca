@@ -1,7 +1,27 @@
-export enum CardType {
-    Yellow,
-    Red,
+export enum CardTypeEnum {
+    Yellow = "Yellow",
+    Red = "Red",
 }
+
+export type CardType = "Yellow" | "Red";
+
+export type AssignGoalDto = {
+  tournament: string;
+  game: string;
+  team: string;
+  player_number?: number | null;
+  own_goal: boolean;
+  minute: number;
+};
+
+export type AssignCardDto = {
+  tournament: string;
+  game: string;
+  team: string;
+  player_number?: number | null;
+  card: CardType;
+  minute: number;
+};
 
 export enum GameStatus {
   Scheduled = "Scheduled",
@@ -41,10 +61,14 @@ export type EndTime = {
 export type Foul = {
   player_id: string,
   player_name: string,
+  player_number?: number,
   team_name: string,
   period: number,
   minute: number,
   card: CardType,
+  staff_id?: string | null,
+  staff_name?: string,
+  staff_type?: string,
   timestamp: Date,
 }
 
@@ -54,6 +78,7 @@ export type Goal = {
   team_name: string,
   period: number,
   minute: number,
+  own_goal: boolean,
   timestamp: Date,
 }
 

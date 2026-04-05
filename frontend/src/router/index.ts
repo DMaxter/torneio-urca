@@ -47,15 +47,24 @@ const routes = [
       requiresAuth: true,
     }
   },
-  {
-    path: "/game-calls",
-    name: "gameCalls",
-    component: () => import("@views/GameCallsView.vue"),
-    meta: {
-      title: "Chamada de Jogadores | " + import.meta.env.VUE_APP_NAME,
-      requiresAuth: true,
-    }
-  }
+   {
+     path: "/game-calls",
+     name: "gameCalls",
+     component: () => import("@views/GameCallsView.vue"),
+     meta: {
+       title: "Chamada de Jogadores | " + import.meta.env.VUE_APP_NAME,
+       requiresAuth: true,
+     }
+   },
+   {
+     path: "/admin/live-game/:gameId",
+     name: "liveGame",
+     component: () => import("@views/LiveGameManagement.vue"),
+     meta: {
+       title: "Jogo ao Vivo | " + import.meta.env.VUE_APP_NAME,
+       requiresAuth: true,
+     }
+   }
 ];
 
 const router = createRouter({

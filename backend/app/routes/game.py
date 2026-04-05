@@ -175,6 +175,23 @@ async def get_games():
     return result
 
 
+@router.get("/{game_id}", response_model=GameDto)
+async def get_game_by_id(game_id: str):
+    get_logger().info(f"Retrieving game {game_id}")
+    game = await get_game(game_id)
+    home_call = (
+        await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("home_call")})
+        if game.get("home_call")
+        else None
+    )
+    away_call = (
+        await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("away_call")})
+        if game.get("away_call")
+        else None
+    )
+    return game_to_dto(game, home_call, away_call)
+
+
 @router.patch("/{game_id}", response_model=GameDto)
 async def update_game(
     game_id: str, body: UpdateGameDto, current_user=Depends(get_current_user)

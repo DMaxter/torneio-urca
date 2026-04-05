@@ -44,14 +44,32 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
         if len(game_calls) != 2:
             raise Error.game_calls_not_delivered()
 
-        team_call = None
+        # Build map of team_id -> call
+        team_calls = {}
         for call in game_calls:
-            if str(call.get("team")) == str(goal.team):
-                team_call = call
-                break
+            team_id = str(call.get("team"))
+            team_calls[team_id] = call
 
-        if not team_call:
-            raise Error.bad_request("Chamada de jogo não encontrada para esta equipa")
+        scoring_team_id = str(goal.team)
+        if scoring_team_id not in team_calls:
+            raise Error.bad_request(
+                "Chamada de jogo não encontrada para a equipa que marcou"
+            )
+
+        if goal.own_goal:
+            # For own goals, the player is from the opposing team
+            opponent_team_ids = [
+                tid for tid in team_calls.keys() if tid != scoring_team_id
+            ]
+            if not opponent_team_ids:
+                raise Error.bad_request(
+                    "Não foi possível encontrar a equipa adversária"
+                )
+            team_call = team_calls[opponent_team_ids[0]]
+            get_logger().info(f"Looking up player in opposing team's call for own goal")
+        else:
+            # Regular goal: player is from scoring team
+            team_call = team_calls[scoring_team_id]
 
         player_found = False
         for p in team_call.get("players", []):
@@ -82,9 +100,7 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
         "player_id": ObjectId(player_id) if player_id else None,
         "player_name": player_name,
         "player_number": goal.player_number,
-        "staff_id": ObjectId(goal.staff_id) if goal.staff_id else None,
-        "staff_name": "",
-        "staff_type": None,
+        "own_goal": goal.own_goal,
         "game_id": ObjectId(goal.game),
         "period": game.get("current_period", 0),
         "minute": goal.minute,
@@ -106,6 +122,7 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
             "player_name": player_name,
             "player_number": goal.player_number,
             "team_name": team["name"],
+            "own_goal": goal.own_goal,
             "period": game.get("current_period", 0),
             "minute": goal.minute,
             "timestamp": goal_dict["timestamp"].isoformat(),

@@ -34,48 +34,48 @@
       </P-Column>
       <P-Column header="Ação" style="width: 150px">
         <template #body="{ data }">
-          <div class="flex gap-1" v-if="data.status !== GameStatus.Finished">
-            <P-Button 
-              v-if="data.status === GameStatus.Scheduled" 
-              label="Iniciar Chamadas" 
-              size="small" 
-              severity="info"
-              @click="startCalls(data.id)" 
-              v-tooltip.top="'Iniciar chamadas de jogadores'"
-            />
-            <P-Button 
-              v-else-if="data.status === GameStatus.CallsPending" 
-              label="Confirmar" 
-              size="small" 
-              severity="success"
-              @click="confirmCalls(data.id)" 
-              v-tooltip.top="'Confirmar chamadas (mín. 5 jogadores)'"
-            />
-            <P-Button 
-              v-else-if="data.status === GameStatus.ReadyToStart" 
-              label="Iniciar Jogo" 
-              size="small" 
-              severity="success"
-              @click="startGame(data.id)" 
-              v-tooltip.top="'Iniciar o jogo'"
-            />
-            <P-Button 
-              v-else-if="data.status === GameStatus.InProgress" 
-              label="Terminar" 
-              size="small" 
-              severity="danger"
-              @click="finishGame(data.id)" 
-              v-tooltip.top="'Terminar o jogo'"
-            />
-            <P-Button 
-              v-if="data.status !== GameStatus.InProgress && data.status !== GameStatus.Finished" 
-              icon="close" 
-              size="small" 
-              severity="danger"
-              @click="cancelGame(data.id)" 
-              v-tooltip.top="'Cancelar jogo'"
-            />
-          </div>
+           <div class="flex gap-1" v-if="data.status !== GameStatus.Finished">
+             <P-Button 
+               v-if="data.status === GameStatus.Scheduled" 
+               label="Iniciar Chamadas" 
+               size="small" 
+               severity="info"
+               @click="startCalls(data.id)" 
+               v-tooltip.top="'Iniciar chamadas de jogadores'"
+             />
+             <P-Button 
+               v-else-if="data.status === GameStatus.CallsPending" 
+               label="Confirmar" 
+               size="small" 
+               severity="success"
+               @click="confirmCalls(data.id)" 
+               v-tooltip.top="'Confirmar chamadas (mín. 5 jogadores)'"
+             />
+             <P-Button 
+               v-else-if="data.status === GameStatus.ReadyToStart" 
+               label="Iniciar Jogo" 
+               size="small" 
+               severity="success"
+               @click="startGame(data.id)" 
+               v-tooltip.top="'Iniciar o jogo'"
+             />
+             <P-Button 
+               v-else-if="data.status === GameStatus.InProgress" 
+               label="Live" 
+               size="small" 
+               severity="warn"
+               @click="goToLiveGame(data.id)" 
+               v-tooltip.top="'Abrir vista de jogo ao vivo'"
+             />
+             <P-Button 
+               v-if="data.status !== GameStatus.InProgress && data.status !== GameStatus.Finished" 
+               icon="close" 
+               size="small" 
+               severity="danger"
+               @click="cancelGame(data.id)" 
+               v-tooltip.top="'Cancelar jogo'"
+             />
+           </div>
         </template>
       </P-Column>
       <P-Column header="Eliminar todos" style="width: 110px">
@@ -114,6 +114,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useGameStore } from "@stores/games";
 import { useTeamStore } from "@stores/teams";
@@ -121,6 +122,7 @@ import { useTournamentStore } from "@stores/tournaments";
 import { GameStatus } from "@router/backend/services/game/types";
 import * as gameService from "@router/backend/services/game";
 
+const router = useRouter();
 const enabled = defineModel<boolean>();
 const toast = useToast();
 const gameStore = useGameStore();
@@ -235,6 +237,10 @@ async function cancelGame(gameId: string) {
     const msg = e.response?.data?.detail?.error || "Erro ao cancelar jogo";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   }
+}
+
+function goToLiveGame(gameId: string) {
+  router.push(`/admin/live-game/${gameId}`);
 }
 
 function getStatusSeverity(status: number | string) {

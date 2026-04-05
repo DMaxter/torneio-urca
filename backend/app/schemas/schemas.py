@@ -201,9 +201,9 @@ class GameDayDto(BaseModel):
 class AssignGoalDto(BaseModel):
     tournament: str
     game: str
-    team: str
+    team: str  # Scoring team
     player_number: Optional[int] = None  # Shirt number from game call
-    staff_id: Optional[str] = None  # For staff (optional)
+    own_goal: bool = False  # If true, player is from opposing team
     minute: int
 
 
