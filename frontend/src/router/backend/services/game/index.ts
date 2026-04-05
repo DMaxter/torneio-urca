@@ -69,3 +69,7 @@ export async function assignCard(card: AssignCardDto): Promise<AxiosResponse<any
 export async function assignFoul(foul: { tournament: string; game: string; team: string; player_number?: number | null; minute: number }): Promise<AxiosResponse<any | Error>> {
   return await http.post("/fouls", foul);
 }
+
+export async function deleteGameEvent(gameId: string, eventIndex: number): Promise<AxiosResponse<void | Error>> {
+  return await http.delete(`/games/${gameId}/events/${eventIndex}`);
+}

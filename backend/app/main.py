@@ -19,6 +19,7 @@ from app.routes.game import router as game_router
 from app.routes.goal import router as goal_router
 from app.routes.card import router as card_router
 from app.routes.foul import router as foul_router
+from app.routes.staff import router as staff_router
 from app.routes.game_day import router as game_day_router
 from app.routes.file import router as file_router
 from app.config import get_settings
@@ -121,6 +122,7 @@ api_router.include_router(game_router)
 api_router.include_router(goal_router)
 api_router.include_router(card_router)
 api_router.include_router(foul_router)
+api_router.include_router(staff_router)
 api_router.include_router(file_router)
 api_router.include_router(game_day_router)
 

@@ -177,7 +177,14 @@ const sections: Section[] = [
       { label: "Gerar", icon: "sports_soccer", severity: "secondary", handler: () => generateGames.value = true },
       { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGames.value = true }
     ]
-  }
+   },
+   {
+    title: "Gestão de Staff de Equipas",
+    icon: "👥",
+    actions: [
+      { label: "Gerir", icon: "manage_accounts", severity: "info", handler: () => router.push('/admin/staff') }
+    ]
+   }
 ];
 </script>
 

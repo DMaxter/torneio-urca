@@ -404,11 +404,13 @@ async def update_period(
     timer_started_at = game.get("timer_started_at")
 
     if body.action == "start_new":
-        new_period = (
-            body.period
-            if body.period is not None
-            else (current_period + 1 if current_period > 0 else 1)
-        )
+        if body.period is not None:
+            new_period = body.period
+        elif current_period == 0:
+            new_period = 1
+        else:
+            # Period already set (e.g., by "end" action), just start the timer
+            new_period = current_period
 
         # Validate tie for overtime (period 3) and penalties (period 5)
         if new_period in (3, 5):
@@ -530,13 +532,27 @@ async def update_period(
     else:
         raise Error.bad_request(f"Invalid action: {body.action}")
 
+    # Capture values before update for event creation
+    old_period = game.get("current_period", 0)
+    old_elapsed = game.get("period_elapsed_seconds", 0)
+
     await db.db[GAMES_COLLECTION].update_one({"_id": game["_id"]}, {"$set": updates})
 
     game.update(updates)
 
     # Add period start/end events
     if body.action == "start_new":
-        period_num = updates.get("current_period", game.get("current_period", 0))
+        period_num = updates.get("current_period", old_period)
+        # If there was a previous period running, auto-end it
+        if old_period > 0 and old_period != period_num:
+            end_event = {
+                "PeriodEnd": {
+                    "period": old_period,
+                    "elapsed_seconds": old_elapsed,
+                    "timestamp": now.isoformat(),
+                }
+            }
+            await add_game_event(game["_id"], end_event)
         start_event = {
             "PeriodStart": {
                 "period": period_num,
@@ -565,10 +581,11 @@ async def update_period(
         }
         await add_game_event(game["_id"], stop_event)
     elif body.action == "end":
+        # The period being ended is the one that was running before the update
         end_event = {
             "PeriodEnd": {
-                "period": game.get("current_period", 0),
-                "elapsed_seconds": game.get("period_elapsed_seconds", 0),
+                "period": old_period,
+                "elapsed_seconds": old_elapsed,
                 "timestamp": now.isoformat(),
             }
         }
@@ -585,6 +602,32 @@ async def update_period(
         else None
     )
     return game_to_dto(game, home_call, away_call)
+
+
+@router.delete("/{game_id}/events/{event_index}", status_code=204)
+async def delete_game_event(
+    game_id: str, event_index: int, current_user=Depends(get_current_user)
+):
+    """Delete a specific game event by its index in the events list."""
+    get_logger().info(
+        f"[{current_user['username']}] Deleting event {event_index} from game '{game_id}'"
+    )
+    try:
+        game = await db.db[GAMES_COLLECTION].find_one({"_id": ObjectId(game_id)})
+    except Exception:
+        raise Error.invalid_id("game")
+    if not game:
+        raise Error.not_found("Game")
+
+    events = game.get("events", [])
+    if event_index < 0 or event_index >= len(events):
+        raise Error.bad_request("Invalid event index")
+
+    events.pop(event_index)
+    await db.db[GAMES_COLLECTION].update_one(
+        {"_id": ObjectId(game_id)}, {"$set": {"events": events}}
+    )
+    get_logger().info(f"Event {event_index} deleted from game '{game_id}'")
 
 
 @router.patch("/calls/{call_id}", response_model=GameCallDto)

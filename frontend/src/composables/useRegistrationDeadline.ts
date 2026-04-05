@@ -1,6 +1,6 @@
 import { ref, onMounted, onUnmounted, computed } from "vue";
 
-const REGISTRATION_DEADLINE = new Date("2026-06-08T23:59:59");
+const REGISTRATION_DEADLINE = new Date("2026-05-08T23:59:59");
 
 const now = ref(new Date());
 let interval: ReturnType<typeof setInterval> | null = null;

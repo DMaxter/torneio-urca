@@ -495,3 +495,120 @@ async def update_team(
     get_logger().info(f"Team '{team_id}' updated successfully")
 
     return team_to_dto(updated_team)
+
+
+@router.post("/{team_id}/players", response_model=TeamDto)
+async def add_player_to_team(
+    team_id: str, player_id: str, current_user=Depends(get_current_user)
+):
+    """Add an existing player to a team."""
+    get_logger().info(
+        f"[{current_user['username']}] Adding player '{player_id}' to team '{team_id}'"
+    )
+    try:
+        team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    except Exception:
+        raise Error.invalid_id("team")
+    if not team:
+        raise Error.not_found("Team")
+
+    try:
+        player = await db.db[PLAYERS_COLLECTION].find_one({"_id": ObjectId(player_id)})
+    except Exception:
+        raise Error.invalid_id("player")
+    if not player:
+        raise Error.not_found("Player")
+
+    player_oid = ObjectId(player_id)
+    current_players = team.get("players", [])
+    if player_oid not in current_players:
+        current_players.append(player_oid)
+        await db.db[TEAMS_COLLECTION].update_one(
+            {"_id": ObjectId(team_id)}, {"$set": {"players": current_players}}
+        )
+        # Also update the player's team reference
+        await db.db[PLAYERS_COLLECTION].update_one(
+            {"_id": player_oid}, {"$set": {"team": ObjectId(team_id)}}
+        )
+
+    updated_team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    return team_to_dto(updated_team)
+
+
+@router.delete("/{team_id}/players/{player_id}", response_model=TeamDto)
+async def remove_player_from_team(
+    team_id: str, player_id: str, current_user=Depends(get_current_user)
+):
+    """Remove a player from a team."""
+    get_logger().info(
+        f"[{current_user['username']}] Removing player '{player_id}' from team '{team_id}'"
+    )
+    try:
+        team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    except Exception:
+        raise Error.invalid_id("team")
+    if not team:
+        raise Error.not_found("Team")
+
+    player_oid = ObjectId(player_id)
+    current_players = team.get("players", [])
+    current_players = [p for p in current_players if p != player_oid]
+    await db.db[TEAMS_COLLECTION].update_one(
+        {"_id": ObjectId(team_id)}, {"$set": {"players": current_players}}
+    )
+    # Clear the player's team reference
+    await db.db[PLAYERS_COLLECTION].update_one(
+        {"_id": player_oid}, {"$set": {"team": None}}
+    )
+
+    updated_team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    return team_to_dto(updated_team)
+
+
+@router.patch("/{team_id}/staff/{staff_field}", response_model=TeamDto)
+async def update_team_staff(
+    team_id: str,
+    staff_field: str,
+    staff_id: Optional[str] = None,
+    current_user=Depends(get_current_user),
+):
+    """Update a team's staff member (set or remove)."""
+    valid_fields = [
+        "main_coach",
+        "assistant_coach",
+        "physiotherapist",
+        "first_deputy",
+        "second_deputy",
+    ]
+    if staff_field not in valid_fields:
+        raise Error.bad_request(
+            f"Invalid staff field. Must be one of: {', '.join(valid_fields)}"
+        )
+
+    get_logger().info(
+        f"[{current_user['username']}] Updating {staff_field} for team '{team_id}'"
+    )
+    try:
+        team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    except Exception:
+        raise Error.invalid_id("team")
+    if not team:
+        raise Error.not_found("Team")
+
+    if staff_id:
+        try:
+            staff = await db.db[STAFF_COLLECTION].find_one({"_id": ObjectId(staff_id)})
+        except Exception:
+            raise Error.invalid_id("staff")
+        if not staff:
+            raise Error.not_found("Staff member")
+        staff_oid = ObjectId(staff_id)
+    else:
+        staff_oid = None
+
+    await db.db[TEAMS_COLLECTION].update_one(
+        {"_id": ObjectId(team_id)}, {"$set": {staff_field: staff_oid}}
+    )
+
+    updated_team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    return team_to_dto(updated_team)

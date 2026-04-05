@@ -29,7 +29,7 @@
         <div class="text-3xl font-bold text-stone-900">{{ getPeriodLabel(game.current_period) }}</div>
         <div v-if="game.current_period > 0" class="text-xs text-stone-400">{{ getPeriodTypeLabel(game.current_period) }}</div>
       </div>
-      <div class="bg-white border border-stone-300 rounded-xl p-4 text-center">
+      <div v-if="game.current_period < 5" class="bg-white border border-stone-300 rounded-xl p-4 text-center">
         <div class="text-sm text-stone-500">Cronómetro</div>
         <div class="text-4xl font-bold text-stone-900 mt-1">{{ timerDisplay }}</div>
         <div class="text-xs text-stone-400">
@@ -154,23 +154,28 @@
       <div class="bg-white border border-stone-300 rounded-xl p-4 max-h-96 overflow-y-auto">
         <h2 class="text-lg font-semibold text-stone-900 mb-4">Eventos do Jogo</h2>
 
-        <div v-if="sortedEvents.length === 0" class="text-stone-400 text-center py-8">
+        <div v-if="sortedEventsWithIndex.length === 0" class="text-stone-400 text-center py-8">
           Nenhum evento registado
         </div>
 
         <div v-else class="space-y-2">
-          <div v-for="(event, idx) in sortedEvents" :key="idx" 
-               class="flex items-center gap-3 p-3 rounded-lg border-2"
-               :class="getEventBorderClass(event)">
+          <div v-for="(item, idx) in sortedEventsWithIndex" :key="item.index" 
+               class="flex items-center gap-3 p-3 rounded-lg border-2 group"
+               :class="getEventBorderClass(item.event)">
             <div class="font-bold text-stone-600 text-xl w-24 text-center shrink-0">
-              <div>{{ getEventTimeDisplay(event) }}</div>
-              <div class="text-xs text-stone-400 font-normal">{{ getEventTimestampFormatted(event) }}</div>
+              <div>{{ getEventTimeDisplay(item.event) }}</div>
+              <div class="text-xs text-stone-400 font-normal">{{ getEventTimestampFormatted(item.event) }}</div>
             </div>
             <div class="flex-1 min-w-0">
-              <div class="text-base font-semibold text-stone-900">{{ getEventDescription(event) }}</div>
-              <div v-if="getEventMetadata(event)" class="text-xs text-stone-400">{{ getEventMetadata(event) }}</div>
+              <div class="text-base font-semibold text-stone-900">{{ getEventDescription(item.event) }}</div>
+              <div v-if="getEventMetadata(item.event)" class="text-xs text-stone-400">{{ getEventMetadata(item.event) }}</div>
             </div>
-            <div class="text-2xl shrink-0">{{ getEventIcon(event) }}</div>
+            <div class="text-2xl shrink-0">{{ getEventIcon(item.event) }}</div>
+            <button 
+              class="material-symbols-outlined text-red-600 cursor-pointer hover:bg-red-50 rounded-full p-1 transition-colors shrink-0"
+              @click="deleteEvent(item.index)"
+              v-tooltip.top="'Eliminar evento'"
+            >delete</button>
           </div>
         </div>
       </div>
@@ -447,8 +452,13 @@ const currentElapsedSeconds = computed(() => {
   if (game.value.timer_active && game.value.timer_started_at) {
     const now = Date.now();
     const startTime = Date.parse(game.value.timer_started_at + 'Z');
-    const activeElapsed = Math.floor((now - startTime) / 1000);
+    const activeElapsed = (now - startTime) / 1000;
     elapsed += activeElapsed;
+  }
+  // Cap elapsed time at the period's duration
+  const duration = getDurationForPeriod(game.value.current_period);
+  if (duration > 0 && elapsed > duration) {
+    elapsed = duration;
   }
   return elapsed;
 });
@@ -458,10 +468,10 @@ const timerDisplay = computed(() => {
   const durationSeconds = getDurationForPeriod(game.value.current_period);
   const remaining = Math.max(0, durationSeconds - currentElapsedSeconds.value);
   const mins = Math.floor(remaining / 60);
-  const secs = remaining % 60;
+  const secs = Math.floor(remaining % 60);
+  const tenths = Math.floor((remaining % 1) * 10);
   if (mins === 0) {
     // Show seconds and tenths
-    const tenths = Math.floor((secs % 1) * 10);
     return `${secs}.${tenths}s`;
   }
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
@@ -672,6 +682,18 @@ function getEventPeriod(event: GameEvent): number {
     const foul = (event as any).Foul;
     return foul.period || 0;
   }
+  if ('PeriodStart' in event) {
+    return (event as any).PeriodStart.period || 0;
+  }
+  if ('PeriodResume' in event) {
+    return (event as any).PeriodResume.period || 0;
+  }
+  if ('PeriodEnd' in event) {
+    return (event as any).PeriodEnd.period || 0;
+  }
+  if ('PeriodPause' in event) {
+    return (event as any).PeriodPause.period || 0;
+  }
   return 0;
 }
 
@@ -689,8 +711,13 @@ function getEventTimeDisplay(event: GameEvent): string {
     return 'Pen.';
   }
 
-  if ('PeriodStart' in event || 'PeriodEnd' in event || 'PeriodPause' in event) {
-    const ps = (event as any).PeriodStart || (event as any).PeriodEnd || (event as any).PeriodPause;
+  if ('PeriodStart' in event || 'PeriodEnd' in event || 'PeriodPause' in event || 'PeriodResume' in event) {
+    const ps = (event as any).PeriodStart || (event as any).PeriodEnd || (event as any).PeriodPause || (event as any).PeriodResume;
+    return `P${ps.period}`;
+  }
+
+  if ('PeriodStart' in event || 'PeriodEnd' in event || 'PeriodPause' in event || 'PeriodResume' in event) {
+    const ps = (event as any).PeriodStart || (event as any).PeriodEnd || (event as any).PeriodPause || (event as any).PeriodResume;
     return `P${ps.period}`;
   }
 
@@ -770,16 +797,11 @@ function getEventMetadata(event: GameEvent): string {
   return '';
 }
 
-const sortedEvents = computed(() => {
-  // Map events with their original index for stable sorting
+const sortedEventsWithIndex = computed(() => {
   const eventsWithIndex = events.value.map((e, i) => ({ event: e, index: i }));
-  
-  return eventsWithIndex
-    .sort((a, b) => {
-      // Sort by timestamp descending (most recent first)
-      return getEventTimestamp(b.event) - getEventTimestamp(a.event);
-    })
-    .map(item => item.event);
+  return eventsWithIndex.sort((a, b) => {
+    return getEventTimestamp(b.event) - getEventTimestamp(a.event);
+  });
 });
 
 function getEventTeamName(event: GameEvent): string {
@@ -894,13 +916,16 @@ async function resumePeriod() {
   if (!game.value) return;
   
   try {
-    const response = await gameService.updatePeriod(game.value.id, { action: 'resume' });
+    // If elapsed time is 0, this is a new period start, not a resume
+    const action = game.value.period_elapsed_seconds === 0 ? 'start_new' : 'resume';
+    const response = await gameService.updatePeriod(game.value.id, { action });
     if (response.status === 200) {
-      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Timer retomado', life: 3000 });
+      const msg = action === 'start_new' ? 'Período iniciado' : 'Cronómetro retomado';
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: msg, life: 3000 });
       await loadGame();
     }
   } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || 'Erro ao retomar timer';
+    const msg = e.response?.data?.detail?.error || 'Erro ao retomar cronómetro';
     toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   }
 }
@@ -911,11 +936,11 @@ async function stopTimer() {
   try {
     const response = await gameService.updatePeriod(game.value.id, { action: 'stop' });
     if (response.status === 200) {
-      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Timer parado', life: 3000 });
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Cronómetro parado', life: 3000 });
       await loadGame();
     }
   } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || 'Erro ao parar timer';
+    const msg = e.response?.data?.detail?.error || 'Erro ao parar cronómetro';
     toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   }
 }
@@ -958,6 +983,12 @@ async function loadGame() {
   if (response.status === 200 && response.data && 'id' in response.data) {
     game.value = response.data as Game;
     events.value = response.data.events || [];
+    
+    // Stop polling if game is finished
+    if (game.value.status === GameStatus.Finished && refreshInterval) {
+      clearInterval(refreshInterval);
+      refreshInterval = 0;
+    }
   } else {
     game.value = null;
   }
@@ -981,6 +1012,24 @@ async function finishGame() {
   }
 }
 
+async function deleteEvent(eventIndex: number) {
+  if (!game.value) return;
+  
+  const confirmed = confirm('Tem a certeza que deseja eliminar este evento?');
+  if (!confirmed) return;
+  
+  try {
+    const response = await gameService.deleteGameEvent(game.value.id, eventIndex);
+    if (response.status === 204) {
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Evento eliminado', life: 3000 });
+      await loadGame();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || 'Erro ao eliminar evento';
+    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+  }
+}
+
 let refreshInterval: number = 0;
 let timerTickInterval: number = 0;
 
@@ -993,11 +1042,27 @@ onMounted(async () => {
   
   refreshInterval = setInterval(loadGame, 10000);
   
-  timerTickInterval = setInterval(() => {
+  timerTickInterval = setInterval(async () => {
     if (game.value?.timer_active) {
-      game.value = { ...game.value };
+      const duration = getDurationForPeriod(game.value.current_period);
+      const elapsed = game.value.period_elapsed_seconds;
+      const startTime = game.value.timer_started_at ? Date.parse(game.value.timer_started_at + 'Z') : 0;
+      const activeElapsed = startTime > 0 ? (Date.now() - startTime) / 1000 : 0;
+      const totalElapsed = elapsed + activeElapsed;
+      
+      // Auto-stop timer when it reaches 0
+      if (duration > 0 && totalElapsed >= duration) {
+        await stopTimer();
+      } else {
+        game.value = { ...game.value };
+      }
     }
-  }, 1000);
+  }, 100);
+});
+
+onUnmounted(() => {
+  if (refreshInterval) clearInterval(refreshInterval);
+  if (timerTickInterval) clearInterval(timerTickInterval);
 });
 </script>
 

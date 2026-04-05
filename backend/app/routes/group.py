@@ -238,11 +238,14 @@ async def get_classification(group_id: str):
         home_goals = 0
         away_goals = 0
         for event in game.get("events", []):
-            if event.get("type") == "Goal":
-                event_team = str(event.get("team_id"))
-                if event_team == home_team_id:
+            if "Goal" in event:
+                goal = event["Goal"]
+                goal_team_name = goal.get("team_name", "")
+                home_team_name = teams_map.get(home_team_id, "")
+                away_team_name = teams_map.get(away_team_id, "")
+                if goal_team_name == home_team_name:
                     home_goals += 1
-                elif event_team == away_team_id:
+                elif goal_team_name == away_team_name:
                     away_goals += 1
 
         standings[home_team_id]["games"] += 1
@@ -284,7 +287,64 @@ async def get_classification(group_id: str):
             )
         )
 
-    result.sort(key=lambda x: (-x.points, -x.goal_difference, -x.goals_scored))
+    # Build head-to-head results map for direct confrontation tiebreaker
+    h2h_results = {}  # (team_a_id, team_b_id) -> winner team_id or None (tie)
+    for game in games:
+        home_call = calls_map.get(str(game.get("home_call")))
+        away_call = calls_map.get(str(game.get("away_call")))
+        if not home_call or not away_call:
+            continue
+        home_team_id = str(home_call.get("team"))
+        away_team_id = str(away_call.get("team"))
+        if home_team_id not in team_ids or away_team_id not in team_ids:
+            continue
+        home_goals = 0
+        away_goals = 0
+        for event in game.get("events", []):
+            if "Goal" in event:
+                goal = event["Goal"]
+                goal_team_name = goal.get("team_name", "")
+                home_team_name = teams_map.get(home_team_id, "")
+                away_team_name = teams_map.get(away_team_id, "")
+                if goal_team_name == home_team_name:
+                    home_goals += 1
+                elif goal_team_name == away_team_name:
+                    away_goals += 1
+        if home_goals > away_goals:
+            h2h_results[(home_team_id, away_team_id)] = home_team_id
+            h2h_results[(away_team_id, home_team_id)] = home_team_id
+        elif away_goals > home_goals:
+            h2h_results[(home_team_id, away_team_id)] = away_team_id
+            h2h_results[(away_team_id, home_team_id)] = away_team_id
+        else:
+            h2h_results[(home_team_id, away_team_id)] = None
+            h2h_results[(away_team_id, home_team_id)] = None
+
+    def compare_teams(a: TeamStanding, b: TeamStanding) -> int:
+        # 1. Points (higher is better)
+        if a.points != b.points:
+            return b.points - a.points
+        # 2. Direct confrontation (head-to-head)
+        h2h = h2h_results.get((a.team_id, b.team_id))
+        if h2h is not None:
+            if h2h == a.team_id:
+                return -1  # a wins
+            elif h2h == b.team_id:
+                return 1  # b wins
+        # 3. Goal difference (higher is better)
+        if a.goal_difference != b.goal_difference:
+            return b.goal_difference - a.goal_difference
+        # 4. Goals scored (higher is better)
+        if a.goals_scored != b.goals_scored:
+            return b.goals_scored - a.goals_scored
+        # 5. Goals suffered (lower is better)
+        if a.goals_suffered != b.goals_suffered:
+            return a.goals_suffered - b.goals_suffered
+        return 0
+
+    from functools import cmp_to_key
+
+    result.sort(key=cmp_to_key(compare_teams))
 
     get_logger().info(f"Retrieved classification for group '{group_id}'")
     return ClassificationDto(
