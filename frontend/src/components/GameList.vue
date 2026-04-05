@@ -22,9 +22,60 @@
           </div>
         </template>
       </P-Column>
+      <P-Column header="Fase" style="width: 100px">
+        <template #body="{ data }">
+          <span class="text-sm text-stone-500">{{ getPhaseLabel(data.phase) }}</span>
+        </template>
+      </P-Column>
       <P-Column header="Estado" style="width: 120px">
         <template #body="{ data }">
           <P-Tag :severity="getStatusSeverity(data.status)" :value="getStatusLabel(data.status)" />
+        </template>
+      </P-Column>
+      <P-Column header="Ação" style="width: 150px">
+        <template #body="{ data }">
+          <div class="flex gap-1" v-if="data.status !== GameStatus.Finished">
+            <P-Button 
+              v-if="data.status === GameStatus.Scheduled" 
+              label="Iniciar Chamadas" 
+              size="small" 
+              severity="info"
+              @click="startCalls(data.id)" 
+              v-tooltip.top="'Iniciar chamadas de jogadores'"
+            />
+            <P-Button 
+              v-else-if="data.status === GameStatus.CallsPending" 
+              label="Confirmar" 
+              size="small" 
+              severity="success"
+              @click="confirmCalls(data.id)" 
+              v-tooltip.top="'Confirmar chamadas (mín. 5 jogadores)'"
+            />
+            <P-Button 
+              v-else-if="data.status === GameStatus.ReadyToStart" 
+              label="Iniciar Jogo" 
+              size="small" 
+              severity="success"
+              @click="startGame(data.id)" 
+              v-tooltip.top="'Iniciar o jogo'"
+            />
+            <P-Button 
+              v-else-if="data.status === GameStatus.InProgress" 
+              label="Terminar" 
+              size="small" 
+              severity="danger"
+              @click="finishGame(data.id)" 
+              v-tooltip.top="'Terminar o jogo'"
+            />
+            <P-Button 
+              v-if="data.status !== GameStatus.InProgress && data.status !== GameStatus.Finished" 
+              icon="close" 
+              size="small" 
+              severity="danger"
+              @click="cancelGame(data.id)" 
+              v-tooltip.top="'Cancelar jogo'"
+            />
+          </div>
         </template>
       </P-Column>
       <P-Column header="Eliminar todos" style="width: 110px">
@@ -68,6 +119,7 @@ import { useGameStore } from "@stores/games";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 import { GameStatus } from "@router/backend/services/game/types";
+import * as gameService from "@router/backend/services/game";
 
 const enabled = defineModel<boolean>();
 const toast = useToast();
@@ -120,23 +172,117 @@ async function confirmDeleteAll() {
   }
 }
 
-function getStatusSeverity(status: number) {
-  switch (status) {
-    case GameStatus.NotStarted: return "secondary";
-    case GameStatus.InProgress: return "info";
-    case GameStatus.Finished: return "success";
-    case GameStatus.Canceled: return "danger";
+async function startCalls(gameId: string) {
+  try {
+    const response = await gameService.updateGameStatus(gameId, GameStatus.CallsPending);
+    if (response.status === 200) {
+      toast.add({ severity: "success", summary: "Sucesso", detail: "Chamadas iniciadas", life: 3000 });
+      await gameStore.getGames();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || "Erro ao iniciar chamadas";
+    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+  }
+}
+
+async function confirmCalls(gameId: string) {
+  try {
+    const response = await gameService.confirmGameCalls(gameId);
+    if (response.status === 200) {
+      toast.add({ severity: "success", summary: "Sucesso", detail: "Chamadas confirmadas", life: 3000 });
+      await gameStore.getGames();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || "Erro ao confirmar chamadas";
+    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+  }
+}
+
+async function startGame(gameId: string) {
+  try {
+    const response = await gameService.updateGameStatus(gameId, GameStatus.InProgress);
+    if (response.status === 200) {
+      toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo iniciado", life: 3000 });
+      await gameStore.getGames();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || "Erro ao iniciar jogo";
+    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+  }
+}
+
+async function finishGame(gameId: string) {
+  try {
+    const response = await gameService.updateGameStatus(gameId, GameStatus.Finished);
+    if (response.status === 200) {
+      toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo terminado", life: 3000 });
+      await gameStore.getGames();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || "Erro ao terminar jogo";
+    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+  }
+}
+
+async function cancelGame(gameId: string) {
+  try {
+    const response = await gameService.updateGameStatus(gameId, GameStatus.Canceled);
+    if (response.status === 200) {
+      toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo cancelado", life: 3000 });
+      await gameStore.getGames();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || "Erro ao cancelar jogo";
+    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+  }
+}
+
+function getStatusSeverity(status: number | string) {
+  const s = String(status);
+  switch (s) {
+    case "0":
+    case "Scheduled": return "secondary";
+    case "1":
+    case "CallsPending": return "warn";
+    case "2":
+    case "ReadyToStart": return "info";
+    case "3":
+    case "InProgress": return "success";
+    case "4":
+    case "Finished": return "contrast";
+    case "5":
+    case "Canceled": return "danger";
     default: return "secondary";
   }
 }
 
-function getStatusLabel(status: number) {
-  switch (status) {
-    case GameStatus.NotStarted: return "Por iniciar";
-    case GameStatus.InProgress: return "Em progresso";
-    case GameStatus.Finished: return "Terminado";
-    case GameStatus.Canceled: return "Cancelado";
-    default: return "Desconhecido";
+function getPhaseLabel(phase: string) {
+  switch (phase) {
+    case "group": return "Grupos";
+    case "quarter_final": return "Quartos";
+    case "semi_final": return "Meias";
+    case "final": return "Final";
+    case "third_place": return "3º/4º";
+    default: return phase;
+  }
+}
+
+function getStatusLabel(status: number | string) {
+  const s = String(status);
+  switch (s) {
+    case "0":
+    case "Scheduled": return "Agendado";
+    case "1":
+    case "CallsPending": return "Chamadas Pendentes";
+    case "2":
+    case "ReadyToStart": return "Pronto";
+    case "3":
+    case "InProgress": return "Em Progresso";
+    case "4":
+    case "Finished": return "Terminado";
+    case "5":
+    case "Canceled": return "Cancelado";
+    default: return "?" + s;
   }
 }
 

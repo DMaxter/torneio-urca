@@ -41,3 +41,11 @@ export async function deleteGame(gameId: string): Promise<AxiosResponse<void | E
 export async function updateGameCall(callId: string, players: { player: string; number: number | null }[]): Promise<AxiosResponse<any | Error>> {
   return await http.patch(`/games/calls/${callId}`, { players });
 }
+
+export async function updateGameStatus(gameId: string, status: number): Promise<AxiosResponse<Game | Error>> {
+  return await http.patch(`/games/${gameId}/status`, { status });
+}
+
+export async function confirmGameCalls(gameId: string): Promise<AxiosResponse<Game | Error>> {
+  return await http.patch(`/games/${gameId}/confirm-calls`);
+}

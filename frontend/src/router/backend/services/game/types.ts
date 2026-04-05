@@ -4,10 +4,12 @@ export enum CardType {
 }
 
 export enum GameStatus {
-  NotStarted,
-  InProgress,
-  Finished,
-  Canceled,
+  Scheduled = "Scheduled",
+  CallsPending = "CallsPending",
+  ReadyToStart = "ReadyToStart",
+  InProgress = "InProgress",
+  Finished = "Finished",
+  Canceled = "Canceled",
 }
 
 export type GameCall = {

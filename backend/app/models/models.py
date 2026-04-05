@@ -30,7 +30,9 @@ class StaffType(str, Enum):
 class GameStatus(str, Enum):
     """Status of a game in the tournament lifecycle."""
 
-    NotStarted = "NotStarted"
+    Scheduled = "Scheduled"
+    CallsPending = "CallsPending"
+    ReadyToStart = "ReadyToStart"
     InProgress = "InProgress"
     Finished = "Finished"
     Canceled = "Canceled"
@@ -146,7 +148,7 @@ class Game(BaseModel):
     scheduled_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     finish_date: Optional[datetime] = None
-    status: GameStatus = GameStatus.NotStarted
+    status: GameStatus = GameStatus.Scheduled
     home_call: Optional[str] = None
     away_call: Optional[str] = None
     phase: GamePhase = GamePhase.Group
@@ -182,8 +184,12 @@ class Goal(BaseModel):
     tournament: str
     team_id: str
     team_name: str = ""
-    player_id: str
+    player_id: Optional[str] = None
     player_name: str = ""
+    player_number: Optional[int] = None  # Shirt number from game call
+    staff_id: Optional[str] = None  # For staff goals (if allowed)
+    staff_name: str = ""
+    staff_type: Optional[StaffType] = None
     game_id: str
     period: int
     minute: int
@@ -199,8 +205,12 @@ class Card(BaseModel):
     team_name: str = ""
     card: CardType
     game_id: str
-    player_id: str
+    player_id: Optional[str] = None
     player_name: str = ""
+    player_number: Optional[int] = None  # Shirt number from game call
+    staff_id: Optional[str] = None  # For staff fouls
+    staff_name: str = ""
+    staff_type: Optional[StaffType] = None
     period: int
     minute: int
     timestamp: datetime

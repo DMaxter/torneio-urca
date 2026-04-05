@@ -45,6 +45,7 @@
     <ViewGamesDialog v-model="viewGames" />
     <GameList v-model="listGames" />
     <GameManagement v-model="manageGame" />
+    <GameManagementDialog v-model="manageGames" />
     <GroupList v-model="listGroups" />
     <GroupManagement v-model="manageGroup" />
     <GenerateGroupsDialog v-model="generateGroups" />
@@ -98,6 +99,7 @@ const generateGroups = ref(false);
 const viewGroups = ref(false);
 const listGames = ref(false);
 const manageGame = ref(false);
+const manageGames = ref(false);
 const gameDays = ref(false);
 const generateGames = ref(false);
 const gameCalendar = ref(false);
@@ -167,12 +169,12 @@ const sections: Section[] = [
     ]
   },
   {
-    title: "Jogos",
+    title: "Gestão de Jogos",
     icon: "🎮",
     actions: [
+      { label: "Gerir", icon: "manage_search", severity: "info", handler: () => manageGames.value = true },
       { label: "Gerar", icon: "sports_soccer", severity: "success", handler: () => generateGames.value = true },
-      { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGames.value = true },
-      { label: "Chamada", icon: "groups", severity: "secondary", handler: goToGameCalls }
+      { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGames.value = true }
     ]
   }
 ];

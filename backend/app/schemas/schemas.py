@@ -121,6 +121,10 @@ class UpdateGameCallDto(BaseModel):
     players: List[dict]  # [{"player": str, "number": int | None}]
 
 
+class ConfirmGameCallDto(BaseModel):
+    confirmed: bool
+
+
 class CreateGameDto(BaseModel):
     tournament: str
     scheduled_date: Optional[datetime] = None
@@ -175,6 +179,10 @@ class UpdateGameDto(BaseModel):
     scheduled_date: Optional[datetime] = None
 
 
+class UpdateGameStatusDto(BaseModel):
+    status: GameStatus
+
+
 class CreateGameDayDto(BaseModel):
     tournament: str
     date: str
@@ -194,7 +202,8 @@ class AssignGoalDto(BaseModel):
     tournament: str
     game: str
     team: str
-    player: str
+    player_number: Optional[int] = None  # Shirt number from game call
+    staff_id: Optional[str] = None  # For staff (optional)
     minute: int
 
 
@@ -202,7 +211,8 @@ class AssignCardDto(BaseModel):
     tournament: str
     game: str
     team: str
-    player: str
+    player_number: Optional[int] = None  # Shirt number from game call
+    staff_id: Optional[str] = None  # For staff (optional)
     card: CardType
     minute: int
 

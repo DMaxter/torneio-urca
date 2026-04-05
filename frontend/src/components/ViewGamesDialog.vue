@@ -29,6 +29,7 @@
               <p class="text-xs font-semibold text-stone-400 mb-1">Jornada {{ ri + 1 }}</p>
               <ul class="space-y-1">
                 <li v-for="(match, i) in round" :key="i" class="text-xs text-stone-600 flex items-center gap-1">
+                  <P-Tag :severity="getStatusSeverity(match.status)" :value="getStatusLabel(match.status)" class="shrink-0 text-[10px]" v-tooltip.top="getStatusTooltip(match.status)" />
                   <span class="truncate">{{ match.home }}</span>
                   <span class="text-stone-400 shrink-0">vs</span>
                   <span class="truncate">{{ match.away }}</span>
@@ -45,6 +46,7 @@
           </div>
           <div class="divide-y divide-stone-100">
             <div v-for="game in tournament.knockout" :key="game.id" class="px-3 py-2 flex items-center gap-3">
+              <P-Tag :severity="getStatusSeverity(game.status)" :value="getStatusLabel(game.status)" class="shrink-0 text-[10px]" v-tooltip.top="getStatusTooltip(game.status)" />
               <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
               <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.home)"></span>
               <span class="text-xs text-stone-400 shrink-0">vs</span>
@@ -168,6 +170,7 @@ interface KnockoutEntry {
   label: string;
   home: string;
   away: string;
+  status: number;
 }
 
 const byTournament = computed(() => {
@@ -216,6 +219,7 @@ const byTournament = computed(() => {
             : (KNOCKOUT_PHASE_LABEL[g.phase] ?? g.phase),
           home: g.home_placeholder ?? getTeamName(g.home_call?.team ?? ""),
           away: g.away_placeholder ?? getTeamName(g.away_call?.team ?? ""),
+          status: g.status,
         }));
 
       return { id: tournament.id, name: tournament.name, groups: groupsWithRounds, knockout };
@@ -246,6 +250,63 @@ function buildRounds(matches: MatchEntry[]): MatchEntry[][] {
   }
 
   return rounds;
+}
+
+function getStatusSeverity(status: number | string) {
+  const s = String(status);
+  switch (s) {
+    case "0":
+    case "Scheduled": return "secondary";
+    case "1":
+    case "CallsPending": return "warn";
+    case "2":
+    case "ReadyToStart": return "info";
+    case "3":
+    case "InProgress": return "success";
+    case "4":
+    case "Finished": return "contrast";
+    case "5":
+    case "Canceled": return "danger";
+    default: return "secondary";
+  }
+}
+
+function getStatusLabel(status: number | string) {
+  const s = String(status);
+  switch (s) {
+    case "0":
+    case "Scheduled": return "Ag.";
+    case "1":
+    case "CallsPending": return "Cham.";
+    case "2":
+    case "ReadyToStart": return "Pronto";
+    case "3":
+    case "InProgress": return "Jogo";
+    case "4":
+    case "Finished": return "Fim";
+    case "5":
+    case "Canceled": return "Canc.";
+    default: return "?";
+  }
+}
+
+function getStatusTooltip(status: number | string) {
+  const s = String(status);
+  switch (s) {
+    case "0":
+    case "Scheduled": return "Agendado";
+    case "1":
+    case "CallsPending": return "Chamadas Pendentes";
+    case "2":
+    case "ReadyToStart": return "Pronto - Pode iniciar o jogo";
+    case "3":
+    case "InProgress": return "Em Progresso";
+    case "4":
+    case "Finished": return "Terminado";
+    case "5":
+    case "Canceled": return "Cancelado";
+    default: return "Desconhecido";
+  }
 }
 
 onMounted(async () => {

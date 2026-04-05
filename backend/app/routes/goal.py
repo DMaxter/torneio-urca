@@ -3,13 +3,13 @@ from fastapi import APIRouter, Depends
 from datetime import datetime
 from database import db, GOALS_COLLECTION, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import AssignGoalDto
+from app.models.models import GameStatus
 from app.error import Error
 from app.utils.auth import get_current_user
 from app.utils import get_logger
 from app.routes.tournament import get_tournament
-from app.routes.game import get_game, check_game_running, add_game_event
+from app.routes.game import get_game, add_game_event
 from app.routes.team import get_team
-from app.routes.player import get_player
 
 router = APIRouter(prefix="/goals", tags=["Goals"])
 
@@ -17,52 +17,74 @@ router = APIRouter(prefix="/goals", tags=["Goals"])
 @router.post("", status_code=201)
 async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user)):
     get_logger().info(
-        f"[{current_user['username']}] Assigning goal - player: {goal.player}, game: {goal.game}, minute: {goal.minute}"
+        f"[{current_user['username']}] Assigning goal - player_number: {goal.player_number}, game: {goal.game}, minute: {goal.minute}"
     )
     tournament = await get_tournament(goal.tournament)
     game = await get_game(goal.game)
 
-    tournament_id = ObjectId(goal.tournament)
-    get_logger().info("Checking if game is running")
-    check_game_running(tournament_id, game)
+    if game.get("status") != GameStatus.InProgress:
+        raise Error.bad_request("O jogo não está em progresso")
 
-    get_logger().info(f"Validating player '{goal.player}' in team '{goal.team}'")
+    get_logger().info(f"Validating team '{goal.team}'")
     team = await get_team(goal.team)
-    player = await get_player(goal.player)
 
-    player_id = ObjectId(goal.player)
-    if player_id not in team.get("players", []):
-        raise Error.player_not_in_team()
+    player_name = ""
+    player_id = None
 
-    get_logger().info("Checking if player is in game calls")
-    game_calls = (
-        await db.db["game_calls"]
-        .find({"_id": {"$in": [game.get("home_call"), game.get("away_call")]}})
-        .to_list(2)
-    )
+    if goal.player_number is not None:
+        get_logger().info(
+            f"Looking up player by shirt number {goal.player_number} in game calls"
+        )
+        game_calls = (
+            await db.db["game_calls"]
+            .find({"_id": {"$in": [game.get("home_call"), game.get("away_call")]}})
+            .to_list(2)
+        )
 
-    if len(game_calls) != 2:
-        raise Error.game_calls_not_delivered()
+        if len(game_calls) != 2:
+            raise Error.game_calls_not_delivered()
 
-    player_oid = ObjectId(goal.player)
-    in_game = False
-    for call in game_calls:
-        if player_oid in call.get("players", []):
-            in_game = True
-            break
+        team_call = None
+        for call in game_calls:
+            if str(call.get("team")) == str(goal.team):
+                team_call = call
+                break
 
-    if not in_game:
-        raise Error.player_not_in_game()
+        if not team_call:
+            raise Error.bad_request("Chamada de jogo não encontrada para esta equipa")
+
+        player_found = False
+        for p in team_call.get("players", []):
+            if p.get("number") == goal.player_number:
+                player_id = p.get("player")
+                player_found = True
+                break
+
+        if not player_found or not player_id:
+            raise Error.bad_request(
+                f"Jogador com número {goal.player_number} não encontrado na chamada"
+            )
+
+        player = await db.db["players"].find_one({"_id": player_id})
+        if player:
+            player_name = player["name"]
+            player_id = str(player_id)
+        else:
+            player_id = str(player_id)
 
     get_logger().info(
-        f"Recording goal for player '{player['name']}' at minute {goal.minute}"
+        f"Recording goal for player number {goal.player_number} at minute {goal.minute}"
     )
     goal_dict = {
         "tournament": ObjectId(goal.tournament),
         "team_id": ObjectId(goal.team),
         "team_name": team["name"],
-        "player_id": ObjectId(goal.player),
-        "player_name": player["name"],
+        "player_id": ObjectId(player_id) if player_id else None,
+        "player_name": player_name,
+        "player_number": goal.player_number,
+        "staff_id": ObjectId(goal.staff_id) if goal.staff_id else None,
+        "staff_name": "",
+        "staff_type": None,
         "game_id": ObjectId(goal.game),
         "period": game.get("current_period", 0),
         "minute": goal.minute,
@@ -80,8 +102,9 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
     get_logger().info("Adding goal event to game")
     event = {
         "Goal": {
-            "player_id": str(ObjectId(goal.player)),
-            "player_name": player["name"],
+            "player_id": player_id,
+            "player_name": player_name,
+            "player_number": goal.player_number,
             "team_name": team["name"],
             "period": game.get("current_period", 0),
             "minute": goal.minute,
@@ -91,7 +114,7 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
 
     await add_game_event(ObjectId(goal.game), event)
     get_logger().info(
-        f"[{current_user['username']}] Goal for player '{player['name']}' recorded successfully"
+        f"[{current_user['username']}] Goal for player number {goal.player_number} recorded successfully"
     )
 
     return {"message": "Goal assigned successfully"}

@@ -14,6 +14,8 @@ from app.schemas.schemas import (
     GameCallDto,
     UpdateGameDto,
     UpdateGameCallDto,
+    UpdateGameStatusDto,
+    ConfirmGameCallDto,
 )
 from app.models.models import GameStatus, GamePhase
 from app.error import Error
@@ -49,7 +51,7 @@ def game_to_dto(game: dict, home_call: dict | None, away_call: dict | None) -> G
         scheduled_date=game.get("scheduled_date"),
         start_date=game.get("start_date"),
         finish_date=game.get("finish_date"),
-        status=game.get("status", GameStatus.NotStarted),
+        status=game.get("status", GameStatus.Scheduled),
         phase=game.get("phase", GamePhase.Group),
         home_placeholder=game.get("home_placeholder"),
         away_placeholder=game.get("away_placeholder"),
@@ -71,7 +73,7 @@ async def add_game(game: CreateGameDto, current_user=Depends(get_current_user)):
     game_dict = {
         "tournament": ObjectId(game.tournament),
         "scheduled_date": game.scheduled_date,
-        "status": GameStatus.NotStarted,
+        "status": GameStatus.Scheduled,
         "phase": game.phase,
         "home_placeholder": game.home_placeholder,
         "away_placeholder": game.away_placeholder,
@@ -207,6 +209,136 @@ async def delete_game(game_id: str, current_user=Depends(get_current_user)):
     )
     await db.db[GAMES_COLLECTION].delete_one({"_id": game["_id"]})
     get_logger().info(f"[{current_user['username']}] Deleted game '{game_id}'")
+
+
+@router.patch("/{game_id}/status", response_model=GameDto)
+async def update_game_status(
+    game_id: str, body: UpdateGameStatusDto, current_user=Depends(get_current_user)
+):
+    game = await get_game(game_id)
+    current_status = game.get("status", GameStatus.Scheduled)
+    new_status = body.status
+
+    valid_transitions = {
+        GameStatus.Scheduled: [GameStatus.CallsPending, GameStatus.Canceled],
+        GameStatus.CallsPending: [GameStatus.ReadyToStart, GameStatus.Canceled],
+        GameStatus.ReadyToStart: [GameStatus.InProgress, GameStatus.Canceled],
+        GameStatus.InProgress: [GameStatus.Finished],
+        GameStatus.Finished: [],
+        GameStatus.Canceled: [],
+    }
+
+    if new_status not in valid_transitions.get(current_status, []):
+        raise Error.bad_request(
+            f"Transição inválida de {current_status} para {new_status}"
+        )
+
+    await db.db[GAMES_COLLECTION].update_one(
+        {"_id": game["_id"]}, {"$set": {"status": new_status}}
+    )
+    game["status"] = new_status
+
+    if new_status == GameStatus.InProgress:
+        game["start_date"] = datetime.utcnow()
+        await db.db[GAMES_COLLECTION].update_one(
+            {"_id": game["_id"]}, {"$set": {"start_date": game["start_date"]}}
+        )
+
+    if new_status == GameStatus.Finished:
+        game["finish_date"] = datetime.utcnow()
+        await db.db[GAMES_COLLECTION].update_one(
+            {"_id": game["_id"]}, {"$set": {"finish_date": game["finish_date"]}}
+        )
+
+    get_logger().info(
+        f"[{current_user['username']}] Updated game '{game_id}' status to {new_status}"
+    )
+
+    home_call = (
+        await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("home_call")})
+        if game.get("home_call")
+        else None
+    )
+    away_call = (
+        await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("away_call")})
+        if game.get("away_call")
+        else None
+    )
+    return game_to_dto(game, home_call, away_call)
+
+
+@router.patch("/{game_id}/confirm-calls", response_model=GameDto)
+async def confirm_game_calls(game_id: str, current_user=Depends(get_current_user)):
+    game = await get_game(game_id)
+
+    if game.get("status") != GameStatus.CallsPending:
+        raise Error.bad_request(
+            "As chamadas só podem ser confirmadas quando o jogo está em estado de Chamadas Pendentes"
+        )
+
+    home_call = (
+        await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("home_call")})
+        if game.get("home_call")
+        else None
+    )
+    away_call = (
+        await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("away_call")})
+        if game.get("away_call")
+        else None
+    )
+
+    MIN_PLAYERS = 5
+
+    def count_active_players(call):
+        if not call:
+            return 0
+        return sum(1 for p in call.get("players", []) if p.get("number") is not None)
+
+    def check_duplicate_numbers(call):
+        if not call:
+            return []
+        numbers = [
+            p.get("number")
+            for p in call.get("players", [])
+            if p.get("number") is not None
+        ]
+        duplicates = [n for n in numbers if numbers.count(n) > 1]
+        return list(set(duplicates))
+
+    home_count = count_active_players(home_call)
+    away_count = count_active_players(away_call)
+
+    if home_count < MIN_PLAYERS:
+        raise Error.bad_request(
+            f"A equipa da casa precisa de pelo menos {MIN_PLAYERS} jogadores com número atribuído. Atual: {home_count}"
+        )
+    if away_count < MIN_PLAYERS:
+        raise Error.bad_request(
+            f"A equipa visitante precisa de pelo menos {MIN_PLAYERS} jogadores com número atribuído. Atual: {away_count}"
+        )
+
+    home_duplicates = check_duplicate_numbers(home_call)
+    if home_duplicates:
+        raise Error.bad_request(
+            f"A equipa da casa tem números duplicados: {', '.join(map(str, home_duplicates))}"
+        )
+
+    away_duplicates = check_duplicate_numbers(away_call)
+    if away_duplicates:
+        raise Error.bad_request(
+            f"A equipa visitante tem números duplicados: {', '.join(map(str, away_duplicates))}"
+        )
+
+    await db.db[GAMES_COLLECTION].update_one(
+        {"_id": game["_id"]}, {"$set": {"status": GameStatus.ReadyToStart}}
+    )
+    game["status"] = GameStatus.ReadyToStart
+
+    get_logger().info(
+        f"[{current_user['username']}] Confirmed calls for game '{game_id}'"
+    )
+
+    return game_to_dto(game, home_call, away_call)
 
 
 @router.patch("/calls/{call_id}", response_model=GameCallDto)
