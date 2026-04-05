@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urca-tournament
+  labels:
+    app: urca-tournament
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: urca-tournament
+  template:
+    metadata:
+      labels:
+        app: urca-tournament
+    spec:
+      containers:
+        - name: urca-tournament
+          image: ghcr.io/REPLACE_WITH_USERNAME/urca-tournament:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: urca-tournament-config
+            - secretRef:
+                name: urca-tournament-secret
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5

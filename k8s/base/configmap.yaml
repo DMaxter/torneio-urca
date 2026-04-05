@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: urca-tournament-config
+data:
+  DATABASE_NAME: "tournament"
+  HTTP_HOST: "0.0.0.0"
+  HTTP_PORT: "8000"
+  PRODUCTION: "true"
+  CORS_ORIGINS: "*"
