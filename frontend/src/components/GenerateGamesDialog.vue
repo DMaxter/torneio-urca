@@ -324,24 +324,43 @@ function formatPlaceholder(text: string): string {
 }
 
 function computeKnockoutPreview(groups: { name: string }[]) {
-  if (groups.length < 4) {
-    knockoutPreview.value = [];
-    return;
-  }
-
   const sorted = [...groups].sort((a, b) => a.name.localeCompare(b.name));
-  const [A, B, C, D] = sorted.map(g => g.name);
 
-  knockoutPreview.value = [
-    { label: "Quartos de Final - Jogo 1", phase: "quarter_final", home: `1º Classificado ${A}`, away: `2º Classificado ${B}` },
-    { label: "Quartos de Final - Jogo 2", phase: "quarter_final", home: `1º Classificado ${C}`, away: `2º Classificado ${D}` },
-    { label: "Quartos de Final - Jogo 3", phase: "quarter_final", home: `2º Classificado ${C}`, away: `1º Classificado ${D}` },
-    { label: "Quartos de Final - Jogo 4", phase: "quarter_final", home: `2º Classificado ${A}`, away: `1º Classificado ${B}` },
-    { label: "Meia Final - Jogo 1",       phase: "semi_final",    home: "Vencedor Quartos de Final - Jogo 1", away: "Vencedor Quartos de Final - Jogo 2" },
-    { label: "Meia Final - Jogo 2",       phase: "semi_final",    home: "Vencedor Quartos de Final - Jogo 3", away: "Vencedor Quartos de Final - Jogo 4" },
-    { label: "3º e 4º Lugar",             phase: "third_place",   home: "Perdedor Meia Final - Jogo 1",       away: "Perdedor Meia Final - Jogo 2" },
-    { label: "Final",                     phase: "final",         home: "Vencedor Meia Final - Jogo 1",       away: "Vencedor Meia Final - Jogo 2" },
+  // Always include Final and 3rd/4th place match
+  const baseKnockout: KnockoutGamePreview[] = [
+    { label: "3º e 4º Lugar", phase: "third_place" as const, home: "Perdedor Meia Final", away: "Perdedor Meia Final" },
+    { label: "Final", phase: "final" as const, home: "Vencedor Meia Final", away: "Vencedor Meia Final" },
   ];
+
+  if (groups.length >= 4) {
+    // 4+ groups: full quarter_final bracket + semifinals
+    const [A, B, C, D] = sorted.map(g => g.name);
+    knockoutPreview.value = [
+      { label: "Quartos de Final - Jogo 1", phase: "quarter_final", home: `1º Classificado ${A}`, away: `2º Classificado ${B}` },
+      { label: "Quartos de Final - Jogo 2", phase: "quarter_final", home: `1º Classificado ${C}`, away: `2º Classificado ${D}` },
+      { label: "Quartos de Final - Jogo 3", phase: "quarter_final", home: `2º Classificado ${C}`, away: `1º Classificado ${D}` },
+      { label: "Quartos de Final - Jogo 4", phase: "quarter_final", home: `2º Classificado ${A}`, away: `1º Classificado ${B}` },
+      { label: "Meia Final - Jogo 1", phase: "semi_final", home: "Vencedor Quartos de Final - Jogo 1", away: "Vencedor Quartos de Final - Jogo 2" },
+      { label: "Meia Final - Jogo 2", phase: "semi_final", home: "Vencedor Quartos de Final - Jogo 3", away: "Vencedor Quartos de Final - Jogo 4" },
+      ...baseKnockout,
+    ];
+  } else if (groups.length >= 2) {
+    // 2-3 groups: semifinals + final + 3rd place
+    const [A, B] = sorted.map(g => g.name);
+    knockoutPreview.value = [
+      { label: "Meia Final - Jogo 1", phase: "semi_final", home: `1º Classificado ${A}`, away: `2º Classificado ${B}` },
+      { label: "Meia Final - Jogo 2", phase: "semi_final", home: `1º Classificado ${B}`, away: `2º Classificado ${A}` },
+      ...baseKnockout,
+    ];
+  } else if (groups.length === 1) {
+    // 1 group: just final + 3rd/4th (top 2 from group)
+    knockoutPreview.value = [
+      { label: "3º e 4º Lugar", phase: "third_place", home: "3º Classificado", away: "4º Classificado" },
+      { label: "Final", phase: "final", home: "1º Classificado", away: "2º Classificado" },
+    ];
+  } else {
+    knockoutPreview.value = [];
+  }
 }
 
 function buildDirectKnockout() {
