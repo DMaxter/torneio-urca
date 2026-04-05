@@ -127,7 +127,13 @@ api_router.include_router(file_router)
 api_router.include_router(game_day_router)
 
 app.mount("/api", api_router)
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+# Serve static frontend if the directory exists, otherwise skip
+import os
+
+static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+if os.path.isdir(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
 
 
 @app.get("/")
