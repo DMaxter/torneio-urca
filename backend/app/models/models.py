@@ -155,6 +155,9 @@ class Game(BaseModel):
     home_placeholder: Optional[str] = None
     away_placeholder: Optional[str] = None
     current_period: int = 0
+    period_elapsed_seconds: int = 0
+    timer_active: bool = False
+    timer_started_at: Optional[datetime] = None
     events: List[Any] = []
 
 

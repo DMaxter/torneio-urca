@@ -22,10 +22,72 @@
       </div>
     </div>
 
-    <!-- Current Minute Display -->
-    <div v-if="game" class="mb-4 p-3 bg-white border border-stone-300 rounded-lg text-center">
-      <div class="text-sm text-stone-500">Minuto atual</div>
-      <div class="text-4xl font-bold text-stone-900">{{ currentMinute }}'</div>
+    <!-- Period and Clock Display -->
+    <div v-if="game" class="mb-4 grid grid-cols-2 gap-4">
+      <div class="bg-white border border-stone-300 rounded-xl p-4 text-center">
+        <div class="text-sm text-stone-500">Período</div>
+        <div class="text-3xl font-bold text-stone-900">{{ getPeriodLabel(game.current_period) }}</div>
+        <div v-if="game.current_period > 0" class="text-xs text-stone-400">{{ getPeriodTypeLabel(game.current_period) }}</div>
+      </div>
+      <div class="bg-white border border-stone-300 rounded-xl p-4 text-center">
+        <div class="text-sm text-stone-500">Cronómetro</div>
+        <div class="text-4xl font-bold text-stone-900 mt-1">{{ timerDisplay }}</div>
+        <div class="text-xs text-stone-400">
+          {{ getTimerLabel(game.current_period) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Period Controls -->
+    <div v-if="game && game.status === 'InProgress'" class="mb-4 flex gap-2 justify-center flex-wrap">
+      <P-Button
+        v-if="game.current_period === 0"
+        label="Iniciar Período"
+        severity="success"
+        size="large"
+        @click="startPeriod"
+      />
+      <template v-else>
+        <P-Button
+          v-if="showResumeButton"
+          :label="resumeButtonLabel"
+          severity="success"
+          size="large"
+          @click="resumePeriod"
+        />
+        <P-Button
+          v-if="game.timer_active"
+          label="Parar"
+          severity="warning"
+          size="large"
+          @click="stopTimer"
+        />
+        <P-Button
+          v-if="game.current_period < 5"
+          :label="getNextPeriodLabel(game.current_period)"
+          :severity="getNextPeriodSeverity(game.current_period)"
+          size="large"
+          :disabled="!canProceedToNextPeriod"
+          v-tooltip.top="getNextPeriodTooltip(game.current_period)"
+          @click="endPeriod"
+        />
+        <P-Button
+          v-else-if="game.current_period === 4"
+          :label="getNextPeriodLabel(game.current_period)"
+          :severity="getNextPeriodSeverity(game.current_period)"
+          size="large"
+          :disabled="!canProceedToNextPeriod"
+          v-tooltip.top="getNextPeriodTooltip(game.current_period)"
+          @click="startPenalties"
+        />
+        <P-Button
+          v-if="game.current_period >= 5"
+          label="Finalizar Jogo"
+          severity="danger"
+          size="large"
+          @click="finishGame"
+        />
+      </template>
     </div>
 
     <div v-if="game" class="space-y-4">
@@ -37,18 +99,24 @@
             <div class="text-lg font-bold text-blue-800">{{ getTeamName(game.home_call?.team) }}</div>
             <div class="text-5xl font-bold text-stone-900 mt-2">{{ homeScore }}</div>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <P-Button 
-              label="⚽ Golo" 
-              size="large" 
+          <div class="grid grid-cols-3 gap-2">
+            <P-Button
+              label="⚽ Golo"
+              size="large"
               class="bg-green-600 hover:bg-green-700 text-white border-none"
               @click="openEventDialog(game.home_call?.team, 'goal')"
             />
-            <P-Button 
-              label="🟨 Cartão" 
-              size="large" 
+            <P-Button
+              label="🟨 Cartão"
+              size="large"
               class="bg-yellow-500 hover:bg-yellow-600 text-white border-none"
               @click="openEventDialog(game.home_call?.team, 'card')"
+            />
+            <P-Button
+              label="⚠️ Falta"
+              size="large"
+              class="bg-orange-500 hover:bg-orange-600 text-white border-none"
+              @click="openEventDialog(game.home_call?.team, 'foul')"
             />
           </div>
         </div>
@@ -59,18 +127,24 @@
             <div class="text-lg font-bold text-red-800">{{ getTeamName(game.away_call?.team) }}</div>
             <div class="text-5xl font-bold text-stone-900 mt-2">{{ awayScore }}</div>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <P-Button 
-              label="⚽ Golo" 
-              size="large" 
+          <div class="grid grid-cols-3 gap-2">
+            <P-Button
+              label="⚽ Golo"
+              size="large"
               class="bg-green-600 hover:bg-green-700 text-white border-none"
               @click="openEventDialog(game.away_call?.team, 'goal')"
             />
-            <P-Button 
-              label="🟨 Cartão" 
-              size="large" 
+            <P-Button
+              label="🟨 Cartão"
+              size="large"
               class="bg-yellow-500 hover:bg-yellow-600 text-white border-none"
               @click="openEventDialog(game.away_call?.team, 'card')"
+            />
+            <P-Button
+              label="⚠️ Falta"
+              size="large"
+              class="bg-orange-500 hover:bg-orange-600 text-white border-none"
+              @click="openEventDialog(game.away_call?.team, 'foul')"
             />
           </div>
         </div>
@@ -79,7 +153,7 @@
       <!-- Events Log -->
       <div class="bg-white border border-stone-300 rounded-xl p-4 max-h-96 overflow-y-auto">
         <h2 class="text-lg font-semibold text-stone-900 mb-4">Eventos do Jogo</h2>
-        
+
         <div v-if="sortedEvents.length === 0" class="text-stone-400 text-center py-8">
           Nenhum evento registado
         </div>
@@ -88,12 +162,15 @@
           <div v-for="(event, idx) in sortedEvents" :key="idx" 
                class="flex items-center gap-3 p-3 rounded-lg border-2"
                :class="getEventBorderClass(event)">
-            <div class="font-bold text-stone-600 text-xl w-16 text-center">{{ getEventMinute(event) }}'</div>
-            <div class="flex-1">
-              <div class="text-base font-semibold text-stone-900">{{ getEventDescription(event) }}</div>
-              <div v-if="getEventTeamName(event)" class="text-sm text-stone-500">{{ getEventTeamName(event) }}</div>
+            <div class="font-bold text-stone-600 text-xl w-24 text-center shrink-0">
+              <div>{{ getEventTimeDisplay(event) }}</div>
+              <div class="text-xs text-stone-400 font-normal">{{ getEventTimestampFormatted(event) }}</div>
             </div>
-            <div class="text-2xl">{{ getEventIcon(event) }}</div>
+            <div class="flex-1 min-w-0">
+              <div class="text-base font-semibold text-stone-900">{{ getEventDescription(event) }}</div>
+              <div v-if="getEventMetadata(event)" class="text-xs text-stone-400">{{ getEventMetadata(event) }}</div>
+            </div>
+            <div class="text-2xl shrink-0">{{ getEventIcon(event) }}</div>
           </div>
         </div>
       </div>
@@ -105,36 +182,36 @@
     </div>
 
     <!-- Event Dialog -->
-    <PDialog v-model:visible="eventDialogVisible" modal :header="eventDialogTitle" class="w-11/12 md:w-1/2 lg:w-1/3">
+    <P-Dialog v-model:visible="eventDialogVisible" modal :header="eventDialogTitle" class="w-11/12 md:w-1/2 lg:w-1/3">
       <div class="p-4">
         <!-- Goal Dialog -->
         <div v-if="eventType === 'goal'">
           <div class="mb-4">
             <label class="block text-sm font-medium text-stone-700 mb-2">Tipo de Golo</label>
             <div class="flex gap-2">
-              <P-Button 
-                :label="`Golo (${getTeamName(selectedTeam)})`" 
+              <P-Button
+                :label="`Golo (${getTeamName(selectedTeam)})`"
                 :severity="selectedGoalType === 'regular' ? 'success' : 'secondary'"
                 class="flex-1"
                 @click="selectedGoalType = 'regular'"
               />
-              <P-Button 
-                label="Auto-Golo" 
+              <P-Button
+                label="Auto-Golo"
                 :severity="selectedGoalType === 'own_goal' ? 'warning' : 'secondary'"
                 class="flex-1"
                 @click="selectedGoalType = 'own_goal'"
               />
             </div>
           </div>
-          
+
           <div v-if="selectedGoalType === 'regular'">
             <div class="mb-4">
               <label class="block text-sm font-medium text-stone-700 mb-2">Jogador que Marcou</label>
               <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                <P-Button 
-                  v-for="num in availableShirtNumbers" 
+                <P-Button
+                  v-for="num in availableShirtNumbers"
                   :key="num"
-                  :label="`#${num}`" 
+                  :label="`#${num}`"
                   :severity="playerNumber === num ? 'success' : 'secondary'"
                   class="text-lg py-3"
                   @click="playerNumber = num"
@@ -149,14 +226,14 @@
           <div class="mb-4">
             <label class="block text-sm font-medium text-stone-700 mb-2">Tipo de Cartão</label>
             <div class="flex gap-2">
-              <P-Button 
-                label="🟨 Amarelo" 
+              <P-Button
+                label="🟨 Amarelo"
                 :severity="cardType === 'Yellow' ? 'warning' : 'secondary'"
                 class="flex-1"
                 @click="cardType = 'Yellow'"
               />
-              <P-Button 
-                label="🟥 Vermelho" 
+              <P-Button
+                label="🟥 Vermelho"
                 :severity="cardType === 'Red' ? 'danger' : 'secondary'"
                 class="flex-1"
                 @click="cardType = 'Red'"
@@ -167,20 +244,21 @@
           <div class="mb-4">
             <label class="block text-sm font-medium text-stone-700 mb-2">Atribuir a</label>
             <div class="flex gap-2 mb-2">
-              <P-Button 
-                label="Jogador" 
+              <P-Button
+                label="Jogador"
                 :severity="cardTarget === 'player' ? 'info' : 'secondary'"
                 class="flex-1"
                 @click="cardTarget = 'player'"
               />
-              <P-Button 
-                label="Staff" 
+              <P-Button
+                v-if="hasStaffForTeam"
+                label="Staff"
                 :severity="cardTarget === 'staff' ? 'info' : 'secondary'"
                 class="flex-1"
                 @click="cardTarget = 'staff'"
               />
             </div>
-            
+
             <div v-if="cardTarget === 'player'">
               <label class="block text-sm font-medium text-stone-700 mb-2">Número do Jogador</label>
               <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -194,8 +272,8 @@
                 />
               </div>
             </div>
-            
-            <div v-else>
+
+            <div v-else-if="hasStaffForTeam">
               <label class="block text-sm font-medium text-stone-700 mb-2">Membro do Staff</label>
               <P-Select 
                 v-model="staffId"
@@ -209,27 +287,20 @@
           </div>
         </div>
 
-        <!-- Minute Input (common) -->
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-stone-700 mb-2">Minuto</label>
-          <div class="flex gap-2 items-center">
-            <P-Button 
-              icon="remove" 
-              severity="secondary" 
-              @click="minute = Math.max(0, minute - 1)"
-            />
-            <P-InputNumber 
-              v-model="minute" 
-              :min="0" 
-              :max="99" 
-              class="flex-1 text-2xl text-center"
-              inputClass="text-center"
-            />
-            <P-Button 
-              icon="add" 
-              severity="secondary" 
-              @click="minute = Math.min(99, minute + 1)"
-            />
+        <!-- Foul Dialog -->
+        <div v-if="eventType === 'foul'">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-stone-700 mb-2">Jogador que Cometeu a Falta</label>
+            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              <P-Button 
+                v-for="num in availableShirtNumbers" 
+                :key="num"
+                :label="`#${num}`" 
+                :severity="playerNumber === num ? 'warning' : 'secondary'"
+                class="text-lg py-3"
+                @click="playerNumber = num"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -238,16 +309,16 @@
         <div class="flex gap-2 w-full justify-between">
           <P-Button severity="secondary" @click="closeEventDialog">Cancelar</P-Button>
           <P-Button 
-            :severity="eventType === 'goal' ? 'success' : 'warning'" 
+            :severity="eventType === 'goal' ? 'success' : eventType === 'foul' ? 'warning' : 'warning'" 
             :loading="saving"
             :disabled="!canSubmitEvent"
             @click="submitEvent"
           >
-            {{ eventType === 'goal' ? 'Marcar Golo' : 'Dar Cartão' }}
+            {{ eventType === 'goal' ? 'Marcar Golo' : eventType === 'foul' ? 'Registar Falta' : 'Atribuir Cartão' }}
           </P-Button>
         </div>
       </template>
-    </PDialog>
+    </P-Dialog>
   </div>
 </template>
 
@@ -259,7 +330,7 @@ import { useGameStore } from "@stores/games";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 import * as gameService from "@router/backend/services/game";
-import type { Game, GameEvent, Goal, Foul } from "@router/backend/services/game/types";
+import type { Game, GameEvent } from "@router/backend/services/game/types";
 import { GameStatus } from "@router/backend/services/game/types";
 import type { CardType } from "@router/backend/services/game/types";
 
@@ -277,10 +348,9 @@ const saving = ref(false);
 
 // Event dialog state
 const eventDialogVisible = ref(false);
-const selectedTeam = ref<string | null>(null); // Used in template for highlighting
-const eventTeam = ref<string | null>(null); // The team for the event being created
-const eventType = ref<'goal' | 'card' | null>(null);
-const minute = ref<number>(0);
+const selectedTeam = ref<string | null>(null);
+const eventTeam = ref<string | null>(null);
+const eventType = ref<'goal' | 'card' | 'foul' | null>(null);
 const playerNumber = ref<number | null>(null);
 const cardType = ref<CardType>('Yellow');
 const cardTarget = ref<'player' | 'staff'>('player');
@@ -293,31 +363,44 @@ const eventDialogTitle = computed(() => {
   if (eventType.value === 'goal') {
     return selectedGoalType.value === 'own_goal' ? 'Registar Auto-Golo' : `Registar Golo - ${teamName}`;
   }
-  return `Registar Cartão - ${teamName}`;
+  if (eventType.value === 'card') {
+    return `Atribuir Cartão - ${teamName}`;
+  }
+  return `Registar Falta - ${teamName}`;
 });
 
 const homeTeamId = computed(() => game.value?.home_call?.team || '');
 const awayTeamId = computed(() => game.value?.away_call?.team || '');
 
 const homeScore = computed(() => {
-  return events.value.filter(e => 'Goal' in e && !(e as Goal).own_goal && (e as Goal).team_name === getTeamName(homeTeamId.value)).length;
+  if (!game.value) return 0;
+  const homeName = getTeamName(homeTeamId.value);
+  return events.value.filter(e => {
+    if ('Goal' in e) {
+      const goal = (e as any).Goal;
+      return goal.team_name === homeName;
+    }
+    return false;
+  }).length;
 });
 
 const awayScore = computed(() => {
-  return events.value.filter(e => 'Goal' in e && !(e as Goal).own_goal && (e as Goal).team_name === getTeamName(awayTeamId.value)).length;
-});
-
-const currentMinute = computed(() => {
-  if (events.value.length === 0) return 0;
-  const lastEvent = sortedEvents.value[0];
-  return getEventMinute(lastEvent);
+  if (!game.value) return 0;
+  const awayName = getTeamName(awayTeamId.value);
+  return events.value.filter(e => {
+    if ('Goal' in e) {
+      const goal = (e as any).Goal;
+      return goal.team_name === awayName;
+    }
+    return false;
+  }).length;
 });
 
 const availableShirtNumbers = computed(() => {
   if (!game.value || !eventTeam.value) return [];
   const call = eventTeam.value === homeTeamId.value ? game.value.home_call : game.value.away_call;
   if (!call) return [];
-  
+
   const numbers = new Set<number>();
   call.players.forEach(p => {
     if (p.number !== null) numbers.add(p.number);
@@ -326,19 +409,23 @@ const availableShirtNumbers = computed(() => {
 });
 
 const staffOptions = computed(() => {
-  // This would ideally fetch staff for the selected team
-  // For now, return empty or a placeholder
   return [];
 });
 
+const hasStaffForTeam = computed(() => {
+  // For now, always return false since we don't have staff data loaded per team
+  // If staff options is empty, there's no staff to assign cards to
+  return staffOptions.value.length > 0;
+});
+
 const canSubmitEvent = computed(() => {
-  if (!eventTeam.value || !eventType.value || minute.value < 0) return false;
-  
+  if (!eventTeam.value || !eventType.value) return false;
+
   if (eventType.value === 'goal') {
-    if (selectedGoalType.value === 'own_goal') return true; // No player selection needed for own goals in our simplified version
+    if (selectedGoalType.value === 'own_goal') return true;
     return playerNumber.value !== null;
   }
-  
+
   if (eventType.value === 'card') {
     if (cardTarget.value === 'player') {
       return playerNumber.value !== null && cardType.value;
@@ -346,17 +433,92 @@ const canSubmitEvent = computed(() => {
       return staffId.value !== null && cardType.value;
     }
   }
-  
+
+  if (eventType.value === 'foul') {
+    return playerNumber.value !== null;
+  }
+
   return false;
 });
 
-const sortedEvents = computed(() => {
-  return [...events.value].sort((a, b) => {
-    return getEventMinute(a) - getEventMinute(b);
-  });
+const currentElapsedSeconds = computed(() => {
+  if (!game.value) return 0;
+  let elapsed = game.value.period_elapsed_seconds;
+  if (game.value.timer_active && game.value.timer_started_at) {
+    const now = Date.now();
+    const startTime = Date.parse(game.value.timer_started_at + 'Z');
+    const activeElapsed = Math.floor((now - startTime) / 1000);
+    elapsed += activeElapsed;
+  }
+  return elapsed;
+});
+
+const timerDisplay = computed(() => {
+  if (!game.value) return '00:00';
+  const durationSeconds = getDurationForPeriod(game.value.current_period);
+  const remaining = Math.max(0, durationSeconds - currentElapsedSeconds.value);
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+  if (mins === 0) {
+    // Show seconds and tenths
+    const tenths = Math.floor((secs % 1) * 10);
+    return `${secs}.${tenths}s`;
+  }
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+});
+
+function getDurationForPeriod(period: number): number {
+  if (period >= 1 && period <= 2) return 1200; // 20 minutes
+  if (period >= 3 && period <= 4) return 300; // 5 minutes
+  return 0; // not started or penalties/finished
+}
+
+function getTimerLabel(period: number): string {
+  if (period >= 1 && period <= 2) return '20:00 min';
+  if (period >= 3 && period <= 4) return '05:00 min';
+  return '';
+}
+
+const canProceedToNextPeriod = computed(() => {
+  if (!game.value) return false;
+  if (game.value.current_period < 2) return true;
+  if (game.value.current_period === 2) {
+    return homeScore.value === awayScore.value;
+  }
+  if (game.value.current_period === 3) return true;
+  if (game.value.current_period === 4) return true;
+  return false;
+});
+
+const showResumeButton = computed(() => {
+  if (!game.value) return false;
+  if (game.value.timer_active) return false;
+  const duration = getDurationForPeriod(game.value.current_period);
+  if (duration === 0) return false;
+  return currentElapsedSeconds.value < duration;
+});
+
+const resumeButtonLabel = computed(() => {
+  if (!game.value) return 'Continuar';
+  if (!game.value.timer_active && currentElapsedSeconds.value === 0) {
+    return 'Iniciar Período';
+  }
+  return 'Continuar';
 });
 
 // Methods
+function getPeriodLabel(period: number): string {
+  if (period === 0) return 'Não iniciado';
+  if (period <= 4) return `${period}º Período`;
+  return 'Penalidades';
+}
+
+function getPeriodTypeLabel(period: number): string {
+  if (period >= 1 && period <= 2) return 'Tempo Regular';
+  if (period >= 3 && period <= 4) return 'Prolongamento';
+  return 'Penalidades';
+}
+
 function getTournamentName(id: string): string {
   const t = tournamentStore.tournaments.find(t => t.id === id);
   return t ? t.name : id;
@@ -379,53 +541,272 @@ function getPhaseLabel(phase: string): string {
   return labels[phase] || phase;
 }
 
+function getNextPeriodLabel(currentPeriod: number): string {
+  if (currentPeriod === 2) return 'Próximo Período (Prolongamento)';
+  if (currentPeriod === 3) return 'Próximo Período';
+  if (currentPeriod === 4) return 'Iniciar Penalidades';
+  return 'Próximo Período';
+}
+
+function getNextPeriodSeverity(currentPeriod: number): string {
+  return 'info';
+}
+
+function getNextPeriodTooltip(currentPeriod: number): string {
+  if (currentPeriod === 2) {
+    return canProceedToNextPeriod.value ? 'Avançar para o prolongamento (período 3)' : 'O prolongamento só pode ser jogado se o placar estiver empatado';
+  }
+  if (currentPeriod === 4) {
+    return canProceedToNextPeriod.value ? 'Iniciar período de penalidades (período 5)' : 'As penalidades só podem ser jogadas se o placar estiver empatado';
+  }
+  return 'Avançar para o próximo período';
+}
+
 function getEventBorderClass(event: GameEvent): string {
   if ('Goal' in event) {
-    return (event as Goal).own_goal ? 'border-orange-200 bg-orange-50' : 'border-green-200 bg-green-50';
+    const goal = (event as any).Goal;
+    return goal.own_goal ? 'border-orange-200 bg-orange-50' : 'border-green-200 bg-green-50';
   }
   if ('Foul' in event) {
+    const foul = (event as any).Foul;
+    if (foul.card === null || foul.card === undefined) {
+      return 'border-orange-200 bg-orange-50';
+    }
     return 'border-red-200 bg-red-50';
+  }
+  if ('PeriodStart' in event || 'PeriodResume' in event) {
+    return 'border-blue-200 bg-blue-50';
+  }
+  if ('PeriodEnd' in event || 'PeriodPause' in event) {
+    return 'border-gray-200 bg-gray-50';
   }
   return '';
 }
 
 function getEventIcon(event: GameEvent): string {
   if ('Goal' in event) {
-    return (event as Goal).own_goal ? '🔨' : '⚽';
+    const goal = (event as any).Goal;
+    return goal.own_goal ? '🥅' : '⚽';
   }
   if ('Foul' in event) {
-    return (event as Foul).card === 'Yellow' ? '🟨' : '🟥';
+    const foul = (event as any).Foul;
+    if (foul.card === null || foul.card === undefined) {
+      return '⚠️';
+    }
+    return foul.card === 'Yellow' ? '🟨' : '🟥';
   }
-  return '';
-}
-
-function getEventMinute(event: GameEvent): number {
-  if ('Goal' in event) return (event as Goal).minute;
-  if ('Foul' in event) return (event as Foul).minute;
-  return 0;
-}
-
-function getEventTeamName(event: GameEvent): string {
-  if ('Goal' in event) return (event as Goal).team_name;
-  if ('Foul' in event) return (event as Foul).team_name;
+  if ('PeriodStart' in event) {
+    return '▶️';
+  }
+  if ('PeriodResume' in event) {
+    return '▶️';
+  }
+  if ('PeriodEnd' in event) {
+    return '⏹️';
+  }
+  if ('PeriodPause' in event) {
+    return '⏸️';
+  }
   return '';
 }
 
 function getEventDescription(event: GameEvent): string {
   if ('Goal' in event) {
-    const goal = event as Goal;
-    return goal.own_goal ? `Auto-golo de ${goal.player_name}` : `Golo de ${goal.player_name}`;
+    const goal = (event as any).Goal;
+    if (goal.own_goal) {
+      const committedBy = goal.own_goal_committed_by || 'Equipa adversária';
+      return `Auto-golo de ${committedBy}`;
+    }
+    const name = goal.player_name || 'Jogador desconhecido';
+    return `Golo de ${name}`;
   }
   if ('Foul' in event) {
-    const foul = event as Foul;
+    const foul = (event as any).Foul;
+    if (foul.card === null || foul.card === undefined) {
+      return `${foul.player_name} - Falta`;
+    }
     const cardText = foul.card === 'Yellow' ? 'Amarelo' : 'Vermelho';
-    const target = foul.staff_name && foul.staff_name !== '' ? foul.staff_name : foul.player_name;
-    return `${target} - Cartão ${cardText}`;
+    return `${foul.player_name} - Cartão ${cardText}`;
+  }
+  if ('PeriodStart' in event) {
+    const ps = (event as any).PeriodStart;
+    const isOvertime = ps.period >= 3 && ps.period <= 4;
+    return isOvertime ? `Início do Prolongamento (${ps.period}º)` : `Início do ${ps.period}º Período`;
+  }
+  if ('PeriodResume' in event) {
+    const pr = (event as any).PeriodResume;
+    const isOvertime = pr.period >= 3 && pr.period <= 4;
+    return isOvertime ? `Retoma do Prolongamento (${pr.period}º)` : `Retoma do ${pr.period}º Período`;
+  }
+  if ('PeriodEnd' in event) {
+    const pe = (event as any).PeriodEnd;
+    const isOvertime = pe.period >= 3 && pe.period <= 4;
+    return isOvertime ? `Fim do Prolongamento (${pe.period}º)` : `Fim do ${pe.period}º Período`;
+  }
+  if ('PeriodPause' in event) {
+    const pp = (event as any).PeriodPause;
+    const isOvertime = pp.period >= 3 && pp.period <= 4;
+    return isOvertime ? `Pausa no Prolongamento (${pp.period}º)` : `Pausa no ${pp.period}º Período`;
   }
   return '';
 }
 
-function openEventDialog(teamId: string | undefined, type: 'goal' | 'card') {
+function getEventMinute(event: GameEvent): number {
+  if ('Goal' in event) {
+    const goal = (event as any).Goal;
+    return goal.minute;
+  }
+  if ('Foul' in event) {
+    const foul = (event as any).Foul;
+    return foul.minute;
+  }
+  return 0;
+}
+
+function getEventPeriod(event: GameEvent): number {
+  if ('Goal' in event) {
+    const goal = (event as any).Goal;
+    return goal.period || 0;
+  }
+  if ('Foul' in event) {
+    const foul = (event as any).Foul;
+    return foul.period || 0;
+  }
+  return 0;
+}
+
+function getEventPeriodLabel(event: GameEvent): string {
+  const period = getEventPeriod(event);
+  if (period === 0) return 'Não iniciado';
+  if (period <= 4) return `${period}º Período`;
+  return 'Penalidades';
+}
+
+function getEventTimeDisplay(event: GameEvent): string {
+  const period = getEventPeriod(event);
+
+  if (period === 5) {
+    return 'Pen.';
+  }
+
+  if ('PeriodStart' in event || 'PeriodEnd' in event || 'PeriodPause' in event) {
+    const ps = (event as any).PeriodStart || (event as any).PeriodEnd || (event as any).PeriodPause;
+    return `P${ps.period}`;
+  }
+
+  const goal = (event as any).Goal || (event as any).Foul;
+  if (!goal) return '';
+
+  const minute = goal.minute || 0;
+  const second = goal.second !== undefined ? goal.second : 0;
+
+  let maxMinute = 0;
+  if (period >= 1 && period <= 2) maxMinute = 20;
+  else if (period >= 3 && period <= 4) maxMinute = 5;
+
+  let timeStr = '';
+  if (minute === 0) {
+    timeStr = `${second}"`;
+  } else if (minute === maxMinute) {
+    timeStr = `${minute}'${second}"`;
+  } else {
+    timeStr = `${minute}'`;
+  }
+
+  return `${timeStr} (P${period})`;
+}
+
+function getEventTimestamp(event: GameEvent): number {
+  const getTs = (raw: string | undefined) => {
+    if (!raw) return 0;
+    // Treat naive timestamps as UTC by appending 'Z'
+    const utc = raw.endsWith('Z') ? raw : raw + 'Z';
+    return new Date(utc).getTime();
+  };
+  
+  if ('Goal' in event) {
+    const goal = (event as any).Goal;
+    return getTs(goal.timestamp);
+  }
+  if ('Foul' in event) {
+    const foul = (event as any).Foul;
+    return getTs(foul.timestamp);
+  }
+  if ('PeriodStart' in event) {
+    const ps = (event as any).PeriodStart;
+    return getTs(ps.timestamp);
+  }
+  if ('PeriodResume' in event) {
+    const pr = (event as any).PeriodResume;
+    return getTs(pr.timestamp);
+  }
+  if ('PeriodEnd' in event) {
+    const pe = (event as any).PeriodEnd;
+    return getTs(pe.timestamp);
+  }
+  if ('PeriodPause' in event) {
+    const pp = (event as any).PeriodPause;
+    return getTs(pp.timestamp);
+  }
+  return 0;
+}
+
+function getEventTimestampFormatted(event: GameEvent): string {
+  const ts = getEventTimestamp(event);
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function getEventMetadata(event: GameEvent): string {
+  // For period start/end/pause/resume events, don't show team name or period label
+  if ('PeriodStart' in event || 'PeriodEnd' in event || 'PeriodPause' in event || 'PeriodResume' in event) {
+    return '';
+  }
+  const teamName = getEventTeamName(event);
+  const periodLabel = getEventPeriodLabel(event);
+  if (teamName && periodLabel) {
+    return `${teamName} - ${periodLabel}`;
+  }
+  return '';
+}
+
+const sortedEvents = computed(() => {
+  // Map events with their original index for stable sorting
+  const eventsWithIndex = events.value.map((e, i) => ({ event: e, index: i }));
+  
+  return eventsWithIndex
+    .sort((a, b) => {
+      // Sort by timestamp descending (most recent first)
+      return getEventTimestamp(b.event) - getEventTimestamp(a.event);
+    })
+    .map(item => item.event);
+});
+
+function getEventTeamName(event: GameEvent): string {
+  if ('Goal' in event) {
+    const goal = (event as any).Goal;
+    return goal.team_name;
+  }
+  if ('Foul' in event) {
+    const foul = (event as any).Foul;
+    return foul.team_name;
+  }
+  return '';
+}
+
+function getEventSecond(event: GameEvent): number {
+  if ('Goal' in event) {
+    const goal = (event as any).Goal;
+    return goal.second !== undefined ? goal.second : 0;
+  }
+  if ('Foul' in event) {
+    const foul = (event as any).Foul;
+    return foul.second !== undefined ? foul.second : 0;
+  }
+  return 0;
+}
+
+function openEventDialog(teamId: string | undefined, type: 'goal' | 'card' | 'foul') {
   if (!teamId) return;
   
   selectedTeam.value = teamId;
@@ -436,7 +817,6 @@ function openEventDialog(teamId: string | undefined, type: 'goal' | 'card') {
   cardTarget.value = 'player';
   playerNumber.value = null;
   staffId.value = null;
-  minute.value = currentMinute.value;
   eventDialogVisible.value = true;
 }
 
@@ -450,11 +830,12 @@ async function submitEvent() {
   saving.value = true;
   
   try {
+    const currentMinute = Math.floor(currentElapsedSeconds.value / 60);
     const baseDto = {
       tournament: game.value.tournament,
       game: game.value.id,
       team: eventTeam.value!,
-      minute: minute.value,
+      minute: currentMinute,
     };
 
     if (eventType.value === 'goal') {
@@ -466,20 +847,24 @@ async function submitEvent() {
       await gameService.assignGoal(dto);
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Golo registado', life: 3000 });
     } else if (eventType.value === 'card') {
+      const cardTypeValue: CardType = cardType.value;
       const dto = {
         ...baseDto,
         player_number: cardTarget.value === 'player' ? playerNumber.value : null,
-        card: cardType.value,
+        card: cardTypeValue,
       };
       await gameService.assignCard(dto);
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Cartão registado', life: 3000 });
+    } else if (eventType.value === 'foul') {
+      const dto = {
+        ...baseDto,
+        player_number: cardTarget.value === 'player' ? playerNumber.value : null,
+      };
+      await gameService.assignFoul(dto);
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Falta registada', life: 3000 });
     }
 
-    // Reload game to get updated events
     await loadGame();
-    
-    // Reset minute to current match time
-    minute.value = currentMinute.value;
     
   } catch (e: any) {
     const msg = e.response?.data?.detail?.error || 'Erro ao registar evento';
@@ -487,6 +872,84 @@ async function submitEvent() {
   } finally {
     saving.value = false;
     closeEventDialog();
+  }
+}
+
+async function startPeriod() {
+  if (!game.value) return;
+  
+  try {
+    const response = await gameService.updatePeriod(game.value.id, { action: 'start_new' });
+    if (response.status === 200) {
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Período iniciado', life: 3000 });
+      await loadGame();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || 'Erro ao iniciar período';
+    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+  }
+}
+
+async function resumePeriod() {
+  if (!game.value) return;
+  
+  try {
+    const response = await gameService.updatePeriod(game.value.id, { action: 'resume' });
+    if (response.status === 200) {
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Timer retomado', life: 3000 });
+      await loadGame();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || 'Erro ao retomar timer';
+    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+  }
+}
+
+async function stopTimer() {
+  if (!game.value) return;
+  
+  try {
+    const response = await gameService.updatePeriod(game.value.id, { action: 'stop' });
+    if (response.status === 200) {
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Timer parado', life: 3000 });
+      await loadGame();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || 'Erro ao parar timer';
+    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+  }
+}
+
+async function endPeriod() {
+  if (!game.value) return;
+  
+  const confirmed = confirm('Tem a certeza que deseja terminar o período?');
+  if (!confirmed) return;
+  
+  try {
+    const response = await gameService.updatePeriod(game.value.id, { action: 'end' });
+    if (response.status === 200) {
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Período terminado', life: 3000 });
+      await loadGame();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || 'Erro ao terminar período';
+    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+  }
+}
+
+async function startPenalties() {
+  if (!game.value) return;
+  
+  try {
+    const response = await gameService.updatePeriod(game.value.id, { action: 'start_new', period: 5 });
+    if (response.status === 200) {
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Iniciando penalidades', life: 3000 });
+      await loadGame();
+    }
+  } catch (e: any) {
+    const msg = e.response?.data?.detail?.error || 'Erro ao iniciar penalidades';
+    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   }
 }
 
@@ -518,8 +981,8 @@ async function finishGame() {
   }
 }
 
-// Refresh events periodically
 let refreshInterval: number = 0;
+let timerTickInterval: number = 0;
 
 onMounted(async () => {
   await Promise.all([
@@ -527,14 +990,14 @@ onMounted(async () => {
     tournamentStore.getTournaments(),
   ]);
   await loadGame();
-  // Refresh every 10 seconds
+  
   refreshInterval = setInterval(loadGame, 10000);
-});
-
-onUnmounted(() => {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-  }
+  
+  timerTickInterval = setInterval(() => {
+    if (game.value?.timer_active) {
+      game.value = { ...game.value };
+    }
+  }, 1000);
 });
 </script>
 

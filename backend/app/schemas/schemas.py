@@ -91,11 +91,11 @@ class TeamDto(BaseModel):
     responsible_name: str
     responsible_email: str
     responsible_phone: str
-    main_coach: str
+    main_coach: Optional[str] = None
     assistant_coach: Optional[str] = None
     players: List[str]
-    physiotherapist: str
-    first_deputy: str
+    physiotherapist: Optional[str] = None
+    first_deputy: Optional[str] = None
     second_deputy: Optional[str] = None
 
 
@@ -160,6 +160,10 @@ class GameDto(BaseModel):
     home_call: Optional[GameCallDto] = None
     away_call: Optional[GameCallDto] = None
     events: List[Any] = []
+    current_period: int = 0
+    period_elapsed_seconds: int = 0
+    timer_active: bool = False
+    timer_started_at: Optional[datetime] = None
 
 
 class CreateGroupDto(BaseModel):
@@ -181,6 +185,12 @@ class UpdateGameDto(BaseModel):
 
 class UpdateGameStatusDto(BaseModel):
     status: GameStatus
+
+
+class UpdatePeriodDto(BaseModel):
+    action: str  # "start_new", "resume", "stop", "end", "set_seconds"
+    period: Optional[int] = None
+    seconds: Optional[int] = None
 
 
 class CreateGameDayDto(BaseModel):
@@ -214,6 +224,15 @@ class AssignCardDto(BaseModel):
     player_number: Optional[int] = None  # Shirt number from game call
     staff_id: Optional[str] = None  # For staff (optional)
     card: CardType
+    minute: int
+
+
+class AssignFoulDto(BaseModel):
+    tournament: str
+    game: str
+    team: str
+    player_number: Optional[int] = None  # Shirt number from game call
+    staff_id: Optional[str] = None  # For staff (optional)
     minute: int
 
 

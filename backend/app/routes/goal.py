@@ -93,10 +93,54 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
     get_logger().info(
         f"Recording goal for player number {goal.player_number} at minute {goal.minute}"
     )
+
+    # For own goals, the team credited is the opposing team (not the team whose button was clicked)
+    committing_team_id = goal.team
+    committing_team_name = team["name"]
+
+    if goal.own_goal:
+        # Find the opposing team by comparing with the game's home_call and away_call team IDs
+        home_call = (
+            await db.db["game_calls"].find_one({"_id": game.get("home_call")})
+            if game.get("home_call")
+            else None
+        )
+        away_call = (
+            await db.db["game_calls"].find_one({"_id": game.get("away_call")})
+            if game.get("away_call")
+            else None
+        )
+
+        scoring_team_id = str(goal.team)
+        if home_call and str(home_call.get("team")) != scoring_team_id:
+            # Opposing team is home team
+            credited_team_id = str(home_call.get("team"))
+            credited_team = await db.db["teams"].find_one(
+                {"_id": home_call.get("team")}
+            )
+            credited_team_name = credited_team["name"] if credited_team else ""
+        elif away_call and str(away_call.get("team")) != scoring_team_id:
+            # Opposing team is away team
+            credited_team_id = str(away_call.get("team"))
+            credited_team = await db.db["teams"].find_one(
+                {"_id": away_call.get("team")}
+            )
+            credited_team_name = credited_team["name"] if credited_team else ""
+        else:
+            # Fallback: use the team as-is
+            credited_team_id = goal.team
+            credited_team_name = team["name"]
+            get_logger().warning(
+                f"Could not determine opposing team for own goal, using {credited_team_name}"
+            )
+    else:
+        credited_team_id = goal.team
+        credited_team_name = team["name"]
+
     goal_dict = {
         "tournament": ObjectId(goal.tournament),
-        "team_id": ObjectId(goal.team),
-        "team_name": team["name"],
+        "team_id": ObjectId(credited_team_id),
+        "team_name": credited_team_name,
         "player_id": ObjectId(player_id) if player_id else None,
         "player_name": player_name,
         "player_number": goal.player_number,
@@ -104,6 +148,7 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
         "game_id": ObjectId(goal.game),
         "period": game.get("current_period", 0),
         "minute": goal.minute,
+        "second": game.get("period_elapsed_seconds", 0) % 60,
         "timestamp": datetime.utcnow(),
     }
 
@@ -121,10 +166,12 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
             "player_id": player_id,
             "player_name": player_name,
             "player_number": goal.player_number,
-            "team_name": team["name"],
+            "team_name": credited_team_name,
             "own_goal": goal.own_goal,
+            "own_goal_committed_by": committing_team_name if goal.own_goal else None,
             "period": game.get("current_period", 0),
             "minute": goal.minute,
+            "second": game.get("period_elapsed_seconds", 0) % 60,
             "timestamp": goal_dict["timestamp"].isoformat(),
         }
     }

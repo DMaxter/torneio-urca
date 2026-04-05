@@ -11,7 +11,7 @@ from database import (
 from app.schemas.schemas import CreateTeamDto, TeamDto, StaffType
 from app.error import Error
 from app.constants import MIN_PLAYERS, MIN_AGE
-from app.utils import calculate_age, get_logger
+from app.utils import calculate_age, get_logger, sanitize_for_serialization
 from app.utils.auth import get_current_user
 from datetime import datetime
 import json
@@ -21,21 +21,20 @@ router = APIRouter(prefix="/teams", tags=["Teams"])
 
 def team_to_dto(team: dict) -> TeamDto:
     """Convert a team document from the database to a TeamDto."""
+    clean = sanitize_for_serialization(team)
     return TeamDto(
-        id=str(team["_id"]),
-        tournament=str(team["tournament"]),
-        name=team["name"],
-        responsible_name=team["responsible_name"],
-        responsible_email=team["responsible_email"],
-        responsible_phone=team["responsible_phone"],
-        main_coach=str(team["main_coach"]),
-        assistant_coach=str(team["assistant_coach"])
-        if team.get("assistant_coach")
-        else None,
-        players=[str(p) for p in team.get("players", [])],
-        physiotherapist=str(team["physiotherapist"]),
-        first_deputy=str(team["first_deputy"]),
-        second_deputy=str(team["second_deputy"]) if team.get("second_deputy") else None,
+        id=clean["_id"],
+        tournament=clean["tournament"],
+        name=clean["name"],
+        responsible_name=clean["responsible_name"],
+        responsible_email=clean["responsible_email"],
+        responsible_phone=clean["responsible_phone"],
+        main_coach=clean["main_coach"],
+        assistant_coach=clean.get("assistant_coach"),
+        players=clean.get("players", []),
+        physiotherapist=clean["physiotherapist"],
+        first_deputy=clean["first_deputy"],
+        second_deputy=clean.get("second_deputy"),
     )
 
 

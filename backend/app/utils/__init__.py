@@ -1,5 +1,6 @@
 import jwt
 import logging
+from bson import ObjectId
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from fastapi import HTTPException, status
@@ -8,6 +9,17 @@ from app.constants import MIN_AGE
 
 ALGORITHM = "HS256"
 REQUEST_ID: ContextVar[str] = ContextVar("request_id", default="no-request-id")
+
+
+def sanitize_for_serialization(obj):
+    """Recursively convert ObjectId to string for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: sanitize_for_serialization(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_serialization(item) for item in obj]
+    elif isinstance(obj, ObjectId):
+        return str(obj)
+    return obj
 
 
 class RequestIdFilter(logging.Filter):

@@ -16,11 +16,12 @@ from app.schemas.schemas import (
     UpdateGameCallDto,
     UpdateGameStatusDto,
     ConfirmGameCallDto,
+    UpdatePeriodDto,
 )
 from app.models.models import GameStatus, GamePhase
 from app.error import Error
 from app.utils.auth import get_current_user
-from app.utils import get_logger
+from app.utils import get_logger, sanitize_for_serialization
 
 router = APIRouter(prefix="/games", tags=["Games"])
 
@@ -44,20 +45,41 @@ def game_call_to_dto(call: dict) -> GameCallDto:
     )
 
 
+def sanitize_for_serialization(obj):
+    """Recursively convert ObjectId and datetime to JSON-safe types."""
+    if isinstance(obj, dict):
+        return {k: sanitize_for_serialization(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_for_serialization(item) for item in obj]
+    elif isinstance(obj, ObjectId):
+        return str(obj)
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
+    return obj
+
+
 def game_to_dto(game: dict, home_call: dict | None, away_call: dict | None) -> GameDto:
+    clean_game = sanitize_for_serialization(game)
+    clean_home = sanitize_for_serialization(home_call) if home_call else None
+    clean_away = sanitize_for_serialization(away_call) if away_call else None
+
     return GameDto(
-        id=str(game["_id"]),
-        tournament=str(game["tournament"]),
-        scheduled_date=game.get("scheduled_date"),
-        start_date=game.get("start_date"),
-        finish_date=game.get("finish_date"),
-        status=game.get("status", GameStatus.Scheduled),
-        phase=game.get("phase", GamePhase.Group),
-        home_placeholder=game.get("home_placeholder"),
-        away_placeholder=game.get("away_placeholder"),
-        home_call=game_call_to_dto(home_call) if home_call else None,
-        away_call=game_call_to_dto(away_call) if away_call else None,
-        events=game.get("events", []),
+        id=clean_game["_id"],
+        tournament=clean_game["tournament"],
+        scheduled_date=clean_game.get("scheduled_date"),
+        start_date=clean_game.get("start_date"),
+        finish_date=clean_game.get("finish_date"),
+        status=clean_game.get("status", GameStatus.Scheduled),
+        phase=clean_game.get("phase", GamePhase.Group),
+        home_placeholder=clean_game.get("home_placeholder"),
+        away_placeholder=clean_game.get("away_placeholder"),
+        home_call=game_call_to_dto(clean_home) if clean_home else None,
+        away_call=game_call_to_dto(clean_away) if clean_away else None,
+        events=clean_game.get("events", []),
+        current_period=clean_game.get("current_period", 0),
+        period_elapsed_seconds=clean_game.get("period_elapsed_seconds", 0),
+        timer_active=clean_game.get("timer_active", False),
+        timer_started_at=clean_game.get("timer_started_at"),
     )
 
 
@@ -78,6 +100,10 @@ async def add_game(game: CreateGameDto, current_user=Depends(get_current_user)):
         "home_placeholder": game.home_placeholder,
         "away_placeholder": game.away_placeholder,
         "current_period": 0,
+        "period_elapsed_minutes": 0,
+        "period_elapsed_seconds": 0,
+        "timer_active": False,
+        "timer_started_at": None,
         "events": [],
     }
 
@@ -355,6 +381,209 @@ async def confirm_game_calls(game_id: str, current_user=Depends(get_current_user
         f"[{current_user['username']}] Confirmed calls for game '{game_id}'"
     )
 
+    return game_to_dto(game, home_call, away_call)
+
+
+@router.patch("/{game_id}/period", response_model=GameDto)
+async def update_period(
+    game_id: str, body: UpdatePeriodDto, current_user=Depends(get_current_user)
+):
+    get_logger().info(
+        f"[{current_user['username']}] Updating period for game '{game_id}': action={body.action}, period={body.period}, seconds={getattr(body, 'seconds', None)}"
+    )
+    game = await get_game(game_id)
+
+    if game.get("status") != GameStatus.InProgress:
+        raise Error.bad_request("O jogo não está em progresso")
+
+    updates = {}
+    now = datetime.utcnow()
+    current_period = game.get("current_period", 0)
+    period_elapsed_seconds = game.get("period_elapsed_seconds", 0)
+    timer_active = game.get("timer_active", False)
+    timer_started_at = game.get("timer_started_at")
+
+    if body.action == "start_new":
+        new_period = (
+            body.period
+            if body.period is not None
+            else (current_period + 1 if current_period > 0 else 1)
+        )
+
+        # Validate tie for overtime (period 3) and penalties (period 5)
+        if new_period in (3, 5):
+            home_call_doc = (
+                await db.db[GAME_CALLS_COLLECTION].find_one(
+                    {"_id": game.get("home_call")}
+                )
+                if game.get("home_call")
+                else None
+            )
+            away_call_doc = (
+                await db.db[GAME_CALLS_COLLECTION].find_one(
+                    {"_id": game.get("away_call")}
+                )
+                if game.get("away_call")
+                else None
+            )
+            if not home_call_doc or not away_call_doc:
+                raise Error.bad_request("Game calls not found")
+            home_team_id = str(home_call_doc["team"])
+            away_team_id = str(away_call_doc["team"])
+            home_goals = 0
+            away_goals = 0
+            for e in game.get("events", []):
+                if "Goal" in e:
+                    goal = e["Goal"]
+                    # Only count goals from completed periods (before this new period)
+                    if goal.get("period", 0) < new_period:
+                        team_id = str(goal.get("team_id"))
+                        if team_id == home_team_id:
+                            home_goals += 1
+                        elif team_id == away_team_id:
+                            away_goals += 1
+            if home_goals != away_goals:
+                if new_period == 3:
+                    raise Error.bad_request(
+                        "Scores must be tied to proceed to overtime"
+                    )
+                else:
+                    raise Error.bad_request(
+                        "Scores must be tied to proceed to penalties"
+                    )
+
+        updates["current_period"] = new_period
+        updates["period_elapsed_seconds"] = 0
+        updates["timer_active"] = True
+        updates["timer_started_at"] = now
+    elif body.action == "resume":
+        if timer_active:
+            raise Error.bad_request("Timer is already active")
+        updates["timer_active"] = True
+        updates["timer_started_at"] = now
+    elif body.action == "stop":
+        if not timer_active:
+            raise Error.bad_request("Timer is not active")
+        if timer_started_at:
+            elapsed_since_start = int((now - timer_started_at).total_seconds())
+            updates["period_elapsed_seconds"] = (
+                period_elapsed_seconds + elapsed_since_start
+            )
+        updates["timer_active"] = False
+        updates["timer_started_at"] = None
+    elif body.action == "end":
+        new_period = current_period + 1
+        # Validate tie for overtime (period 3) and penalties (period 5)
+        if new_period in (3, 5):
+            home_call_doc = (
+                await db.db[GAME_CALLS_COLLECTION].find_one(
+                    {"_id": game.get("home_call")}
+                )
+                if game.get("home_call")
+                else None
+            )
+            away_call_doc = (
+                await db.db[GAME_CALLS_COLLECTION].find_one(
+                    {"_id": game.get("away_call")}
+                )
+                if game.get("away_call")
+                else None
+            )
+            if not home_call_doc or not away_call_doc:
+                raise Error.bad_request("Game calls not found")
+            home_team_id = str(home_call_doc["team"])
+            away_team_id = str(away_call_doc["team"])
+            home_goals = 0
+            away_goals = 0
+            for e in game.get("events", []):
+                if "Goal" in e:
+                    goal = e["Goal"]
+                    if goal.get("period", 0) < new_period:
+                        team_id = str(goal.get("team_id"))
+                        if team_id == home_team_id:
+                            home_goals += 1
+                        elif team_id == away_team_id:
+                            away_goals += 1
+            if home_goals != away_goals:
+                if new_period == 3:
+                    raise Error.bad_request(
+                        "Scores must be tied to proceed to overtime"
+                    )
+                else:
+                    raise Error.bad_request(
+                        "Scores must be tied to proceed to penalties"
+                    )
+        updates["current_period"] = new_period
+        updates["period_elapsed_seconds"] = 0
+        updates["timer_active"] = False
+        updates["timer_started_at"] = None
+    elif body.action == "set_seconds":
+        if body.seconds is None:
+            raise Error.bad_request("Seconds is required")
+        if body.seconds < 0 or body.seconds > 1200:
+            raise Error.bad_request("Seconds must be between 0 and 1200")
+        if timer_active:
+            raise Error.bad_request(
+                "Cannot set seconds while timer is active. Stop the timer first."
+            )
+        updates["period_elapsed_seconds"] = body.seconds
+    else:
+        raise Error.bad_request(f"Invalid action: {body.action}")
+
+    await db.db[GAMES_COLLECTION].update_one({"_id": game["_id"]}, {"$set": updates})
+
+    game.update(updates)
+
+    # Add period start/end events
+    if body.action == "start_new":
+        period_num = updates.get("current_period", game.get("current_period", 0))
+        start_event = {
+            "PeriodStart": {
+                "period": period_num,
+                "timestamp": now.isoformat(),
+            }
+        }
+        await add_game_event(game["_id"], start_event)
+    elif body.action == "resume":
+        period_num = game.get("current_period", 0)
+        resume_event = {
+            "PeriodResume": {
+                "period": period_num,
+                "timestamp": now.isoformat(),
+            }
+        }
+        await add_game_event(game["_id"], resume_event)
+    elif body.action == "stop":
+        stop_event = {
+            "PeriodPause": {
+                "period": game.get("current_period", 0),
+                "elapsed_seconds": updates.get(
+                    "period_elapsed_seconds", game.get("period_elapsed_seconds", 0)
+                ),
+                "timestamp": now.isoformat(),
+            }
+        }
+        await add_game_event(game["_id"], stop_event)
+    elif body.action == "end":
+        end_event = {
+            "PeriodEnd": {
+                "period": game.get("current_period", 0),
+                "elapsed_seconds": game.get("period_elapsed_seconds", 0),
+                "timestamp": now.isoformat(),
+            }
+        }
+        await add_game_event(game["_id"], end_event)
+
+    home_call = (
+        await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("home_call")})
+        if game.get("home_call")
+        else None
+    )
+    away_call = (
+        await db.db[GAME_CALLS_COLLECTION].find_one({"_id": game.get("away_call")})
+        if game.get("away_call")
+        else None
+    )
     return game_to_dto(game, home_call, away_call)
 
 

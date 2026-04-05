@@ -5,27 +5,28 @@ from database import db, PLAYERS_COLLECTION
 from app.schemas.schemas import CreatePlayerDto, CreateAdminPlayerDto, PlayerDto
 from app.error import Error
 from app.utils.auth import get_current_user
-from app.utils import get_logger
+from app.utils import get_logger, sanitize_for_serialization
 
 router = APIRouter(prefix="/players", tags=["Players"])
 
 
 def player_to_dto(player: dict) -> PlayerDto:
+    clean = sanitize_for_serialization(player)
     return PlayerDto(
-        id=str(player["_id"]),
-        name=player["name"],
-        birth_date=player["birth_date"],
-        address=player.get("address"),
-        place_of_birth=player.get("place_of_birth"),
-        fiscal_number=player["fiscal_number"],
-        citizen_card_file_id=player.get("citizen_card_file_id"),
-        proof_of_residency_file_id=player.get("proof_of_residency_file_id"),
-        authorization_file_id=player.get("authorization_file_id"),
-        is_federated=player.get("is_federated", False),
-        federation_team=player.get("federation_team"),
-        federation_exams_up_to_date=player.get("federation_exams_up_to_date", False),
-        is_confirmed=player.get("is_confirmed", False),
-        team=player.get("team"),
+        id=clean["_id"],
+        name=clean["name"],
+        birth_date=clean["birth_date"],
+        address=clean.get("address"),
+        place_of_birth=clean.get("place_of_birth"),
+        fiscal_number=clean["fiscal_number"],
+        citizen_card_file_id=clean.get("citizen_card_file_id"),
+        proof_of_residency_file_id=clean.get("proof_of_residency_file_id"),
+        authorization_file_id=clean.get("authorization_file_id"),
+        is_federated=clean.get("is_federated", False),
+        federation_team=clean.get("federation_team"),
+        federation_exams_up_to_date=clean.get("federation_exams_up_to_date", False),
+        is_confirmed=clean.get("is_confirmed", False),
+        team=clean.get("team"),
     )
 
 

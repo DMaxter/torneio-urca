@@ -2,7 +2,7 @@ import type { AxiosResponse } from "axios";
 
 import { http } from "@router/backend/api";
 import type { Error } from "@router/backend/types";
-import type { CreateGame, Game, GameStatus, AssignGoalDto, AssignCardDto } from "@router/backend/services/game/types";
+import type { CreateGame, Game, GameStatus, AssignGoalDto, AssignCardDto, UpdatePeriodDto } from "@router/backend/services/game/types";
 
 // Serialize date as local ISO string (no UTC conversion) so the backend stores
 // and returns the same wall-clock time, avoiding timezone shift on roundtrip.
@@ -54,10 +54,18 @@ export async function getGame(gameId: string): Promise<AxiosResponse<Game | Erro
   return await http.get(`/games/${gameId}`);
 }
 
+export async function updatePeriod(gameId: string, body: UpdatePeriodDto): Promise<AxiosResponse<Game | Error>> {
+  return await http.patch(`/games/${gameId}/period`, body);
+}
+
 export async function assignGoal(goal: AssignGoalDto): Promise<AxiosResponse<any | Error>> {
   return await http.post("/goals", goal);
 }
 
 export async function assignCard(card: AssignCardDto): Promise<AxiosResponse<any | Error>> {
   return await http.post("/cards", card);
+}
+
+export async function assignFoul(foul: { tournament: string; game: string; team: string; player_number?: number | null; minute: number }): Promise<AxiosResponse<any | Error>> {
+  return await http.post("/fouls", foul);
 }

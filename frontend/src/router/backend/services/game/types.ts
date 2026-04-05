@@ -23,6 +23,12 @@ export type AssignCardDto = {
   minute: number;
 };
 
+export type UpdatePeriodDto = {
+  action: string;
+  period?: number;
+  seconds?: number;
+};
+
 export enum GameStatus {
   Scheduled = "Scheduled",
   CallsPending = "CallsPending",
@@ -107,6 +113,10 @@ export type Game = {
   home_call: GameCall | null,
   away_call: GameCall | null,
   events: GameEvent[],
+  current_period: number,
+  period_elapsed_seconds: number,
+  timer_active: boolean,
+  timer_started_at: string | null,
 }
 
 export class CreateGameCall {

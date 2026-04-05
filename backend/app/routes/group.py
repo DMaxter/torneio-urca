@@ -13,18 +13,19 @@ from database import (
 from app.schemas.schemas import CreateGroupDto, GroupDto
 from app.error import Error
 from app.utils.auth import get_current_user
-from app.utils import get_logger
+from app.utils import get_logger, sanitize_for_serialization
 from app.models.models import GameStatus
 
 router = APIRouter(prefix="/groups", tags=["Groups"])
 
 
 def group_to_dto(group: dict) -> GroupDto:
+    clean = sanitize_for_serialization(group)
     return GroupDto(
-        id=str(group["_id"]),
-        tournament=str(group["tournament"]),
-        name=group["name"],
-        teams=[str(t) for t in group.get("teams", [])],
+        id=clean["_id"],
+        tournament=clean["tournament"],
+        name=clean["name"],
+        teams=clean.get("teams", []),
     )
 
 
