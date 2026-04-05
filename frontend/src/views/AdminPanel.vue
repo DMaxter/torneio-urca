@@ -168,12 +168,13 @@ const sections: Section[] = [
       { label: "Dias de Jogo", icon: "edit_calendar", severity: "secondary", handler: () => gameDays.value = true }
     ]
   },
-  {
+   {
     title: "Gestão de Jogos",
     icon: "🎮",
     actions: [
+      { label: "Criar", icon: "add", severity: "success", handler: () => manageGame.value = true },
       { label: "Gerir", icon: "manage_search", severity: "info", handler: () => manageGames.value = true },
-      { label: "Gerar", icon: "sports_soccer", severity: "success", handler: () => generateGames.value = true },
+      { label: "Gerar", icon: "sports_soccer", severity: "secondary", handler: () => generateGames.value = true },
       { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGames.value = true }
     ]
   }

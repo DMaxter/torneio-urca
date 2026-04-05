@@ -2,7 +2,7 @@ import type { AxiosResponse } from "axios";
 
 import { http } from "@router/backend/api";
 import type { Error } from "@router/backend/types";
-import type { CreateGame, Game } from "@router/backend/services/game/types";
+import type { CreateGame, Game, GameStatus } from "@router/backend/services/game/types";
 
 // Serialize date as local ISO string (no UTC conversion) so the backend stores
 // and returns the same wall-clock time, avoiding timezone shift on roundtrip.
@@ -42,7 +42,7 @@ export async function updateGameCall(callId: string, players: { player: string; 
   return await http.patch(`/games/calls/${callId}`, { players });
 }
 
-export async function updateGameStatus(gameId: string, status: number): Promise<AxiosResponse<Game | Error>> {
+export async function updateGameStatus(gameId: string, status: GameStatus): Promise<AxiosResponse<Game | Error>> {
   return await http.patch(`/games/${gameId}/status`, { status });
 }
 

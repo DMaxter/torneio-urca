@@ -82,6 +82,7 @@ import { useGameStore } from "@stores/games";
 import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
+import type { GameStatus } from "@router/backend/services/game/types";
 
 const enabled = defineModel<boolean>();
 const toast = useToast();
@@ -162,7 +163,7 @@ interface MatchEntry {
   away: string;
   homeId: string;
   awayId: string;
-  status: number;
+  status: GameStatus;
 }
 
 interface KnockoutEntry {
@@ -170,7 +171,7 @@ interface KnockoutEntry {
   label: string;
   home: string;
   away: string;
-  status: number;
+  status: GameStatus;
 }
 
 const byTournament = computed(() => {

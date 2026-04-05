@@ -10,12 +10,12 @@
       <label for="date">Data e Hora do Jogo</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-Select id="home" v-model="game.home_call.team" filter :options="teamStore.teams" optionLabel="name" optionValue="id"
+      <P-Select id="home" v-model="homeTeam" filter :options="teamStore.teams" optionLabel="name" optionValue="id"
       fluid />
       <label for="home">Equipa da Casa</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-Select id="away" v-model="game.away_call.team" filter :options="teamStore.teams" optionLabel="name" optionValue="id"
+      <P-Select id="away" v-model="awayTeam" filter :options="teamStore.teams" optionLabel="name" optionValue="id"
       fluid />
       <label for="away">Equipa Visitante</label>
     </P-FloatLabel>
@@ -35,7 +35,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useToast } from "primevue/usetoast";
 
-import { CreateGame, type Game } from "@router/backend/services/game/types";
+import { CreateGame, type Game, type GameCall } from "@router/backend/services/game/types";
 import { useGameStore } from "@stores/games";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
@@ -48,11 +48,45 @@ const props = defineProps<{
 
 const creating = computed(() => props.game === undefined);
 
-const game = ref<Game | CreateGame>(new CreateGame());
+// Use only CreateGame type for the form
+const game = ref<CreateGame>(new CreateGame());
+
+// Computed properties for v-model to handle optional calls
+const homeTeam = computed({
+  get: () => game.value.home_call?.team ?? '',
+  set: (val: string) => {
+    if (!game.value.home_call) {
+      game.value.home_call = { team: val };
+    } else {
+      game.value.home_call.team = val;
+    }
+  }
+});
+
+const awayTeam = computed({
+  get: () => game.value.away_call?.team ?? '',
+  set: (val: string) => {
+    if (!game.value.away_call) {
+      game.value.away_call = { team: val };
+    } else {
+      game.value.away_call.team = val;
+    }
+  }
+});
 
 onMounted(() => {
-  if (!creating.value) {
-    game.value = props.game!
+  if (props.game) {
+    const g = props.game;
+    // Convert Game to CreateGame format for the form
+    game.value = {
+      tournament: g.tournament,
+      scheduled_date: g.scheduled_date,
+      home_call: g.home_call ? { team: g.home_call.team } : null,
+      away_call: g.away_call ? { team: g.away_call.team } : null,
+      phase: g.phase,
+      home_placeholder: g.home_placeholder,
+      away_placeholder: g.away_placeholder,
+    };
   }
 });
 

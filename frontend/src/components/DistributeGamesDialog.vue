@@ -30,7 +30,7 @@
               <ul class="space-y-1">
                 <li v-for="(g, i) in slot.games" :key="g.id" class="text-xs text-stone-600 flex items-center gap-1">
                   <span class="text-stone-400 shrink-0">{{ formatGameTime(slot.startTime, i) }}</span>
-                  <span class="truncate">{{ getTeamName(g.home_call.team) }} vs {{ getTeamName(g.away_call.team) }}</span>
+                   <span class="truncate">{{ getTeamName(g.home_call?.team || '') }} vs {{ getTeamName(g.away_call?.team || '') }}</span>
                   <span class="ml-1 text-stone-400 shrink-0 whitespace-nowrap">({{ g.groupName }}, Jornada {{ g.round }})</span>
                 </li>
               </ul>
@@ -45,9 +45,9 @@
           </div>
           <ul class="divide-y divide-stone-100 max-h-40 overflow-y-auto">
             <li v-for="g in unassigned" :key="g.id" class="px-3 py-2 text-xs text-stone-600 flex items-center gap-1">
-              <span class="truncate">{{ getTeamName(g.home_call.team) }}</span>
-              <span class="text-stone-400 shrink-0">vs</span>
-              <span class="truncate">{{ getTeamName(g.away_call.team) }}</span>
+               <span class="truncate">{{ getTeamName(g.home_call?.team || '') }}</span>
+               <span class="text-stone-400 shrink-0">vs</span>
+               <span class="truncate">{{ getTeamName(g.away_call?.team || '') }}</span>
               <span class="ml-1 text-stone-400 shrink-0">({{ g.groupName }}, Jornada {{ g.round }})</span>
             </li>
           </ul>
