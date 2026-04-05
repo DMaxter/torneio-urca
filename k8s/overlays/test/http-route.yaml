@@ -4,10 +4,9 @@ metadata:
   name: urca-tournament
 spec:
   parentRefs:
-    - name: urca-tournament
+    - name: traefik-gateway
   hostnames:
     - "torneio-test.dmaxter.pt"
-    - "torneio-test.int.dmaxter.pt"
   rules:
     - backendRefs:
         - name: urca-tournament

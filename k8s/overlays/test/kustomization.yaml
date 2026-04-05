@@ -6,16 +6,11 @@ resources:
   - http-route.yaml
 
 patches:
-  - patch: |-
-      apiVersion: apps/v1
+  - target:
       kind: Deployment
-      metadata:
-        name: urca-tournament
-      spec:
-        replicas: 1
-    target:
-      kind: Deployment
+      name: urca-tournament
+    path: deployment.yaml
 
 images:
-  - name: ghcr.io/REPLACE_WITH_USERNAME/urca-tournament
+  - name: ghcr.io/dmaxter/urca-tournament
     newTag: test
