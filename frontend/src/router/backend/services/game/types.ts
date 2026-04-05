@@ -14,7 +14,7 @@ export type GameCall = {
   id: string,
   game: string,
   team: string,
-  players: string[],
+  players: { player: string; number: number | null }[],
   deputy: string | null,
 }
 

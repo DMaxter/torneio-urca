@@ -45,6 +45,7 @@ class PlayerDto(BaseModel):
     federation_team: Optional[str] = None
     federation_exams_up_to_date: bool
     is_confirmed: bool
+    team: Optional[str] = None
 
 
 class CreateStaffDto(BaseModel):
@@ -116,6 +117,10 @@ class CreateGameCallDto(BaseModel):
     team: str
 
 
+class UpdateGameCallDto(BaseModel):
+    players: List[dict]  # [{"player": str, "number": int | None}]
+
+
 class CreateGameDto(BaseModel):
     tournament: str
     scheduled_date: Optional[datetime] = None
@@ -130,7 +135,7 @@ class GameCallDto(BaseModel):
     id: str
     game: str
     team: str
-    players: List[str]
+    players: List[dict]  # [{"player": str, "number": int | None}]
     deputy: Optional[str] = None
 
 

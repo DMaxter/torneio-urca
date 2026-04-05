@@ -37,3 +37,7 @@ export async function updateGame(gameId: string, scheduledDate: Date | null): Pr
 export async function deleteGame(gameId: string): Promise<AxiosResponse<void | Error>> {
   return await http.delete(`/games/${gameId}`);
 }
+
+export async function updateGameCall(callId: string, players: { player: string; number: number | null }[]): Promise<AxiosResponse<any | Error>> {
+  return await http.patch(`/games/calls/${callId}`, { players });
+}

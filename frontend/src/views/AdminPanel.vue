@@ -79,6 +79,10 @@ function onRegisterGame(_game: Game) {
   // TODO: abrir o diálogo de gestão do jogo ao vivo
 }
 
+function goToGameCalls() {
+  router.push("/game-calls");
+}
+
 const listTournaments = ref(false);
 const manageTournament = ref(false);
 const listUsers = ref(false);
@@ -161,7 +165,8 @@ const sections: Section[] = [
       { label: "Gerar", icon: "sports_soccer", severity: "success", handler: () => generateGames.value = true },
       { label: "Calendário", icon: "calendar_month", severity: "info", handler: () => gameCalendar.value = true },
       { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGames.value = true },
-      { label: "Dias de Jogo", icon: "edit_calendar", severity: "secondary", handler: () => gameDays.value = true }
+      { label: "Dias de Jogo", icon: "edit_calendar", severity: "secondary", handler: () => gameDays.value = true },
+      { label: "Chamada", icon: "groups", severity: "secondary", handler: goToGameCalls }
     ]
   }
 ];

@@ -120,7 +120,9 @@ class GameCall(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     game: Optional[str] = None
     team: str
-    players: List[str] = []
+    players: List[
+        dict
+    ] = []  # [{"player": str, "number": int}] or [{"player": str, "number": None}] for removed
     deputy: Optional[str] = None
 
 
@@ -168,7 +170,7 @@ class GameDay(BaseModel):
 
     id: Optional[str] = Field(None, alias="_id")
     tournament: str
-    date: str        # "YYYY-MM-DD"
+    date: str  # "YYYY-MM-DD"
     num_games: int
     start_time: str  # "HH:MM"
 

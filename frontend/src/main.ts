@@ -26,19 +26,20 @@ app.use(router);
 
 // PrimeVue components
 
-import Button from "primevue/button";
 import Accordion from "primevue/accordion";
 import AccordionTab from "primevue/accordiontab";
+import Button from "primevue/button";
 import Checkbox from "primevue/checkbox";
 import Column from 'primevue/column';
 import DataTable from "primevue/datatable";
 import DatePicker from "primevue/datepicker";
 import Dialog from "primevue/dialog";
+import Dropdown from "primevue/dropdown";
 import Fieldset from "primevue/fieldset";
 import FileUpload from "primevue/fileupload";
 import FloatLabel from "primevue/floatlabel";
-import InputText from "primevue/inputtext";
 import InputNumber from "primevue/inputnumber";
+import InputText from "primevue/inputtext";
 import Menubar from "primevue/menubar";
 import MultiSelect from "primevue/multiselect";
 import ProgressSpinner from "primevue/progressspinner";
@@ -57,11 +58,12 @@ app.component("P-Column", Column);
 app.component("P-DataTable", DataTable);
 app.component("P-DatePicker", DatePicker);
 app.component("P-Dialog", Dialog);
+app.component("P-Dropdown", Dropdown);
 app.component("P-Fieldset", Fieldset);
 app.component("P-FileUpload", FileUpload);
 app.component("P-FloatLabel", FloatLabel);
-app.component("P-InputText", InputText);
 app.component("P-InputNumber", InputNumber);
+app.component("P-InputText", InputText);
 app.component("P-Menubar", Menubar);
 app.component("P-MultiSelect", MultiSelect);
 app.component("P-ProgressSpinner", ProgressSpinner);

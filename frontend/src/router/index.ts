@@ -46,6 +46,15 @@ const routes = [
       title: "Admin Panel | " + import.meta.env.VUE_APP_NAME,
       requiresAuth: true,
     }
+  },
+  {
+    path: "/game-calls",
+    name: "gameCalls",
+    component: () => import("@views/GameCallsView.vue"),
+    meta: {
+      title: "Chamada de Jogadores | " + import.meta.env.VUE_APP_NAME,
+      requiresAuth: true,
+    }
   }
 ];
 

@@ -25,6 +25,7 @@ def player_to_dto(player: dict) -> PlayerDto:
         federation_team=player.get("federation_team"),
         federation_exams_up_to_date=player.get("federation_exams_up_to_date", False),
         is_confirmed=player.get("is_confirmed", False),
+        team=player.get("team"),
     )
 
 
@@ -80,9 +81,29 @@ async def add_player_admin(
 
 
 @router.get("", response_model=List[PlayerDto])
-async def get_players():
-    get_logger().info("Retrieving all players")
-    players = await db.db[PLAYERS_COLLECTION].find().to_list(1000)
+async def get_players(team: str | None = None):
+    get_logger().info(f"Retrieving all players (team filter: {team})")
+    query = {}
+    player_team_map = {}
+
+    if team:
+        team_doc = await db.db["teams"].find_one(
+            {"_id": ObjectId(team)}, {"players": 1}
+        )
+        player_ids = team_doc.get("players", []) if team_doc else []
+        query["_id"] = {"$in": player_ids}
+
+    players = await db.db[PLAYERS_COLLECTION].find(query).to_list(1000)
+
+    if not team:
+        all_teams = await db.db["teams"].find().to_list(1000)
+        for t in all_teams:
+            for pid in t.get("players", []):
+                player_team_map[str(pid)] = str(t["_id"])
+
+    for player in players:
+        player["team"] = player_team_map.get(str(player["_id"]))
+
     get_logger().info(f"Retrieved {len(players)} players")
     return [player_to_dto(player) for player in players]
 

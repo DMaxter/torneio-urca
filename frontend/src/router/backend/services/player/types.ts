@@ -21,6 +21,7 @@ export class CreateAdminPlayer {
 export class Player {
   id: string = "";
   name: string = "";
+  team: string = "";
   birth_date: Date | null = null;
   address: string | null = null;
   place_of_birth: string | null = null;
