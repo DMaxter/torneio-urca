@@ -159,13 +159,19 @@ const sections: Section[] = [
     ]
   },
   {
+    title: "Calendário",
+    icon: "📅",
+    actions: [
+      { label: "Calendário", icon: "calendar_month", severity: "info", handler: () => gameCalendar.value = true },
+      { label: "Dias de Jogo", icon: "edit_calendar", severity: "secondary", handler: () => gameDays.value = true }
+    ]
+  },
+  {
     title: "Jogos",
     icon: "🎮",
     actions: [
       { label: "Gerar", icon: "sports_soccer", severity: "success", handler: () => generateGames.value = true },
-      { label: "Calendário", icon: "calendar_month", severity: "info", handler: () => gameCalendar.value = true },
       { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGames.value = true },
-      { label: "Dias de Jogo", icon: "edit_calendar", severity: "secondary", handler: () => gameDays.value = true },
       { label: "Chamada", icon: "groups", severity: "secondary", handler: goToGameCalls }
     ]
   }
