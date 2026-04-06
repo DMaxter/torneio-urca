@@ -3,8 +3,6 @@ kind: Kustomization
 
 resources:
   - configmap.yaml
-  - secret.yaml
   - deployment.yaml
   - service.yaml
-  - http-route.yaml
   - mongodb.yaml
