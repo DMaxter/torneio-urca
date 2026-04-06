@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: urca-tournament
-          image: ghcr.io/REPLACE_WITH_USERNAME/urca-tournament:latest
+          image: ghcr.io/dmaxter/urca-tournament:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

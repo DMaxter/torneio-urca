@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: mongodb
-          image: mongo:7.0
+          image: mongo:8
           ports:
             - containerPort: 27017
               name: mongodb
@@ -60,4 +60,4 @@ spec:
         accessModes: ["ReadWriteOnce"]
         resources:
           requests:
-            storage: 5Gi
+            storage: 25Gi
