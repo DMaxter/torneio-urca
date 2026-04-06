@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
     tags: ['v*']
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - 'Dockerfile'
+      - '.github/workflows/**'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -27,13 +33,10 @@ jobs:
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG="${GITHUB_REF#refs/tags/}"
-            TEST_TAG="test-${SHORT_SHA}"
           else
-            TAG="test"
-            TEST_TAG="test-${SHORT_SHA}"
+            TAG="test-${SHORT_SHA}"
           fi
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
-          echo "test-tag=${TEST_TAG}" >> $GITHUB_OUTPUT
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           echo "image=${{ env.REGISTRY }}/${OWNER}/urca-tournament" >> $GITHUB_OUTPUT
 
@@ -58,15 +61,13 @@ jobs:
           context: .
           push: true
           platforms: linux/arm64
-          tags: |
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
-            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.test-tag }}
+          tags: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
   update-test:
     needs: build-and-push
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
