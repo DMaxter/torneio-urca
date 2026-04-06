@@ -5,8 +5,9 @@ metadata:
 spec:
   parentRefs:
     - name: traefik-gateway
+      namespace: traefik
   hostnames:
-    - "torneio-test.dmaxter.pt"
+    - torneio-test.dmaxter.pt
   rules:
     - backendRefs:
         - name: urca-tournament
