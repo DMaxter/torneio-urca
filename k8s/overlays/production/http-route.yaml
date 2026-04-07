@@ -12,3 +12,7 @@ spec:
     - backendRefs:
         - name: urca-tournament
           port: 80
+      matches:
+        - path:
+            type: PathPrefix
+            value: /
