@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-reset-and-seed
+spec:
+  schedule: "0 */2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 600
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: reset-and-seed
+              image: ghcr.io/dmaxter/urca-tournament:latest
+              imagePullPolicy: Always
+              command:
+                - uv
+                - run
+                - reset_and_seed.py
+              workingDir: /backend
+              envFrom:
+                - configMapRef:
+                    name: urca-tournament-config
+                - secretRef:
+                    name: urca-tournament-secret
+              env:
+                - name: BASE_URL
+                  value: "http://urca-tournament:80/api"
+              resources:
+                requests:
+                  memory: "256Mi"
+                  cpu: "100m"
+                limits:
+                  memory: "512Mi"
+                  cpu: "500m"
+  suspend: True

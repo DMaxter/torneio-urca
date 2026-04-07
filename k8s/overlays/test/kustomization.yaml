@@ -5,6 +5,7 @@ resources:
   - ../../base
   - http-route.yaml
   - sealed-secret.yaml
+  - cronjob.yaml
 
 patches:
   - target:
