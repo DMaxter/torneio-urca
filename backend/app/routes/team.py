@@ -55,7 +55,7 @@ async def process_files(files: List[UploadFile]) -> dict[str, str]:
     return file_dict
 
 
-def create_staff_member(
+async def create_staff_member(
     staff_type: StaffType,
     name: Optional[str],
     birth_date: Optional[str],
@@ -79,7 +79,7 @@ def create_staff_member(
         "citizen_card_file_id": file_dict.get(f"{prefix}_citizen_card"),
         "proof_of_residency_file_id": file_dict.get(f"{prefix}_proof_of_residency"),
     }
-    result = db.db[STAFF_COLLECTION].insert_one(staff_data)
+    result = await db.db[STAFF_COLLECTION].insert_one(staff_data)
     return result.inserted_id
 
 
@@ -238,7 +238,7 @@ async def register_team(
     file_dict = await process_files(files)
 
     get_logger().info("Creating staff members")
-    main_coach_id = create_staff_member(
+    main_coach_id = await create_staff_member(
         StaffType.Coach,
         main_coach_name,
         main_coach_birth_date,
@@ -248,7 +248,7 @@ async def register_team(
         file_dict,
         "main_coach",
     )
-    physiotherapist_id = create_staff_member(
+    physiotherapist_id = await create_staff_member(
         StaffType.Physiotherapist,
         physiotherapist_name,
         physiotherapist_birth_date,
@@ -258,7 +258,7 @@ async def register_team(
         file_dict,
         "physiotherapist",
     )
-    first_deputy_id = create_staff_member(
+    first_deputy_id = await create_staff_member(
         StaffType.GameDeputy,
         first_deputy_name,
         first_deputy_birth_date,
@@ -268,7 +268,7 @@ async def register_team(
         file_dict,
         "first_deputy",
     )
-    second_deputy_id = create_staff_member(
+    second_deputy_id = await create_staff_member(
         StaffType.GameDeputy,
         second_deputy_name,
         second_deputy_birth_date,
