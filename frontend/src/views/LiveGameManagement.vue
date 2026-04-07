@@ -983,7 +983,11 @@ async function loadGame() {
   if (response.status === 200 && response.data && 'id' in response.data) {
     game.value = response.data as Game;
     events.value = response.data.events || [];
-    
+
+    // Update game in store so other views (e.g. CalendarView) react reactively
+    const idx = gameStore.games.findIndex(g => g.id === gameId);
+    if (idx !== -1) gameStore.games[idx] = response.data as Game;
+
     // Stop polling if game is finished
     if (game.value.status === GameStatus.Finished && refreshInterval) {
       clearInterval(refreshInterval);

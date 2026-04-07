@@ -39,6 +39,15 @@ const routes = [
     }
   },
   {
+    path: "/calendario",
+    name: "calendar",
+    component: () => import("@views/CalendarView.vue"),
+    meta: {
+      title: "Calendário | " + import.meta.env.VUE_APP_NAME,
+      requiresAuth: false,
+    }
+  },
+  {
     path: "/admin",
     name: "adminPanel",
     component: () => import("@views/AdminPanel.vue"),
