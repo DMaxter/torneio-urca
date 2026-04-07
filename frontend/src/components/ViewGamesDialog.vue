@@ -184,9 +184,9 @@ const byTournament = computed(() => {
       const knockoutGames = tournamentGames.filter(g => g.phase !== "group");
 
       const groups = groupStore.groups.filter(g => g.tournament === tournament.id);
-      const groupMap: Record<string, { name: string; matches: MatchEntry[] }> = {};
+      const groupMap: Record<string, { name: string; teams: string[]; matches: MatchEntry[] }> = {};
       for (const group of groups) {
-        groupMap[group.id] = { name: group.name, matches: [] };
+        groupMap[group.id] = { name: group.name, teams: group.teams, matches: [] };
       }
       const ungrouped: MatchEntry[] = [];
 
@@ -204,7 +204,7 @@ const byTournament = computed(() => {
 
       const groupsWithRounds = Object.values(groupMap)
         .filter(g => g.matches.length > 0)
-        .map(g => ({ name: g.name, rounds: buildRounds(g.matches) }));
+        .map(g => ({ name: g.name, rounds: buildRounds(g.matches, g.teams) }));
 
       if (ungrouped.length) {
         groupsWithRounds.push({ name: "Sem grupo", rounds: [ungrouped] });
@@ -228,14 +228,12 @@ const byTournament = computed(() => {
     .filter(t => t !== null);
 });
 
-function buildRounds(matches: MatchEntry[]): MatchEntry[][] {
-  const teamIds = [...new Set(matches.flatMap(m => [m.homeId, m.awayId]))];
-  const teams = teamIds.length % 2 === 1 ? [...teamIds, "bye"] : [...teamIds];
+function buildRounds(matches: MatchEntry[], groupTeams: string[]): MatchEntry[][] {
+  const teams = groupTeams.length % 2 === 1 ? [...groupTeams, "bye"] : [...groupTeams];
   const n = teams.length;
   const rounds: MatchEntry[][] = [];
 
   for (let r = 0; r < n - 1; r++) {
-    const round: MatchEntry[] = [];
     for (let i = 0; i < n / 2; i++) {
       const home = teams[i];
       const away = teams[n - 1 - i];
@@ -243,10 +241,9 @@ function buildRounds(matches: MatchEntry[]): MatchEntry[][] {
         const match = matches.find(
           m => (m.homeId === home && m.awayId === away) || (m.homeId === away && m.awayId === home)
         );
-        if (match) round.push(match);
+        if (match) rounds.push([match]);
       }
     }
-    if (round.length) rounds.push(round);
     teams.splice(1, 0, teams.pop()!);
   }
 

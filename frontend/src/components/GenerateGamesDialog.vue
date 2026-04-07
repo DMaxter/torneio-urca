@@ -301,15 +301,13 @@ function buildRounds(teamIds: string[]): MatchPreview[][] {
   const rounds: MatchPreview[][] = [];
 
   for (let r = 0; r < n - 1; r++) {
-    const round: MatchPreview[] = [];
     for (let i = 0; i < n / 2; i++) {
       const home = teams[i];
       const away = teams[n - 1 - i];
       if (home !== "bye" && away !== "bye") {
-        round.push({ homeId: home, awayId: away, home: getTeamName(home), away: getTeamName(away) });
+        rounds.push([{ homeId: home, awayId: away, home: getTeamName(home), away: getTeamName(away) }]);
       }
     }
-    rounds.push(round);
     teams.splice(1, 0, teams.pop()!);
   }
 

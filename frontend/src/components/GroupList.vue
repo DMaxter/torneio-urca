@@ -22,7 +22,7 @@
     </P-DataTable>
     <template #footer>
       <div class="flex gap-2">
-        <P-Button severity="danger" @click="showDeleteAllDialog = true" :disabled="groupStore.groups.length === 0 || deleting">
+        <P-Button severity="danger" @click="promptDeleteAll" :disabled="groupStore.groups.length === 0 || deleting">
           <span class="material-symbols-outlined">delete_sweep</span>
           Eliminar tudo
         </P-Button>
@@ -76,6 +76,7 @@ import { useToast } from "primevue/usetoast";
 import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
+import { useGameStore } from "@stores/games";
 import type { Group } from "@router/backend/services/group/types";
 
 const toast = useToast();
@@ -83,6 +84,7 @@ const enabled = defineModel<boolean>();
 const groupStore = useGroupStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
+const gameStore = useGameStore();
 
 
 const showDeleteAllDialog = ref(false);
@@ -97,6 +99,7 @@ onMounted(async () => {
     groupStore.getGroups(),
     teamStore.getTeams(),
     tournamentStore.getTournaments(),
+    gameStore.getGames(),
   ]);
 });
 
@@ -111,6 +114,16 @@ function viewGroupTeams(event: any) {
   showViewTeams.value = true;
 }
 
+
+function promptDeleteAll() {
+  const tournamentIds = new Set(groupStore.groups.map(g => g.tournament));
+  const hasGames = gameStore.games.some(g => tournamentIds.has(g.tournament));
+  if (hasGames) {
+    toast.add({ severity: "warn", summary: "Não permitido", detail: "Não é possível eliminar grupos quando já existem jogos gerados. Elimina primeiro os jogos.", life: 5000 });
+    return;
+  }
+  showDeleteAllDialog.value = true;
+}
 
 async function confirmDeleteAllGroups() {
   deleting.value = true;

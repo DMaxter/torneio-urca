@@ -86,11 +86,13 @@ import { ref, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { usePlayerStore } from "@stores/players";
 import { useTeamStore } from "@stores/teams";
+import { useGroupStore } from "@stores/groups";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
 const playerStore = usePlayerStore();
 const teamStore = useTeamStore();
+const groupStore = useGroupStore();
 
 const showConfirmPlayer = ref(false);
 const showRemovePlayer = ref(false);
@@ -101,7 +103,7 @@ function getTeamName(playerId: string): string {
 }
 
 onMounted(async () => {
-  await Promise.all([playerStore.getPlayers(), teamStore.getTeams()]);
+  await Promise.all([playerStore.getPlayers(), teamStore.getTeams(), groupStore.getGroups()]);
 });
 
 function promptConfirmPlayer(playerId: string, playerName: string) {
@@ -120,6 +122,11 @@ async function confirmPlayerAction() {
 }
 
 function promptRemovePlayer(playerId: string, playerName: string) {
+  const team = teamStore.teams.find(t => t.players.includes(playerId));
+  if (team && groupStore.groups.some(g => g.tournament === team.tournament)) {
+    toast.add({ severity: "warn", summary: "Não permitido", detail: "Não é possível remover jogadores quando já existem grupos criados.", life: 4000 });
+    return;
+  }
   playerToAction.value = { id: playerId, name: playerName };
   showRemovePlayer.value = true;
 }

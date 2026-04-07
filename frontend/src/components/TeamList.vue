@@ -291,6 +291,11 @@ async function confirmPlayerAction() {
 }
 
 function promptRemovePlayer(playerId: string, playerName: string) {
+  const team = teamStore.teams.find(t => t.players.includes(playerId));
+  if (team && groupStore.groups.some(g => g.tournament === team.tournament)) {
+    toast.add({ severity: "warn", summary: "Não permitido", detail: "Não é possível remover jogadores quando já existem grupos criados.", life: 4000 });
+    return;
+  }
   playerToAction.value = { id: playerId, name: playerName };
   showRemovePlayer.value = true;
 }

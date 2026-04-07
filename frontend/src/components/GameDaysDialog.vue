@@ -221,7 +221,7 @@ function checkOverlap(day: typeof pendingDays.value[0]): string | null {
       const hh = String(Math.floor(conflict / 60)).padStart(2, "0");
       const mm = String(conflict % 60).padStart(2, "0");
       const otherName = tournamentStore.tournaments.find(t => t.id === other.tournament)?.name ?? "outro torneio";
-      return `Sobreposição às ${hh}:${mm} com "${otherName}". Ajusta a hora de início ou o número de jogos.`;
+      return `Sobreposição no dia ${formatDate(day.date)} às ${hh}:${mm} com "${otherName}". Ajusta a hora de início ou o número de jogos.`;
     }
   }
   return null;

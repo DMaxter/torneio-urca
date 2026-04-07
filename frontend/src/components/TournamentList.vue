@@ -15,11 +15,13 @@
             <button
               v-for="c in TOURNAMENT_COLORS"
               :key="c.value"
-              class="w-4 h-4 rounded-full border-2 transition-transform hover:scale-125"
-              :class="[c.dot, getColor(data.id).value === c.value ? 'border-stone-700 scale-125' : 'border-transparent']"
+              class="w-4 h-4 rounded-full border-2 transition-transform hover:scale-125 flex items-center justify-center"
+              :class="[c.value !== 'none' ? c.dot : 'bg-white border-stone-400', getColor(data.id).value === c.value ? 'border-stone-700 scale-125' : c.value === 'none' ? 'border-stone-300' : 'border-transparent']"
               v-tooltip.top="c.label"
               @click="setColor(data.id, c.value)"
-            />
+            >
+              <span v-if="c.value === 'none'" class="text-stone-400 leading-none" style="font-size:9px">✕</span>
+            </button>
           </div>
         </template>
       </P-Column>

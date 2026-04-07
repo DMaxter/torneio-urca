@@ -1,6 +1,7 @@
 import { ref } from "vue";
 
 export const TOURNAMENT_COLORS = [
+  { value: "none",    label: "Nenhuma",  dot: "bg-transparent border border-stone-300", slot: "", chip: "border-stone-200" },
   { value: "rose",    label: "Rosa",     dot: "bg-pink-300",    slot: "border-l-2 border-l-pink-300",    chip: "border-pink-300" },
   { value: "blue",    label: "Azul",     dot: "bg-blue-400",    slot: "border-l-2 border-l-blue-400",    chip: "border-blue-400" },
   { value: "orange",  label: "Laranja",  dot: "bg-orange-400",  slot: "border-l-2 border-l-orange-400",  chip: "border-orange-400" },

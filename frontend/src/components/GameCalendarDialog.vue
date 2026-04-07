@@ -236,14 +236,17 @@ function getRoundName(game: Game): string {
   if (!group) return "";
   const teams = group.teams.length % 2 === 1 ? [...group.teams, "bye"] : [...group.teams];
   const n = teams.length;
+  let jornada = 1;
   for (let r = 0; r < n - 1; r++) {
     for (let i = 0; i < n / 2; i++) {
       const home = teams[i];
       const away = teams[n - 1 - i];
+      if (home === "bye" || away === "bye") continue;
       if ((home === game.home_call!.team && away === game.away_call!.team) ||
           (home === game.away_call!.team && away === game.home_call!.team)) {
-        return `Jornada ${r + 1}`;
+        return `Jornada ${jornada}`;
       }
+      jornada++;
     }
     teams.splice(1, 0, teams.pop()!);
   }
@@ -391,7 +394,7 @@ function getPhaseSlotClass(game: Game): string {
   if (game.phase === "semi_final")    return `bg-emerald-50 hover:bg-emerald-100 ${border}`;
   if (game.phase === "third_place")   return `bg-violet-50 hover:bg-violet-100 ${border}`;
   if (game.phase === "final")         return `bg-violet-50 hover:bg-violet-100 ${border}`;
-  return "hover:bg-stone-50";
+  return `hover:bg-stone-50 ${border}`;
 }
 
 function getPhaseChipClass(game: Game): string {
@@ -400,7 +403,7 @@ function getPhaseChipClass(game: Game): string {
   if (game.phase === "semi_final")    return `bg-emerald-50 border ${border} text-emerald-700`;
   if (game.phase === "third_place")   return `bg-violet-50 border ${border} text-violet-700`;
   if (game.phase === "final")         return `bg-violet-50 border ${border} text-violet-700`;
-  return "bg-white border-stone-200 text-stone-600 hover:border-blue-300";
+  return `bg-white border ${border || "border-stone-200"} text-stone-600 hover:border-blue-300`;
 }
 
 function isSlotAllowedForGame(slot: Slot, game: Game): boolean {
@@ -412,8 +415,7 @@ function getSlotClass(slot: Slot) {
   if (slot.game && selectedGame.value?.id === slot.game.id) {
     return "bg-blue-50 border-l-2 border-blue-400";
   }
-  if (slot.game && slot.game.phase !== "group") return getPhaseSlotClass(slot.game);
-  if (slot.game) return "hover:bg-stone-50";
+  if (slot.game) return getPhaseSlotClass(slot.game);
   if (selectedGame.value) {
     if (isSlotAllowedForGame(slot, selectedGame.value)) {
       return "hover:bg-green-50 border-l-2 border-dashed border-green-300";
@@ -483,15 +485,13 @@ function buildOrderedGames(tournamentId: string): GameEntry[] {
   const groups = groupStore.groups.filter(g => g.tournament === tournamentId);
   const tournamentGames = gameStore.games.filter(g => g.tournament === tournamentId);
 
-  // Build per-group, per-round 2D array so interleaving respects round boundaries
-  // even when groups have different numbers of games per round (e.g. odd-team groups with bye)
-  const groupRounds: GameEntry[][][] = groups.map(group => {
+  // Each entry is one game (1 game per jornada), ordered sequentially per group
+  const groupJornadas: GameEntry[][] = groups.map(group => {
     const teams = group.teams.length % 2 === 1 ? [...group.teams, "bye"] : [...group.teams];
     const n = teams.length;
-    const rounds: GameEntry[][] = [];
+    const jornadas: GameEntry[] = [];
 
     for (let r = 0; r < n - 1; r++) {
-      const roundGames: GameEntry[] = [];
       for (let i = 0; i < n / 2; i++) {
         const home = teams[i];
         const away = teams[n - 1 - i];
@@ -500,20 +500,20 @@ function buildOrderedGames(tournamentId: string): GameEntry[] {
             g => (g.home_call?.team === home && g.away_call?.team === away) ||
                  (g.home_call?.team === away && g.away_call?.team === home)
           );
-          if (game) roundGames.push({ ...game, groupName: group.name, round: r + 1 });
+          if (game) jornadas.push({ ...game, groupName: group.name, round: jornadas.length + 1 });
         }
       }
-      rounds.push(roundGames);
       teams.splice(1, 0, teams.pop()!);
     }
-    return rounds;
+    return jornadas;
   });
 
-  const maxRounds = Math.max(...groupRounds.map(gr => gr.length), 0);
+  // Interleave by jornada index: jornada 1 of all groups, then jornada 2, etc.
+  const maxJornadas = Math.max(...groupJornadas.map(g => g.length), 0);
   const result: GameEntry[] = [];
-  for (let r = 0; r < maxRounds; r++) {
-    for (const groupR of groupRounds) {
-      if (groupR[r]) result.push(...groupR[r]);
+  for (let j = 0; j < maxJornadas; j++) {
+    for (const groupJ of groupJornadas) {
+      if (groupJ[j]) result.push(groupJ[j]);
     }
   }
 
