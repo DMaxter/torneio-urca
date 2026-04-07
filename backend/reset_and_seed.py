@@ -17,6 +17,8 @@ import bcrypt
 
 from pymongo import MongoClient
 
+from urllib.parse import urlparse
+
 BASE_URL = os.environ.get("BASE_URL", "http://urca-tournament:80/api")
 
 COLLECTIONS = [
@@ -1469,7 +1471,9 @@ def ok(r: httpx.Response, context: str) -> dict:
 def login(client: httpx.Client) -> None:
     print("A fazer login como admin...")
     r = client.post("/auth/login", json={"username": "admin", "password": "admin"})
-    ok(r, "login")
+    data = ok(r, "login")
+    token = data["access_token"]
+    client.headers["Cookie"] = f"auth_token={token}"
     print("  OK\n")
 
 
