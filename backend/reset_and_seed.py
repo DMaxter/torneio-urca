@@ -17,7 +17,7 @@ import bcrypt
 
 from pymongo import MongoClient
 
-BASE_URL = "http://localhost:8000/api"
+BASE_URL = os.environ.get("BASE_URL", "http://urca-tournament:80/api")
 
 COLLECTIONS = [
     "users",
