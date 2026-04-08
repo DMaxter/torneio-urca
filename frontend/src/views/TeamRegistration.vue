@@ -8,6 +8,11 @@
     <div class="form-card">
       <P-Steps :model="steps" :activeStep="currentStep" />
 
+      <div v-if="submitting && registrationProgress.total > 0" class="registration-progress">
+        <P-ProgressBar :value="Math.round((registrationProgress.current / registrationProgress.total) * 100)" :showValue="false" />
+        <span class="progress-text">{{ registrationProgress.step }}</span>
+      </div>
+
       <div class="form-container">
         <!-- Step 1: Team Info -->
         <div v-show="currentStep === 0" class="step-content">
@@ -131,8 +136,10 @@
             @click="submit"
             :loading="submitting"
           >
-            <span class="material-symbols-outlined">check</span>
-            Submeter
+            <span v-if="submitting" class="material-symbols-outlined">progress_activity</span>
+            <span v-else class="material-symbols-outlined">check</span>
+            <span v-if="submitting && registrationProgress.step">{{ registrationProgress.step }}</span>
+            <span v-else>Submeter</span>
           </P-Button>
         </div>
       </div>
@@ -147,12 +154,20 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useTournamentStore } from "@stores/tournaments";
-import { http } from "@router/backend/api";
 import { TOURNAMENT } from "@/constants";
 import { isUnderAge } from "@/utils";
 import { useRegistrationDeadline } from "@composables/useRegistrationDeadline";
 import PlayerForm from "@components/forms/PlayerForm.vue";
 import StaffMemberForm from "@components/forms/StaffMemberForm.vue";
+import {
+  registerTeamStart,
+  registerAddStaff,
+  registerAddPlayer,
+  registerComplete,
+  cancelRegistration,
+  type RegisterStaffData,
+  type RegisterPlayerData,
+} from "@router/backend/services/team";
 
 interface PlayerFormData {
   name: string;
@@ -179,7 +194,7 @@ interface StaffMemberData {
   fiscal_number: string;
 }
 
-interface StaffMemberFiles {
+interface StaffFiles {
   citizenCard?: File | null;
   proofOfResidency?: File | null;
 }
@@ -192,11 +207,13 @@ interface PlayerFormEntry {
 
 interface StaffFormEntry {
   data: StaffMemberData;
-  files: StaffMemberFiles;
+  files: StaffFiles;
 }
 
 const currentStep = ref(0);
 const submitting = ref(false);
+const registrationProgress = ref({ current: 0, total: 0, step: "" });
+let currentTeamId: string | null = null;
 
 const steps = [
   { label: "Equipa" },
@@ -352,94 +369,121 @@ async function submit() {
   }
 
   submitting.value = true;
+  currentTeamId = null;
+
+  const staffCount = [
+    staffForms.main_coach,
+    staffForms.physiotherapist,
+    staffForms.first_deputy,
+    staffForms.second_deputy,
+  ].filter(s => s.data.name).length;
+  const totalSteps = 1 + staffCount + playerForms.length + 1;
+  let currentStep = 0;
+
+  const updateProgress = (step: string) => {
+    currentStep++;
+    registrationProgress.value = { current: currentStep, total: totalSteps, step };
+  };
+
+  const showError = (detail: string) => {
+    toast.add({ severity: "error", summary: "Erro", detail, life: 5000 });
+  };
 
   try {
-    const formData = new FormData();
-
-    formData.append("tournament", teamData.tournament);
-    formData.append("name", teamData.name);
-    formData.append("responsible_name", teamData.responsible_name);
-    formData.append("responsible_email", teamData.responsible_email);
-    formData.append("responsible_phone", teamData.responsible_phone);
-
-    if (staffForms.main_coach.data.name) {
-      appendStaffData(formData, "main_coach", staffForms.main_coach.data);
-    }
-
-    if (staffForms.physiotherapist.data.name) {
-      appendStaffData(formData, "physiotherapist", staffForms.physiotherapist.data);
-    }
-
-    if (staffForms.first_deputy.data.name) {
-      appendStaffData(formData, "first_deputy", staffForms.first_deputy.data);
-    }
-
-    if (staffForms.second_deputy.data.name) {
-      appendStaffData(formData, "second_deputy", staffForms.second_deputy.data);
-    }
-
-    const playersJson = playerForms.map(p => ({
-      name: p.data.name,
-      birth_date: p.data.birth_date?.toISOString() || "",
-      address: p.data.address,
-      place_of_birth: p.data.place_of_birth,
-      fiscal_number: p.data.fiscal_number,
-      is_federated: p.data.is_federated,
-      federation_team: p.data.federation_team,
-      federation_exams_up_to_date: p.data.federation_exams_up_to_date
-    }));
-    formData.append("players_json", JSON.stringify(playersJson));
-
-    for (let i = 0; i < playerForms.length; i++) {
-      if (playerForms[i].files.citizenCard) {
-        formData.append("files", playerForms[i].files.citizenCard!, `player_${i}_citizen_card`);
-      }
-      if (playerForms[i].files.proofOfResidency) {
-        formData.append("files", playerForms[i].files.proofOfResidency!, `player_${i}_proof_of_residency`);
-      }
-      if (playerForms[i].files.authorization) {
-        formData.append("files", playerForms[i].files.authorization!, `player_${i}_authorization`);
-      }
-    }
-
-    appendStaffFile(formData, "main_coach", staffForms.main_coach.files);
-    appendStaffFile(formData, "physiotherapist", staffForms.physiotherapist.files);
-    appendStaffFile(formData, "first_deputy", staffForms.first_deputy.files);
-    appendStaffFile(formData, "second_deputy", staffForms.second_deputy.files);
-
-    const response = await http.post("/teams/register", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data"
-      }
+    updateProgress("A criar equipa...");
+    const teamResponse = await registerTeamStart({
+      tournament: teamData.tournament,
+      name: teamData.name,
+      responsible_name: teamData.responsible_name,
+      responsible_email: teamData.responsible_email,
+      responsible_phone: teamData.responsible_phone,
     });
 
-    if (response.status === 201) {
-      toast.add({ severity: "success", summary: "Sucesso", detail: "Equipa registada com sucesso", life: 3000 });
-      setTimeout(() => {
-        router.push("/");
-      }, 1500);
+    if (teamResponse.status !== 201) {
+      showError("Falha ao criar equipa");
+      return;
     }
+
+    currentTeamId = teamResponse.data.id;
+
+    const staffTypes = [
+      { key: "main_coach", type: "Coach" as const, form: staffForms.main_coach },
+      { key: "physiotherapist", type: "Physiotherapist" as const, form: staffForms.physiotherapist },
+      { key: "first_deputy", type: "GameDeputy" as const, form: staffForms.first_deputy },
+      { key: "second_deputy", type: "GameDeputy" as const, form: staffForms.second_deputy },
+    ];
+
+    for (const staff of staffTypes) {
+      if (staff.form.data.name && currentTeamId) {
+        updateProgress(`A adicionar ${staff.key === "main_coach" ? "treinador" : staff.key === "physiotherapist" ? "fisioterapeuta" : "delegado"}...`);
+        
+        const staffData: RegisterStaffData = {
+          team_id: currentTeamId,
+          staff_type: staff.type,
+          name: staff.form.data.name,
+          birth_date: staff.form.data.birth_date?.toISOString() || "",
+          address: staff.form.data.address,
+          place_of_birth: staff.form.data.place_of_birth,
+          fiscal_number: staff.form.data.fiscal_number,
+          files: {
+            citizenCard: staff.form.files.citizenCard || undefined,
+            proofOfResidency: staff.form.files.proofOfResidency || undefined,
+          },
+        };
+
+        await registerAddStaff(staffData);
+      }
+    }
+
+    for (let i = 0; i < playerForms.length; i++) {
+      if (!currentTeamId) break;
+      
+      updateProgress(`A adicionar jogador ${i + 1}/${playerForms.length}...`);
+      
+      const playerData: RegisterPlayerData = {
+        team_id: currentTeamId,
+        name: playerForms[i].data.name,
+        birth_date: playerForms[i].data.birth_date?.toISOString() || "",
+        address: playerForms[i].data.address,
+        place_of_birth: playerForms[i].data.place_of_birth,
+        fiscal_number: playerForms[i].data.fiscal_number,
+        is_federated: playerForms[i].data.is_federated,
+        federation_team: playerForms[i].data.federation_team,
+        federation_exams_up_to_date: playerForms[i].data.federation_exams_up_to_date,
+        files: {
+          citizenCard: playerForms[i].files.citizenCard || undefined,
+          proofOfResidency: playerForms[i].files.proofOfResidency || undefined,
+          authorization: playerForms[i].files.authorization || undefined,
+        },
+      };
+
+      await registerAddPlayer(playerData);
+    }
+
+    if (currentTeamId) {
+      updateProgress("A concluir registo...");
+      await registerComplete(currentTeamId);
+    }
+
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Equipa registada com sucesso", life: 3000 });
+    setTimeout(() => {
+      router.push("/");
+    }, 1500);
+
   } catch (error: any) {
     console.error(error);
+    showError(error?.response?.data?.detail || "Erro durante o registo");
+    
+    if (currentTeamId) {
+      try {
+        await cancelRegistration(currentTeamId);
+      } catch {
+      }
+    }
   } finally {
     submitting.value = false;
-  }
-}
-
-function appendStaffData(formData: FormData, prefix: string, data: StaffMemberData) {
-  formData.append(`${prefix}_name`, data.name);
-  formData.append(`${prefix}_birth_date`, data.birth_date?.toISOString() || "");
-  formData.append(`${prefix}_address`, data.address);
-  formData.append(`${prefix}_place_of_birth`, data.place_of_birth);
-  formData.append(`${prefix}_fiscal_number`, data.fiscal_number);
-}
-
-function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberFiles) {
-  if (files.citizenCard) {
-    formData.append("files", files.citizenCard, `${prefix}_citizen_card`);
-  }
-  if (files.proofOfResidency) {
-    formData.append("files", files.proofOfResidency, `${prefix}_proof_of_residency`);
+    registrationProgress.value = { current: 0, total: 0, step: "" };
+    currentTeamId = null;
   }
 }
 </script>
@@ -514,6 +558,25 @@ function appendStaffFile(formData: FormData, prefix: string, files: StaffMemberF
 
 .form-container {
   margin-top: 1rem;
+}
+
+.registration-progress {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--p-surface-50);
+  border-radius: 8px;
+}
+
+.registration-progress .p-progressbar {
+  height: 8px;
+}
+
+.progress-text {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 .step-content h2 {

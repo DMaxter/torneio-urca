@@ -243,3 +243,37 @@ class CreateAdminPlayerDto(BaseModel):
     tournament: str
     is_federated: bool = False
     federation_team: Optional[str] = None
+
+
+class RegisterTeamStartDto(BaseModel):
+    tournament: str
+    name: str
+    responsible_name: str
+    responsible_email: str
+    responsible_phone: str
+
+
+class RegisterTeamCompleteDto(BaseModel):
+    team_id: str
+
+
+class RegisterStaffDto(BaseModel):
+    team_id: str
+    staff_type: StaffType
+    name: str
+    birth_date: datetime
+    address: Optional[str] = None
+    place_of_birth: Optional[str] = None
+    fiscal_number: str
+
+
+class RegisterPlayerDto(BaseModel):
+    team_id: str
+    name: str
+    birth_date: datetime
+    address: Optional[str] = None
+    place_of_birth: Optional[str] = None
+    fiscal_number: str
+    is_federated: bool = False
+    federation_team: Optional[str] = None
+    federation_exams_up_to_date: bool = False

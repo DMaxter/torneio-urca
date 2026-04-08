@@ -8,7 +8,17 @@ from database import (
     PLAYERS_COLLECTION,
     STAFF_COLLECTION,
 )
-from app.schemas.schemas import CreateTeamDto, TeamDto, StaffType
+from app.schemas.schemas import (
+    CreateTeamDto,
+    TeamDto,
+    StaffType,
+    RegisterTeamStartDto,
+    RegisterStaffDto,
+    RegisterPlayerDto,
+    RegisterTeamCompleteDto,
+    StaffDto,
+    PlayerDto,
+)
 from app.error import Error
 from app.constants import MIN_PLAYERS, MIN_AGE
 from app.utils import calculate_age, get_logger, sanitize_for_serialization
@@ -35,6 +45,44 @@ def team_to_dto(team: dict) -> TeamDto:
         physiotherapist=clean["physiotherapist"],
         first_deputy=clean["first_deputy"],
         second_deputy=clean.get("second_deputy"),
+    )
+
+
+def staff_to_dto(staff: dict) -> StaffDto:
+    """Convert a staff document from the database to a StaffDto."""
+    clean = sanitize_for_serialization(staff)
+    return StaffDto(
+        id=clean["_id"],
+        name=clean["name"],
+        birth_date=clean["birth_date"],
+        address=clean.get("address"),
+        place_of_birth=clean.get("place_of_birth"),
+        fiscal_number=clean["fiscal_number"],
+        staff_type=clean["staff_type"],
+        citizen_card_file_id=clean.get("citizen_card_file_id"),
+        proof_of_residency_file_id=clean.get("proof_of_residency_file_id"),
+        authorization_file_id=clean.get("authorization_file_id"),
+    )
+
+
+def player_to_dto(player: dict) -> PlayerDto:
+    """Convert a player document from the database to a PlayerDto."""
+    clean = sanitize_for_serialization(player)
+    return PlayerDto(
+        id=clean["_id"],
+        name=clean["name"],
+        birth_date=clean["birth_date"],
+        address=clean.get("address"),
+        place_of_birth=clean.get("place_of_birth"),
+        fiscal_number=clean["fiscal_number"],
+        citizen_card_file_id=clean.get("citizen_card_file_id"),
+        proof_of_residency_file_id=clean.get("proof_of_residency_file_id"),
+        authorization_file_id=clean.get("authorization_file_id"),
+        is_federated=clean.get("is_federated", False),
+        federation_team=clean.get("federation_team"),
+        federation_exams_up_to_date=clean.get("federation_exams_up_to_date", False),
+        is_confirmed=clean.get("is_confirmed", False),
+        team=clean.get("team"),
     )
 
 
@@ -307,6 +355,287 @@ async def register_team(
     get_logger().info(f"Team '{name}' registered successfully")
 
     return team_to_dto(team_data)
+
+
+@router.post("/register/start", response_model=TeamDto, status_code=201)
+async def register_team_start(data: RegisterTeamStartDto):
+    """
+    Start team registration - creates team with basic info and responsible.
+
+    This is the first step in the multi-step registration flow.
+    Returns the created team with a temporary ID.
+    """
+    from app.routes.tournament import get_tournament
+
+    get_logger().info(f"Starting team registration for '{data.name}'")
+    await get_tournament(data.tournament)
+
+    team_data = {
+        "tournament": ObjectId(data.tournament),
+        "name": data.name,
+        "responsible_name": data.responsible_name,
+        "responsible_email": data.responsible_email,
+        "responsible_phone": data.responsible_phone,
+        "players": [],
+        "main_coach": None,
+        "physiotherapist": None,
+        "first_deputy": None,
+        "second_deputy": None,
+        "valid": False,
+        "registration_status": "in_progress",
+    }
+
+    result = await db.db[TEAMS_COLLECTION].insert_one(team_data)
+    team_data["_id"] = result.inserted_id
+
+    get_logger().info(
+        f"Team registration started: '{data.name}' (ID: {result.inserted_id})"
+    )
+    return team_to_dto(team_data)
+
+
+@router.post("/register/staff", response_model=StaffDto, status_code=201)
+async def register_add_staff(
+    staff_type: StaffType = Form(...),
+    team_id: str = Form(...),
+    name: str = Form(...),
+    birth_date: str = Form(...),
+    address: Optional[str] = Form(None),
+    place_of_birth: Optional[str] = Form(None),
+    fiscal_number: str = Form(...),
+    citizen_card: Optional[UploadFile] = File(None),
+    proof_of_residency: Optional[UploadFile] = File(None),
+):
+    """
+    Add a staff member to a team during registration.
+
+    This is the second step in the multi-step registration flow.
+    """
+    try:
+        team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    except Exception:
+        raise Error.invalid_id("team")
+    if not team:
+        raise Error.not_found("Team")
+
+    file_dict = {}
+    if citizen_card:
+        content = await citizen_card.read()
+        file_id = await db.upload_file(
+            f"staff_{team_id}_{staff_type}_citizen_card",
+            citizen_card.content_type or "application/octet-stream",
+            content,
+        )
+        file_dict["citizen_card_file_id"] = file_id
+
+    if proof_of_residency:
+        content = await proof_of_residency.read()
+        file_id = await db.upload_file(
+            f"staff_{team_id}_{staff_type}_proof_of_residency",
+            proof_of_residency.content_type or "application/octet-stream",
+            content,
+        )
+        file_dict["proof_of_residency_file_id"] = file_id
+
+    staff_data = {
+        "name": name,
+        "birth_date": datetime.fromisoformat(birth_date),
+        "address": address,
+        "place_of_birth": place_of_birth,
+        "fiscal_number": fiscal_number,
+        "staff_type": staff_type,
+        **file_dict,
+    }
+    result = await db.db[STAFF_COLLECTION].insert_one(staff_data)
+    staff_data["_id"] = result.inserted_id
+
+    staff_field_map = {
+        StaffType.Coach: "main_coach",
+        StaffType.Physiotherapist: "physiotherapist",
+        StaffType.GameDeputy: None,
+    }
+    staff_field = staff_field_map.get(staff_type)
+    if staff_field:
+        await db.db[TEAMS_COLLECTION].update_one(
+            {"_id": ObjectId(team_id)}, {"$set": {staff_field: result.inserted_id}}
+        )
+    else:
+        current_deputy_count = sum(
+            1 for d in ["first_deputy", "second_deputy"] if team.get(d)
+        )
+        if current_deputy_count == 0:
+            await db.db[TEAMS_COLLECTION].update_one(
+                {"_id": ObjectId(team_id)},
+                {"$set": {"first_deputy": result.inserted_id}},
+            )
+        else:
+            await db.db[TEAMS_COLLECTION].update_one(
+                {"_id": ObjectId(team_id)},
+                {"$set": {"second_deputy": result.inserted_id}},
+            )
+
+    get_logger().info(f"Staff '{name}' added to team '{team_id}'")
+    return staff_to_dto(staff_data)
+
+
+@router.post("/register/player", response_model=PlayerDto, status_code=201)
+async def register_add_player(
+    team_id: str = Form(...),
+    name: str = Form(...),
+    birth_date: str = Form(...),
+    fiscal_number: str = Form(...),
+    address: Optional[str] = Form(None),
+    place_of_birth: Optional[str] = Form(None),
+    is_federated: bool = Form(False),
+    federation_team: Optional[str] = Form(None),
+    federation_exams_up_to_date: bool = Form(False),
+    citizen_card: Optional[UploadFile] = File(None),
+    proof_of_residency: Optional[UploadFile] = File(None),
+    authorization: Optional[UploadFile] = File(None),
+):
+    """
+    Add a player to a team during registration.
+
+    This is part of the multi-step registration flow.
+    Validates age and requires authorization file for minors under MIN_AGE.
+    """
+    try:
+        team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    except Exception:
+        raise Error.invalid_id("team")
+    if not team:
+        raise Error.not_found("Team")
+
+    player_birth_date = datetime.fromisoformat(birth_date.replace("Z", "+00:00"))
+    age = calculate_age(player_birth_date)
+
+    file_dict = {}
+
+    if citizen_card:
+        content = await citizen_card.read()
+        file_id = await db.upload_file(
+            f"player_{team_id}_{name}_citizen_card",
+            citizen_card.content_type or "application/octet-stream",
+            content,
+        )
+        file_dict["citizen_card_file_id"] = file_id
+
+    if proof_of_residency:
+        content = await proof_of_residency.read()
+        file_id = await db.upload_file(
+            f"player_{team_id}_{name}_proof_of_residency",
+            proof_of_residency.content_type or "application/octet-stream",
+            content,
+        )
+        file_dict["proof_of_residency_file_id"] = file_id
+
+    if authorization:
+        content = await authorization.read()
+        file_id = await db.upload_file(
+            f"player_{team_id}_{name}_authorization",
+            authorization.content_type or "application/octet-stream",
+            content,
+        )
+        file_dict["authorization_file_id"] = file_id
+
+    if age < MIN_AGE and "authorization_file_id" not in file_dict:
+        raise HTTPException(
+            status_code=400,
+            detail=f"O jogador {name} é menor de {MIN_AGE} anos e requer autorização",
+        )
+
+    player_data = {
+        "name": name,
+        "birth_date": player_birth_date,
+        "address": address,
+        "place_of_birth": place_of_birth,
+        "fiscal_number": fiscal_number,
+        "is_federated": is_federated,
+        "federation_team": federation_team,
+        "federation_exams_up_to_date": federation_exams_up_to_date,
+        "is_confirmed": False,
+        "team": ObjectId(team_id),
+        **file_dict,
+    }
+
+    result = await db.db[PLAYERS_COLLECTION].insert_one(player_data)
+    player_data["_id"] = result.inserted_id
+
+    await db.db[TEAMS_COLLECTION].update_one(
+        {"_id": ObjectId(team_id)}, {"$push": {"players": result.inserted_id}}
+    )
+
+    get_logger().info(f"Player '{name}' added to team '{team_id}'")
+    return player_to_dto(player_data)
+
+
+@router.post("/register/complete", response_model=TeamDto, status_code=200)
+async def register_complete(data: RegisterTeamCompleteDto):
+    """
+    Complete team registration.
+
+    This is the final step that validates minimum player count and adds
+    the team to the tournament.
+    """
+    from app.routes.tournament import get_tournament
+
+    try:
+        team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(data.team_id)})
+    except Exception:
+        raise Error.invalid_id("team")
+    if not team:
+        raise Error.not_found("Team")
+
+    if len(team.get("players", [])) < MIN_PLAYERS:
+        raise HTTPException(
+            status_code=400, detail=f"É necessário um mínimo de {MIN_PLAYERS} jogadores"
+        )
+
+    await db.db[TEAMS_COLLECTION].update_one(
+        {"_id": ObjectId(data.team_id)}, {"$set": {"registration_status": "completed"}}
+    )
+
+    await db.db[TOURNAMENTS_COLLECTION].update_one(
+        {"_id": team["tournament"]}, {"$push": {"teams": ObjectId(data.team_id)}}
+    )
+
+    updated_team = await db.db[TEAMS_COLLECTION].find_one(
+        {"_id": ObjectId(data.team_id)}
+    )
+    get_logger().info(f"Team '{team['name']}' registration completed")
+    return team_to_dto(updated_team)
+
+
+@router.delete("/register/{team_id}", status_code=204)
+async def cancel_registration(team_id: str):
+    """
+    Cancel a team registration and delete all associated records.
+
+    Used to cleanup if the user abandons the registration process.
+    """
+    try:
+        team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
+    except Exception:
+        raise Error.invalid_id("team")
+    if not team:
+        raise Error.not_found("Team")
+
+    player_ids = team.get("players", [])
+    if player_ids:
+        await db.db[PLAYERS_COLLECTION].delete_many({"_id": {"$in": player_ids}})
+
+    staff_ids = [
+        team.get("main_coach"),
+        team.get("physiotherapist"),
+        team.get("first_deputy"),
+        team.get("second_deputy"),
+    ]
+    staff_ids = [s for s in staff_ids if s]
+    if staff_ids:
+        await db.db[STAFF_COLLECTION].delete_many({"_id": {"$in": staff_ids}})
+
+    await db.db[TEAMS_COLLECTION].delete_one({"_id": ObjectId(team_id)})
+    get_logger().info(f"Registration cancelled for team '{team_id}'")
 
 
 @router.get("", response_model=List[TeamDto])
