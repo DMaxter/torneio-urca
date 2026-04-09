@@ -192,10 +192,10 @@ function getScore(game: Game): { home: number; away: number } | null {
   const awayName = getAwayName(game);
   let home = 0, away = 0;
   for (const e of game.events) {
-    if ("Goal" in (e as any)) {
-      const goal = (e as any).Goal;
-      if (goal.team_name === homeName) home++;
-      else if (goal.team_name === awayName) away++;
+    if ("Goal" in e) {
+      const goal = (e as { Goal?: { team_name: string } }).Goal;
+      if (goal && goal.team_name === homeName) home++;
+      else if (goal && goal.team_name === awayName) away++;
     }
   }
   return { home, away };

@@ -7,6 +7,7 @@
         Selecionar
       </P-Button>
       <span class="file-name">{{ fileName }}</span>
+      <span class="file-size-limit">(máx. 5MB)</span>
       <input
         type="file"
         :id="id"
@@ -19,6 +20,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
 const props = withDefaults(
   defineProps<{
     modelValue?: File | null;
@@ -35,6 +40,7 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: "update:modelValue", value: File | null): void;
+  (e: "fileError", message: string): void;
 }>();
 
 function triggerFileInput() {
@@ -47,15 +53,19 @@ function triggerFileInput() {
 function onFileChange(event: Event) {
   const target = event.target as HTMLInputElement;
   if (target.files && target.files.length > 0) {
-    emit("update:modelValue", target.files[0]);
+    const file = target.files[0];
+    if (file.size > MAX_FILE_SIZE) {
+      emit("fileError", `O ficheiro "${file.name}" excede o limite de 5MB`);
+      target.value = "";
+      return;
+    }
+    emit("update:modelValue", file);
   }
 }
 
 const fileName = computed(() => {
   return props.modelValue?.name || "Nenhum ficheiro selecionado";
 });
-
-import { computed } from "vue";
 </script>
 
 <style lang="scss" scoped>
@@ -69,11 +79,19 @@ import { computed } from "vue";
   align-items: center;
   gap: 10px;
   margin-top: 5px;
+  flex-wrap: wrap;
 
   .file-name {
     flex: 1;
     font-size: 0.9rem;
     color: var(--p-text-muted-color);
+    word-break: break-all;
+  }
+
+  .file-size-limit {
+    font-size: 0.75rem;
+    color: var(--p-text-muted-color);
+    font-style: italic;
   }
 }
 </style>

@@ -1,15 +1,16 @@
 import axios from "axios";
+import type { ToastServiceMethods } from "primevue/toastservice";
 
 export const http = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
   withCredentials: true,
 });
 
-let toast: any = null;
+let toast: ToastServiceMethods | null = null;
 let lastErrorMessage = "";
 let lastErrorTime = 0;
 
-export function setToast(toastInstance: any) {
+export function setToast(toastInstance: ToastServiceMethods) {
   toast = toastInstance;
 }
 
@@ -33,7 +34,7 @@ http.interceptors.response.use(
 
     const isAuthEndpoint = url.includes("/auth/me");
     if (isAuthEndpoint && status === 200 && !responseData) {
-      return Promise.resolve({ data: null } as any);
+      return Promise.resolve({ data: null });
     }
 
     if (toast && (message !== lastErrorMessage || now - lastErrorTime > 500)) {

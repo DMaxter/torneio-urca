@@ -65,7 +65,7 @@
         <P-Button
           v-if="game.current_period < 5"
           :label="getNextPeriodLabel(game.current_period)"
-          :severity="getNextPeriodSeverity(game.current_period)"
+          :severity="getNextPeriodSeverity()"
           size="large"
           :disabled="!canProceedToNextPeriod"
           v-tooltip.top="getNextPeriodTooltip(game.current_period)"
@@ -74,7 +74,7 @@
         <P-Button
           v-else-if="game.current_period === 4"
           :label="getNextPeriodLabel(game.current_period)"
-          :severity="getNextPeriodSeverity(game.current_period)"
+          :severity="getNextPeriodSeverity()"
           size="large"
           :disabled="!canProceedToNextPeriod"
           v-tooltip.top="getNextPeriodTooltip(game.current_period)"
@@ -159,7 +159,7 @@
         </div>
 
         <div v-else class="space-y-2">
-          <div v-for="(item, idx) in sortedEventsWithIndex" :key="item.index" 
+          <div v-for="item in sortedEventsWithIndex" :key="item.index" 
                class="flex items-center gap-3 p-3 rounded-lg border-2 group"
                :class="getEventBorderClass(item.event)">
             <div class="font-bold text-stone-600 text-xl w-24 text-center shrink-0">
@@ -382,7 +382,7 @@ const homeScore = computed(() => {
   const homeName = getTeamName(homeTeamId.value);
   return events.value.filter(e => {
     if ('Goal' in e) {
-      const goal = (e as any).Goal;
+      const goal = (e as { Goal: { team_name: string } }).Goal;
       return goal.team_name === homeName;
     }
     return false;
@@ -394,7 +394,7 @@ const awayScore = computed(() => {
   const awayName = getTeamName(awayTeamId.value);
   return events.value.filter(e => {
     if ('Goal' in e) {
-      const goal = (e as any).Goal;
+      const goal = (e as { Goal: { team_name: string } }).Goal;
       return goal.team_name === awayName;
     }
     return false;
@@ -558,7 +558,7 @@ function getNextPeriodLabel(currentPeriod: number): string {
   return 'Próximo Período';
 }
 
-function getNextPeriodSeverity(currentPeriod: number): string {
+function getNextPeriodSeverity(): string {
   return 'info';
 }
 
@@ -574,11 +574,11 @@ function getNextPeriodTooltip(currentPeriod: number): string {
 
 function getEventBorderClass(event: GameEvent): string {
   if ('Goal' in event) {
-    const goal = (event as any).Goal;
+    const goal = (event as { Goal: { own_goal: boolean } }).Goal;
     return goal.own_goal ? 'border-orange-200 bg-orange-50' : 'border-green-200 bg-green-50';
   }
   if ('Foul' in event) {
-    const foul = (event as any).Foul;
+    const foul = (event as { Foul: { card: string | null } }).Foul;
     if (foul.card === null || foul.card === undefined) {
       return 'border-orange-200 bg-orange-50';
     }
@@ -595,11 +595,11 @@ function getEventBorderClass(event: GameEvent): string {
 
 function getEventIcon(event: GameEvent): string {
   if ('Goal' in event) {
-    const goal = (event as any).Goal;
+    const goal = (event as { Goal: { own_goal: boolean } }).Goal;
     return goal.own_goal ? '🥅' : '⚽';
   }
   if ('Foul' in event) {
-    const foul = (event as any).Foul;
+    const foul = (event as { Foul: { card: string | null } }).Foul;
     if (foul.card === null || foul.card === undefined) {
       return '⚠️';
     }
@@ -622,7 +622,7 @@ function getEventIcon(event: GameEvent): string {
 
 function getEventDescription(event: GameEvent): string {
   if ('Goal' in event) {
-    const goal = (event as any).Goal;
+    const goal = (event as { Goal: { own_goal: boolean; own_goal_committed_by?: string; player_name?: string } }).Goal;
     if (goal.own_goal) {
       const committedBy = goal.own_goal_committed_by || 'Equipa adversária';
       return `Auto-golo de ${committedBy}`;
@@ -631,7 +631,7 @@ function getEventDescription(event: GameEvent): string {
     return `Golo de ${name}`;
   }
   if ('Foul' in event) {
-    const foul = (event as any).Foul;
+    const foul = (event as { Foul: { card: string | null; player_name: string } }).Foul;
     if (foul.card === null || foul.card === undefined) {
       return `${foul.player_name} - Falta`;
     }
@@ -639,60 +639,48 @@ function getEventDescription(event: GameEvent): string {
     return `${foul.player_name} - Cartão ${cardText}`;
   }
   if ('PeriodStart' in event) {
-    const ps = (event as any).PeriodStart;
+    const ps = (event as { PeriodStart: { period: number } }).PeriodStart;
     const isOvertime = ps.period >= 3 && ps.period <= 4;
     return isOvertime ? `Início do Prolongamento (${ps.period}º)` : `Início do ${ps.period}º Período`;
   }
   if ('PeriodResume' in event) {
-    const pr = (event as any).PeriodResume;
+    const pr = (event as { PeriodResume: { period: number } }).PeriodResume;
     const isOvertime = pr.period >= 3 && pr.period <= 4;
     return isOvertime ? `Retoma do Prolongamento (${pr.period}º)` : `Retoma do ${pr.period}º Período`;
   }
   if ('PeriodEnd' in event) {
-    const pe = (event as any).PeriodEnd;
+    const pe = (event as { PeriodEnd: { period: number } }).PeriodEnd;
     const isOvertime = pe.period >= 3 && pe.period <= 4;
     return isOvertime ? `Fim do Prolongamento (${pe.period}º)` : `Fim do ${pe.period}º Período`;
   }
   if ('PeriodPause' in event) {
-    const pp = (event as any).PeriodPause;
+    const pp = (event as { PeriodPause: { period: number } }).PeriodPause;
     const isOvertime = pp.period >= 3 && pp.period <= 4;
     return isOvertime ? `Pausa no Prolongamento (${pp.period}º)` : `Pausa no ${pp.period}º Período`;
   }
   return '';
 }
 
-function getEventMinute(event: GameEvent): number {
-  if ('Goal' in event) {
-    const goal = (event as any).Goal;
-    return goal.minute;
-  }
-  if ('Foul' in event) {
-    const foul = (event as any).Foul;
-    return foul.minute;
-  }
-  return 0;
-}
-
 function getEventPeriod(event: GameEvent): number {
   if ('Goal' in event) {
-    const goal = (event as any).Goal;
+    const goal = (event as { Goal: { period?: number } }).Goal;
     return goal.period || 0;
   }
   if ('Foul' in event) {
-    const foul = (event as any).Foul;
+    const foul = (event as { Foul: { period?: number } }).Foul;
     return foul.period || 0;
   }
   if ('PeriodStart' in event) {
-    return (event as any).PeriodStart.period || 0;
+    return (event as { PeriodStart: { period: number } }).PeriodStart.period || 0;
   }
   if ('PeriodResume' in event) {
-    return (event as any).PeriodResume.period || 0;
+    return (event as { PeriodResume: { period: number } }).PeriodResume.period || 0;
   }
   if ('PeriodEnd' in event) {
-    return (event as any).PeriodEnd.period || 0;
+    return (event as { PeriodEnd: { period: number } }).PeriodEnd.period || 0;
   }
   if ('PeriodPause' in event) {
-    return (event as any).PeriodPause.period || 0;
+    return (event as { PeriodPause: { period: number } }).PeriodPause.period || 0;
   }
   return 0;
 }
@@ -711,21 +699,34 @@ function getEventTimeDisplay(event: GameEvent): string {
     return 'Pen.';
   }
 
-  if ('PeriodStart' in event || 'PeriodEnd' in event || 'PeriodPause' in event || 'PeriodResume' in event) {
-    const ps = (event as any).PeriodStart || (event as any).PeriodEnd || (event as any).PeriodPause || (event as any).PeriodResume;
+  if ('PeriodStart' in event) {
+    const ps = (event as { PeriodStart: { period: number } }).PeriodStart;
     return `P${ps.period}`;
   }
-
-  if ('PeriodStart' in event || 'PeriodEnd' in event || 'PeriodPause' in event || 'PeriodResume' in event) {
-    const ps = (event as any).PeriodStart || (event as any).PeriodEnd || (event as any).PeriodPause || (event as any).PeriodResume;
-    return `P${ps.period}`;
+  if ('PeriodEnd' in event) {
+    const pe = (event as { PeriodEnd: { period: number } }).PeriodEnd;
+    return `P${pe.period}`;
+  }
+  if ('PeriodPause' in event) {
+    const pp = (event as { PeriodPause: { period: number } }).PeriodPause;
+    return `P${pp.period}`;
+  }
+  if ('PeriodResume' in event) {
+    const pr = (event as { PeriodResume: { period: number } }).PeriodResume;
+    return `P${pr.period}`;
   }
 
-  const goal = (event as any).Goal || (event as any).Foul;
-  if (!goal) return '';
-
-  const minute = goal.minute || 0;
-  const second = goal.second !== undefined ? goal.second : 0;
+  let minute = 0;
+  let second = 0;
+  if ('Goal' in event) {
+    const goal = (event as { Goal: { minute: number; second?: number } }).Goal;
+    minute = goal.minute || 0;
+    second = goal.second !== undefined ? goal.second : 0;
+  } else if ('Foul' in event) {
+    const foul = (event as { Foul: { minute: number; second?: number } }).Foul;
+    minute = foul.minute || 0;
+    second = foul.second !== undefined ? foul.second : 0;
+  }
 
   let maxMinute = 0;
   if (period >= 1 && period <= 2) maxMinute = 20;
@@ -746,33 +747,32 @@ function getEventTimeDisplay(event: GameEvent): string {
 function getEventTimestamp(event: GameEvent): number {
   const getTs = (raw: string | undefined) => {
     if (!raw) return 0;
-    // Treat naive timestamps as UTC by appending 'Z'
     const utc = raw.endsWith('Z') ? raw : raw + 'Z';
     return new Date(utc).getTime();
   };
   
   if ('Goal' in event) {
-    const goal = (event as any).Goal;
+    const goal = (event as { Goal: { timestamp: string } }).Goal;
     return getTs(goal.timestamp);
   }
   if ('Foul' in event) {
-    const foul = (event as any).Foul;
+    const foul = (event as { Foul: { timestamp: string } }).Foul;
     return getTs(foul.timestamp);
   }
   if ('PeriodStart' in event) {
-    const ps = (event as any).PeriodStart;
+    const ps = (event as { PeriodStart: { timestamp: string } }).PeriodStart;
     return getTs(ps.timestamp);
   }
   if ('PeriodResume' in event) {
-    const pr = (event as any).PeriodResume;
+    const pr = (event as { PeriodResume: { timestamp: string } }).PeriodResume;
     return getTs(pr.timestamp);
   }
   if ('PeriodEnd' in event) {
-    const pe = (event as any).PeriodEnd;
+    const pe = (event as { PeriodEnd: { timestamp: string } }).PeriodEnd;
     return getTs(pe.timestamp);
   }
   if ('PeriodPause' in event) {
-    const pp = (event as any).PeriodPause;
+    const pp = (event as { PeriodPause: { timestamp: string } }).PeriodPause;
     return getTs(pp.timestamp);
   }
   return 0;
@@ -806,26 +806,14 @@ const sortedEventsWithIndex = computed(() => {
 
 function getEventTeamName(event: GameEvent): string {
   if ('Goal' in event) {
-    const goal = (event as any).Goal;
+    const goal = (event as { Goal: { team_name: string } }).Goal;
     return goal.team_name;
   }
   if ('Foul' in event) {
-    const foul = (event as any).Foul;
+    const foul = (event as { Foul: { team_name: string } }).Foul;
     return foul.team_name;
   }
   return '';
-}
-
-function getEventSecond(event: GameEvent): number {
-  if ('Goal' in event) {
-    const goal = (event as any).Goal;
-    return goal.second !== undefined ? goal.second : 0;
-  }
-  if ('Foul' in event) {
-    const foul = (event as any).Foul;
-    return foul.second !== undefined ? foul.second : 0;
-  }
-  return 0;
 }
 
 function openEventDialog(teamId: string | undefined, type: 'goal' | 'card' | 'foul') {
@@ -888,8 +876,9 @@ async function submitEvent() {
 
     await loadGame();
     
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || 'Erro ao registar evento';
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || 'Erro ao registar evento';
     toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   } finally {
     saving.value = false;
@@ -906,8 +895,9 @@ async function startPeriod() {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Período iniciado', life: 3000 });
       await loadGame();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || 'Erro ao iniciar período';
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || 'Erro ao iniciar período';
     toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   }
 }
@@ -916,7 +906,6 @@ async function resumePeriod() {
   if (!game.value) return;
   
   try {
-    // If elapsed time is 0, this is a new period start, not a resume
     const action = game.value.period_elapsed_seconds === 0 ? 'start_new' : 'resume';
     const response = await gameService.updatePeriod(game.value.id, { action });
     if (response.status === 200) {
@@ -924,8 +913,9 @@ async function resumePeriod() {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: msg, life: 3000 });
       await loadGame();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || 'Erro ao retomar cronómetro';
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || 'Erro ao retomar cronómetro';
     toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   }
 }
@@ -939,8 +929,9 @@ async function stopTimer() {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Cronómetro parado', life: 3000 });
       await loadGame();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || 'Erro ao parar cronómetro';
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || 'Erro ao parar cronómetro';
     toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   }
 }
@@ -957,8 +948,9 @@ async function endPeriod() {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Período terminado', life: 3000 });
       await loadGame();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || 'Erro ao terminar período';
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || 'Erro ao terminar período';
     toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   }
 }
@@ -972,8 +964,9 @@ async function startPenalties() {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Iniciando penalidades', life: 3000 });
       await loadGame();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || 'Erro ao iniciar penalidades';
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || 'Erro ao iniciar penalidades';
     toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   }
 }
@@ -1010,8 +1003,9 @@ async function finishGame() {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Jogo terminado', life: 3000 });
       router.push('/admin');
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || 'Erro ao terminar jogo';
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || 'Erro ao terminar jogo';
     toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   }
 }
@@ -1028,8 +1022,9 @@ async function deleteEvent(eventIndex: number) {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Evento eliminado', life: 3000 });
       await loadGame();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || 'Erro ao eliminar evento';
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || 'Erro ao eliminar evento';
     toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
   }
 }

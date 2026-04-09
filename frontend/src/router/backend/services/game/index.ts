@@ -4,8 +4,6 @@ import { http } from "@router/backend/api";
 import type { Error } from "@router/backend/types";
 import type { CreateGame, Game, GameStatus, AssignGoalDto, AssignCardDto, UpdatePeriodDto } from "@router/backend/services/game/types";
 
-// Serialize date as local ISO string (no UTC conversion) so the backend stores
-// and returns the same wall-clock time, avoiding timezone shift on roundtrip.
 function toLocalISOString(date: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}T${p(date.getHours())}:${p(date.getMinutes())}:${p(date.getSeconds())}`;
@@ -16,12 +14,12 @@ export async function getGames(): Promise<AxiosResponse<Game[] | Error>> {
 }
 
 export async function createGame(game: CreateGame): Promise<AxiosResponse<Game | Error>> {
-  const body: Record<string, any> = {
+  const body: Record<string, unknown> = {
     tournament: game.tournament,
     phase: game.phase,
   };
-  if (game.home_call) body.home_call = game.home_call;
-  if (game.away_call) body.away_call = game.away_call;
+  if (game.home_call) body.home_call = { team: game.home_call.team };
+  if (game.away_call) body.away_call = { team: game.away_call.team };
   if (game.scheduled_date != null) body.scheduled_date = toLocalISOString(game.scheduled_date as Date);
   if (game.home_placeholder) body.home_placeholder = game.home_placeholder;
   if (game.away_placeholder) body.away_placeholder = game.away_placeholder;
@@ -38,7 +36,7 @@ export async function deleteGame(gameId: string): Promise<AxiosResponse<void | E
   return await http.delete(`/games/${gameId}`);
 }
 
-export async function updateGameCall(callId: string, players: { player: string; number: number | null }[]): Promise<AxiosResponse<any | Error>> {
+export async function updateGameCall(callId: string, players: { player: string; number: number | null }[]): Promise<AxiosResponse<unknown | Error>> {
   return await http.patch(`/games/calls/${callId}`, { players });
 }
 
@@ -58,15 +56,15 @@ export async function updatePeriod(gameId: string, body: UpdatePeriodDto): Promi
   return await http.patch(`/games/${gameId}/period`, body);
 }
 
-export async function assignGoal(goal: AssignGoalDto): Promise<AxiosResponse<any | Error>> {
+export async function assignGoal(goal: AssignGoalDto): Promise<AxiosResponse<unknown | Error>> {
   return await http.post("/goals", goal);
 }
 
-export async function assignCard(card: AssignCardDto): Promise<AxiosResponse<any | Error>> {
+export async function assignCard(card: AssignCardDto): Promise<AxiosResponse<unknown | Error>> {
   return await http.post("/cards", card);
 }
 
-export async function assignFoul(foul: { tournament: string; game: string; team: string; player_number?: number | null; minute: number }): Promise<AxiosResponse<any | Error>> {
+export async function assignFoul(foul: { tournament: string; game: string; team: string; player_number?: number | null; minute: number }): Promise<AxiosResponse<unknown | Error>> {
   return await http.post("/fouls", foul);
 }
 

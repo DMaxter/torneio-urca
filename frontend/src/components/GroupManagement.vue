@@ -1,16 +1,16 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Grupo' : 'Editar Grupo'" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-FloatLabel class="field" variant="on">
-      <P-InputText id="name" v-model="group.name" fluid />
+      <P-InputText id="name" v-model="groupForm.name" fluid />
       <label for="name">Nome</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-Select v-model="group.tournament" id="tournament" :options="tournamentStore.tournaments"
+      <P-Select v-model="groupForm.tournament" id="tournament" :options="tournamentStore.tournaments"
         optionLabel="name" optionValue="id" fluid @change="onTournamentChange" />
       <label for="tournament">Torneio</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-MultiSelect id="teams" v-model="group.teams" :showToggleAll="false" filter
+      <P-MultiSelect id="teams" v-model="groupForm.teams" :showToggleAll="false" filter
         :options="getFilteredTeams()" optionLabel="name" optionValue="id" fluid />
       <label for="teams">Equipas</label>
     </P-FloatLabel>
@@ -43,19 +43,19 @@ const props = defineProps<{
 
 const creating = computed(() => props.group === undefined);
 
-const group = ref<Group | CreateGroup>(new CreateGroup());
+const groupForm = ref<Group | CreateGroup>(new CreateGroup());
 
 watch(() => props.group, (newGroup) => {
   if (newGroup) {
-    group.value = newGroup;
+    groupForm.value = newGroup;
   } else {
-    group.value = new CreateGroup();
+    groupForm.value = new CreateGroup();
   }
 });
 
 onMounted(() => {
   if (!creating.value) {
-    group.value = props.group!
+    groupForm.value = props.group!
   }
 });
 
@@ -64,12 +64,12 @@ const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
 
 function getFilteredTeams() {
-  if (!group.value.tournament) return [];
-  return teamStore.teams.filter(t => t.tournament === group.value.tournament);
+  if (!groupForm.value.tournament) return [];
+  return teamStore.teams.filter(t => t.tournament === groupForm.value.tournament);
 }
 
 function onTournamentChange() {
-  group.value.teams = [];
+  groupForm.value.teams = [];
 }
 
 async function createOrUpdate() {
@@ -81,7 +81,7 @@ async function createOrUpdate() {
 }
 
 async function create() {
-  const result = await groupStore.createGroup(group.value);
+  const result = await groupStore.createGroup(groupForm.value);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Grupo criado com sucesso", life: 3000 });
     close();
@@ -89,7 +89,7 @@ async function create() {
 }
 
 async function update() {
-  const result = await groupStore.updateGroup(props.group!.id, group.value);
+  const result = await groupStore.updateGroup(props.group!.id, groupForm.value);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Grupo atualizado com sucesso", life: 3000 });
     close();

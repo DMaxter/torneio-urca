@@ -47,55 +47,43 @@ export type GameCall = {
 }
 
 export type GameEvent =
-  StartTime |
-  EndTime |
-  Foul |
-  Goal |
-  Break |
-  Resume
+  { Goal: GoalEvent } |
+  { Foul: FoulEvent } |
+  { PeriodStart: PeriodEvent } |
+  { PeriodEnd: PeriodEvent } |
+  { PeriodPause: PeriodEvent } |
+  { PeriodResume: PeriodEvent }
 
-export type StartTime = {
+export type GoalEvent = {
+  player_id: string,
+  player_name: string,
+  team_name: string,
   period: number,
-  timestamp: Date,
+  minute: number,
+  second?: number,
+  own_goal: boolean,
+  timestamp: string,
+  own_goal_committed_by?: string,
 }
 
-export type EndTime = {
-  period: number,
-  timestamp: Date,
-}
-
-export type Foul = {
+export type FoulEvent = {
   player_id: string,
   player_name: string,
   player_number?: number,
   team_name: string,
   period: number,
   minute: number,
-  card: CardType,
+  second?: number,
+  card: CardType | null,
   staff_id?: string | null,
   staff_name?: string,
   staff_type?: string,
-  timestamp: Date,
+  timestamp: string,
 }
 
-export type Goal = {
-  player_id: string,
-  player_name: string,
-  team_name: string,
+export type PeriodEvent = {
   period: number,
-  minute: number,
-  own_goal: boolean,
-  timestamp: Date,
-}
-
-export type Break = {
-  team_id: string,
-  team_name: string,
-  timestamp: Date,
-}
-
-export type Resume = {
-  timestamp: Date,
+  timestamp: string,
 }
 
 export type GamePhase = "group" | "quarter_final" | "semi_final" | "final" | "third_place";

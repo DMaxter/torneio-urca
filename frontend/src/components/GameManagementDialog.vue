@@ -84,7 +84,7 @@
                 v-tooltip.top="'Iniciar o processo de chamadas de jogadores'"
               />
               <P-Button 
-                v-else-if="isCallsPending(data.status)" 
+                v-else-if="isCallsPending(data.status) && !data.home_call && !data.away_call" 
                 label="Preencher Chamadas" 
                 size="small" 
                 severity="warn"
@@ -248,7 +248,6 @@ function isCallsPending(status: string) { return status === "CallsPending" || st
 function isReadyToStart(status: string) { return status === "ReadyToStart" || status === "2"; }
 function isInProgress(status: string) { return status === "InProgress" || status === "3"; }
 function isFinished(status: string) { return status === "Finished" || status === "4"; }
-function isCanceled(status: string) { return status === "Canceled" || status === "5"; }
 
 function getStatusSeverity(status: string) {
   const s = String(status);
@@ -279,8 +278,9 @@ async function startCalls(gameId: string) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Chamadas iniciadas", life: 3000 });
       await refresh();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao iniciar chamadas";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao iniciar chamadas";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   }
 }
@@ -292,8 +292,9 @@ async function confirmCalls(gameId: string) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Chamadas confirmadas", life: 3000 });
       await refresh();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao confirmar chamadas";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao confirmar chamadas";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   }
 }
@@ -305,8 +306,9 @@ async function startGame(gameId: string) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo iniciado", life: 3000 });
       await refresh();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao iniciar jogo";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao iniciar jogo";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   }
 }
@@ -322,8 +324,9 @@ function viewLiveGame(gameId: string) {
   router.push(`/admin/live-game/${gameId}`);
 }
 
-function viewGameLog(gameId: string) {
-  toast.add({ severity: "info", summary: "Em desenvolvimento", detail: "Funcionalidadecoming soon", life: 3000 });
+function viewGameLog(_gameId: string) {
+  console.info("View game log:", _gameId);
+  toast.add({ severity: "info", summary: "Em desenvolvimento", detail: "Funcionalidade coming soon", life: 3000 });
 }
 
 async function refresh() {

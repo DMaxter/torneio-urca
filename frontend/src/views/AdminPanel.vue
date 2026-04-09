@@ -78,10 +78,7 @@ function handleLogout() {
 
 function onRegisterGame(_game: Game) {
   // TODO: abrir o diálogo de gestão do jogo ao vivo
-}
-
-function goToGameCalls() {
-  router.push("/game-calls");
+  console.info("Register game:", _game);
 }
 
 const listTournaments = ref(false);

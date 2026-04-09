@@ -131,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useGameStore } from "@stores/games";
@@ -184,18 +184,6 @@ function getPlayerName(playerId: string, teamId: string | undefined) {
   return player?.name || playerId;
 }
 
-function onTournamentChange() {
-  selectedGameId.value = "";
-  selectedGame.value = null;
-}
-
-async function onGameChange() {
-  const game = gameStore.games.find(g => g.id === selectedGameId.value);
-  if (game) {
-    selectedGame.value = JSON.parse(JSON.stringify(game));
-  }
-}
-
 async function removePlayer(side: "home" | "away", playerId: string) {
   if (!selectedGame.value) return;
 
@@ -227,7 +215,7 @@ async function submitCall() {
     );
 
     toast.add({ severity: "success", summary: "Sucesso", detail: "Chamada guardada com sucesso", life: 3000 });
-  } catch (e) {
+  } catch {
     toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível guardar a chamada", life: 3000 });
   } finally {
     saving.value = false;
@@ -253,8 +241,9 @@ async function closeAndConfirmCall() {
 
     toast.add({ severity: "success", summary: "Sucesso", detail: "Chamada confirmada com sucesso", life: 3000 });
     router.push("/admin");
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao confirmar chamadas";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao confirmar chamadas";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   } finally {
     saving.value = false;
@@ -272,8 +261,9 @@ async function cancelGame() {
 
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo cancelado", life: 3000 });
     router.push("/admin");
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao cancelar jogo";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao cancelar jogo";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   } finally {
     saving.value = false;
@@ -297,7 +287,7 @@ async function populateCall(side: "home" | "away") {
         selectedGame.value.away_call.players = updatedCall.players;
       }
     }
-  } catch (e) {
+  } catch {
     toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível popular a chamada", life: 3000 });
   }
 }

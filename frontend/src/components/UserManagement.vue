@@ -6,12 +6,12 @@
     :style="{ width: '350px' }"
   >
     <P-FloatLabel v-if="creating" class="field" variant="on">
-      <P-InputText id="username" v-model="user.username" fluid />
+      <P-InputText id="username" v-model="userForm.username" fluid />
       <label for="username">Nome de Utilizador</label>
     </P-FloatLabel>
     <div v-if="creating" class="field">
       <P-FloatLabel variant="on">
-        <P-InputText id="password" v-model="user.password" type="password" fluid />
+        <P-InputText id="password" v-model="userForm.password" type="password" fluid />
         <label for="password">Palavra-passe</label>
       </P-FloatLabel>
     </div>
@@ -52,17 +52,17 @@ const props = defineProps<{
 
 const creating = computed(() => props.user === undefined);
 
-interface UserForm {
+interface UserFormData {
   username: string;
   password: string;
 }
 
-const user = ref<UserForm>({ username: "", password: "" });
+const userForm = ref<UserFormData>({ username: "", password: "" });
 const passwords = ref<ChangePassword>({ current_password: "", new_password: "" });
 
 onMounted(() => {
   if (!creating.value) {
-    user.value.username = props.user!.username;
+    userForm.value.username = props.user!.username;
   }
 });
 
@@ -77,11 +77,11 @@ async function createOrUpdate() {
 }
 
 async function create() {
-  if (!user.value.username || !user.value.password) {
+  if (!userForm.value.username || !userForm.value.password) {
     toast.add({ severity: "warn", summary: "Aviso", detail: "Preencha todos os campos", life: 3000 });
     return;
   }
-  const result = await userStore.createUser(user.value as CreateUser);
+  const result = await userStore.createUser(userForm.value as CreateUser);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Utilizador criado com sucesso", life: 3000 });
     close();
@@ -102,7 +102,7 @@ async function changePassword() {
 
 function close() {
   enabled.value = false;
-  user.value = { username: "", password: "" };
+  userForm.value = { username: "", password: "" };
   passwords.value = { current_password: "", new_password: "" };
 }
 </script>

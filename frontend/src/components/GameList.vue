@@ -181,8 +181,9 @@ async function startCalls(gameId: string) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Chamadas iniciadas", life: 3000 });
       await gameStore.getGames();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao iniciar chamadas";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao iniciar chamadas";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   }
 }
@@ -194,8 +195,9 @@ async function confirmCalls(gameId: string) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Chamadas confirmadas", life: 3000 });
       await gameStore.getGames();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao confirmar chamadas";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao confirmar chamadas";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   }
 }
@@ -207,21 +209,9 @@ async function startGame(gameId: string) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo iniciado", life: 3000 });
       await gameStore.getGames();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao iniciar jogo";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
-  }
-}
-
-async function finishGame(gameId: string) {
-  try {
-    const response = await gameService.updateGameStatus(gameId, GameStatus.Finished);
-    if (response.status === 200) {
-      toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo terminado", life: 3000 });
-      await gameStore.getGames();
-    }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao terminar jogo";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao iniciar jogo";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   }
 }
@@ -233,8 +223,9 @@ async function cancelGame(gameId: string) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo cancelado", life: 3000 });
       await gameStore.getGames();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao cancelar jogo";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao cancelar jogo";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   }
 }

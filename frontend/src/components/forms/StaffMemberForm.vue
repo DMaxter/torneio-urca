@@ -4,11 +4,13 @@
     <PersonFields v-model="personData" :id="id" />
     <FileUpload
       v-model="citizenCardFile"
+      @fileError="handleFileError"
       :id="`${id}CitizenCard`"
       label="Cartão de Cidadão (PDF)"
     />
     <FileUpload
       v-model="proofOfResidencyFile"
+      @fileError="handleFileError"
       :id="`${id}ProofResidency`"
       label="Comprovativo de Residência (PDF)"
     />
@@ -17,6 +19,7 @@
 
 <script setup lang="ts">
 import { reactive, watch, ref } from "vue";
+import { useToast } from "primevue/usetoast";
 
 interface StaffMemberData {
   name: string;
@@ -53,6 +56,11 @@ const personData = reactive<StaffMemberData>({
 
 const citizenCardFile = ref<File | null>(null);
 const proofOfResidencyFile = ref<File | null>(null);
+const toast = useToast();
+
+function handleFileError(message: string) {
+  toast.add({ severity: "error", summary: "Erro", detail: message, life: 5000 });
+}
 
 if (props.modelValue) {
   Object.assign(personData, props.modelValue);

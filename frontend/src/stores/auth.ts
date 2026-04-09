@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
+import type { Router } from "vue-router";
 
 import type { LoginCredentials } from "@router/backend/services/auth/types";
 import * as authService from "@router/backend/services/auth";
@@ -27,7 +28,7 @@ export const useAuthStore = defineStore("auth", () => {
     initialized.value = true;
   }
 
-  async function login(credentials: LoginCredentials, router: any): Promise<{ success: boolean; content?: string }> {
+  async function login(credentials: LoginCredentials, router: Router): Promise<{ success: boolean; content?: string }> {
     try {
       const response = await authService.login(credentials);
       if (response.status === 200 && response.data && "access_token" in response.data) {
@@ -42,10 +43,11 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  async function logout(router: any) {
+  async function logout(router: Router) {
     try {
       await authService.logout();
     } catch {
+      // ignore logout errors
     }
     username.value = null;
     userId.value = null;

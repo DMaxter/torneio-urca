@@ -78,6 +78,7 @@ import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 import { useGameStore } from "@stores/games";
 import type { Group } from "@router/backend/services/group/types";
+import type { Team } from "@router/backend/services/team/types";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
@@ -92,7 +93,7 @@ const showViewTeams = ref(false);
 
 const deleting = ref(false);
 const selectedGroupName = ref("");
-const groupTeams = ref<any[]>([]);
+const groupTeams = ref<Team[]>([]);
 
 onMounted(async () => {
   await Promise.all([
@@ -107,8 +108,8 @@ function getTournamentName(tournamentId: string): string {
   return tournamentStore.tournaments.find(t => t.id === tournamentId)?.name ?? "-";
 }
 
-function viewGroupTeams(event: any) {
-  const group = event.data as Group;
+function viewGroupTeams(event: { data: Group }) {
+  const group = event.data;
   selectedGroupName.value = group.name;
   groupTeams.value = teamStore.teams.filter(t => group.teams.includes(t.id));
   showViewTeams.value = true;

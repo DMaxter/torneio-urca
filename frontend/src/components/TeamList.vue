@@ -211,7 +211,7 @@ const showRemovePlayer = ref(false);
 const showEditTeam = ref(false);
 const selectedTeamId = ref("");
 const selectedTeamName = ref("");
-const teamPlayers = ref<any[]>([]);
+const teamPlayers = ref<unknown[]>([]);
 const fileUrl = ref("");
 const teamToDelete = ref<{ id: string; name: string } | null>(null);
 const playerToAction = ref<{ id: string; name: string } | null>(null);
@@ -249,7 +249,7 @@ function promptEditTeam(team: Team) {
   showEditTeam.value = true;
 }
 
-function onTeamSelect(event: any) {
+function onTeamSelect(event: { data: { id: string } }) {
   openTeamPlayers(event.data.id);
 }
 
@@ -265,7 +265,7 @@ async function loadTeamPlayers() {
   if (!selectedTeamId.value) return;
   const { data } = await teamService.getTeamPlayers(selectedTeamId.value);
   if (data) {
-    teamPlayers.value = data as any[];
+    teamPlayers.value = data as unknown[];
   }
 }
 

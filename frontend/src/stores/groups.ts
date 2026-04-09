@@ -47,8 +47,9 @@ export const useGroupStore = defineStore("groupsStore", () => {
         return { success: true };
       }
       return { success: false, error: null };
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.detail?.error || err.response?.data?.error || null;
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: { error?: string }; error?: string } } };
+      const errorMessage = error.response?.data?.detail?.error || error.response?.data?.error || null;
       return { success: false, error: errorMessage };
     }
   }

@@ -10,6 +10,6 @@ export async function assignGoal(data: {
   player_number?: number;
   staff_id?: string;
   minute: number;
-}): Promise<AxiosResponse<any | Error>> {
+}): Promise<AxiosResponse<unknown | Error>> {
   return await http.post("/goals", data);
 }

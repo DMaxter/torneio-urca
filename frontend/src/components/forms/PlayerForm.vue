@@ -15,15 +15,15 @@
 
     <P-FloatLabel class="field" variant="on">
       <P-InputText :id="`${playerId}Name`" v-model="formData.name" fluid />
-      <label :for="`${playerId}Name`">Nome</label>
+      <label :for="`${playerId}Name`">Nome *</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
       <P-DatePicker :id="`${playerId}BirthDate`" v-model="formData.birth_date" fluid />
-      <label :for="`${playerId}BirthDate`">Data de Nascimento</label>
+      <label :for="`${playerId}BirthDate`">Data de Nascimento *</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
       <P-InputText :id="`${playerId}FiscalNumber`" v-model="formData.fiscal_number" fluid />
-      <label :for="`${playerId}FiscalNumber`">NIF</label>
+      <label :for="`${playerId}FiscalNumber`">NIF *</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
       <P-InputText :id="`${playerId}Address`" v-model="formData.address" fluid />
@@ -31,12 +31,13 @@
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
       <P-InputText :id="`${playerId}PlaceOfBirth`" v-model="formData.place_of_birth" fluid />
-      <label :for="`${playerId}PlaceOfBirth`">Local de Nascimento</label>
+      <label :for="`${playerId}PlaceOfBirth`">Local de Nascimento *</label>
     </P-FloatLabel>
 
     <FileUpload
       :modelValue="localFiles.citizenCard"
       @update:modelValue="localFiles.citizenCard = $event"
+      @fileError="handleFileError"
       :id="`${playerId}CitizenCard`"
       label="Cartão de Cidadão (PDF)"
       required
@@ -44,6 +45,7 @@
     <FileUpload
       :modelValue="localFiles.proofOfResidency"
       @update:modelValue="localFiles.proofOfResidency = $event"
+      @fileError="handleFileError"
       :id="`${playerId}ProofResidency`"
       label="Comprovativo de Residência (PDF)"
       required
@@ -69,6 +71,7 @@
       <FileUpload
         :modelValue="localFiles.authorization"
         @update:modelValue="localFiles.authorization = $event"
+        @fileError="handleFileError"
         :id="`${playerId}Authorization`"
         label="Autorização do Encarregado de Educação (PDF)"
         required
@@ -79,6 +82,7 @@
 
 <script setup lang="ts">
 import { reactive, watchEffect } from "vue";
+import { useToast } from "primevue/usetoast";
 import { isUnderAge } from "@/utils";
 import { TOURNAMENT } from "@/constants";
 
@@ -112,6 +116,7 @@ const emit = defineEmits<{
 }>();
 
 const playerId = `player${props.index}`;
+const toast = useToast();
 
 const formData = reactive<PlayerFormData>({
   name: "",
@@ -154,6 +159,10 @@ watchEffect(() => {
 
 function checkUnderAge(): boolean {
   return isUnderAge(formData.birth_date, TOURNAMENT.MIN_AGE);
+}
+
+function handleFileError(message: string) {
+  toast.add({ severity: "error", summary: "Erro", detail: message, life: 5000 });
 }
 </script>
 

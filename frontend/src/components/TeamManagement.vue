@@ -5,24 +5,24 @@
       <div class="w-full md:w-1/3 space-y-3">
         <h3 class="font-semibold text-stone-700">Informação Básica</h3>
         <P-FloatLabel class="field" variant="on">
-          <P-InputText id="name" v-model="team.name" fluid />
+          <P-InputText id="name" v-model="teamForm.name" fluid />
           <label for="name">Nome</label>
         </P-FloatLabel>
         <P-FloatLabel class="field" variant="on">
-          <P-Select id="tournament" v-model="team.tournament" :options="tournamentStore.tournaments"
+          <P-Select id="tournament" v-model="teamForm.tournament" :options="tournamentStore.tournaments"
             optionLabel="name" optionValue="id" fluid />
           <label for="tournament">Torneio</label>
         </P-FloatLabel>
         <P-FloatLabel class="field" variant="on">
-          <P-InputText id="responsibleName" v-model="team.responsible_name" fluid />
+          <P-InputText id="responsibleName" v-model="teamForm.responsible_name" fluid />
           <label for="responsibleName">Nome do Responsável</label>
         </P-FloatLabel>
         <P-FloatLabel class="field" variant="on">
-          <P-InputText id="responsibleEmail" v-model="team.responsible_email" type="email" fluid />
+          <P-InputText id="responsibleEmail" v-model="teamForm.responsible_email" type="email" fluid />
           <label for="responsibleEmail">Email do Responsável</label>
         </P-FloatLabel>
         <P-FloatLabel class="field" variant="on">
-          <P-InputText id="responsiblePhone" v-model="team.responsible_phone" fluid />
+          <P-InputText id="responsiblePhone" v-model="teamForm.responsible_phone" fluid />
           <label for="responsiblePhone">Telemóvel do Responsável</label>
         </P-FloatLabel>
       </div>
@@ -34,7 +34,7 @@
           <h3 class="font-semibold text-stone-700 mb-2">Staff</h3>
           <div v-for="role in staffRoles" :key="role.field" class="flex items-center gap-2 mb-2">
             <span class="text-sm text-stone-600 w-32 shrink-0">{{ role.label }}</span>
-            <P-Select v-model="(team as any)[role.field]" :options="staffOptions" optionLabel="name" optionValue="id"
+            <P-Select v-model="(teamForm as unknown as Record<string, unknown>)[role.field]" :options="staffOptions" optionLabel="name" optionValue="id"
               placeholder="Selecionar..." class="flex-1" showClear />
           </div>
         </div>
@@ -50,7 +50,7 @@
                  class="flex items-center justify-between p-2 rounded bg-stone-50">
               <div class="flex items-center gap-2">
                 <span class="text-sm">{{ player.name }}</span>
-                <span class="text-xs text-stone-400">{{ player.age }} anos</span>
+                <span class="text-xs text-stone-400">{{ calculateAge(player.birth_date) }} anos</span>
               </div>
               <P-Button icon="close" severity="danger" text rounded size="small" 
                 @click="removePlayer(player.id)" v-tooltip.top="'Remover jogador'" />
@@ -89,11 +89,13 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useToast } from "primevue/usetoast";
 import { CreateTeam, type Team } from "@router/backend/services/team/types";
+import { type Player } from "@router/backend/services/player/types";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 import { usePlayerStore } from "@stores/players";
 import { useStaffStore } from "@stores/staff";
 import { http } from "@router/backend/api";
+import { calculateAge } from "@/utils";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
@@ -102,8 +104,8 @@ const props = defineProps<{
 }>();
 
 const creating = computed(() => props.team === undefined);
-const team = ref<Team | CreateTeam>(new CreateTeam());
-const teamPlayers = ref<any[]>([]);
+const teamForm = ref<Team | CreateTeam>(new CreateTeam());
+const teamPlayers = ref<Player[]>([]);
 const showAddPlayerDialog = ref(false);
 const selectedPlayerId = ref<string | null>(null);
 
@@ -131,10 +133,10 @@ const availablePlayers = computed(() => {
 
 watch(() => props.team, async (newTeam) => {
   if (newTeam) {
-    team.value = newTeam;
+    teamForm.value = newTeam;
     await loadTeamPlayers();
   } else {
-    team.value = new CreateTeam();
+    teamForm.value = new CreateTeam();
     teamPlayers.value = [];
   }
 });
@@ -145,7 +147,7 @@ onMounted(async () => {
     staffStore.getStaff(),
   ]);
   if (!creating.value && props.team) {
-    team.value = props.team;
+    teamForm.value = props.team;
     await loadTeamPlayers();
   }
 });
@@ -157,7 +159,7 @@ async function loadTeamPlayers() {
     if (response.status === 200) {
       teamPlayers.value = response.data;
     }
-  } catch (e) {
+  } catch {
     teamPlayers.value = [];
   }
 }
@@ -174,8 +176,9 @@ async function addPlayer() {
       selectedPlayerId.value = null;
       showAddPlayerDialog.value = false;
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao adicionar jogador";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao adicionar jogador";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   }
 }
@@ -188,8 +191,9 @@ async function removePlayer(playerId: string) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Jogador removido", life: 3000 });
       await loadTeamPlayers();
     }
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao remover jogador";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao remover jogador";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   }
 }
@@ -203,7 +207,7 @@ async function createOrUpdate() {
 }
 
 async function create() {
-  const result = await teamStore.createTeam(team.value as CreateTeam);
+  const result = await teamStore.createTeam(teamForm.value as CreateTeam);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Equipa criada com sucesso", life: 3000 });
     close();
@@ -211,7 +215,7 @@ async function create() {
 }
 
 async function update() {
-  const result = await teamStore.updateTeam(props.team!.id, team.value as CreateTeam);
+  const result = await teamStore.updateTeam(props.team!.id, teamForm.value as CreateTeam);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Equipa atualizada com sucesso", life: 3000 });
     close();

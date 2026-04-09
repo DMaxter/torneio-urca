@@ -258,7 +258,21 @@ const canProceed = computed(() => {
     return !!teamData.responsible_name && !!teamData.responsible_email && !!teamData.responsible_phone;
   }
   if (currentStep.value === 2) {
-    return playerForms.length >= TOURNAMENT.MIN_PLAYERS;
+    if (playerForms.length < TOURNAMENT.MIN_PLAYERS) {
+      return false;
+    }
+    return playerForms.every(player => {
+      if (!player.data.name || !player.data.birth_date || !player.data.fiscal_number || !player.data.place_of_birth) {
+        return false;
+      }
+      if (!player.files.citizenCard || !player.files.proofOfResidency) {
+        return false;
+      }
+      if (isUnderAge(player.data.birth_date, TOURNAMENT.MIN_AGE) && !player.files.authorization) {
+        return false;
+      }
+      return true;
+    });
   }
   return true;
 });
@@ -332,9 +346,28 @@ function nextStep() {
     toast.add({ severity: "error", summary: "Erro", detail: "Preencha todos os campos do responsável", life: 3000 });
     return;
   }
-  if (currentStep.value === 2 && playerForms.length < TOURNAMENT.MIN_PLAYERS) {
-    toast.add({ severity: "error", summary: "Erro", detail: `É necessário um mínimo de ${TOURNAMENT.MIN_PLAYERS} jogadores`, life: 3000 });
-    return;
+  if (currentStep.value === 2) {
+    if (playerForms.length < TOURNAMENT.MIN_PLAYERS) {
+      toast.add({ severity: "error", summary: "Erro", detail: `É necessário um mínimo de ${TOURNAMENT.MIN_PLAYERS} jogadores`, life: 3000 });
+      return;
+    }
+    for (let i = 0; i < playerForms.length; i++) {
+      const player = playerForms[i];
+      const errors: string[] = [];
+      if (!player.data.name) errors.push(`Jogador ${i + 1}: Nome é obrigatório`);
+      if (!player.data.birth_date) errors.push(`Jogador ${i + 1}: Data de Nascimento é obrigatória`);
+      if (!player.data.fiscal_number) errors.push(`Jogador ${i + 1}: NIF é obrigatório`);
+      if (!player.data.place_of_birth) errors.push(`Jogador ${i + 1}: Local de Nascimento é obrigatório`);
+      if (!player.files.citizenCard) errors.push(`Jogador ${i + 1}: Cartão de Cidadão é obrigatório`);
+      if (!player.files.proofOfResidency) errors.push(`Jogador ${i + 1}: Comprovativo de Residência é obrigatório`);
+      if (isUnderAge(player.data.birth_date, TOURNAMENT.MIN_AGE) && !player.files.authorization) {
+        errors.push(`Jogador ${i + 1}: Autorização é obrigatória (menor de ${TOURNAMENT.MIN_AGE} anos)`);
+      }
+      if (errors.length > 0) {
+        toast.add({ severity: "error", summary: "Erro", detail: errors[0], life: 5000 });
+        return;
+      }
+    }
   }
   if (currentStep.value < steps.length - 1) {
     currentStep.value++;
@@ -348,26 +381,6 @@ function prevStep() {
 }
 
 async function submit() {
-  if (playerForms.length < TOURNAMENT.MIN_PLAYERS) {
-    toast.add({ severity: "error", summary: "Erro", detail: `É necessário um mínimo de ${TOURNAMENT.MIN_PLAYERS} jogadores`, life: 3000 });
-    return;
-  }
-
-  for (let i = 0; i < playerForms.length; i++) {
-    if (!playerForms[i].files.citizenCard) {
-      toast.add({ severity: "error", summary: "Erro", detail: `Jogador ${i + 1}: Cartão de Cidadão é obrigatório`, life: 3000 });
-      return;
-    }
-    if (!playerForms[i].files.proofOfResidency) {
-      toast.add({ severity: "error", summary: "Erro", detail: `Jogador ${i + 1}: Comprovativo de Residência é obrigatório`, life: 3000 });
-      return;
-    }
-    if (isUnderAge(playerForms[i].data.birth_date, TOURNAMENT.MIN_AGE) && !playerForms[i].files.authorization) {
-      toast.add({ severity: "error", summary: "Erro", detail: `Jogador ${i + 1}: Autorização é obrigatória (menor de ${TOURNAMENT.MIN_AGE} anos)`, life: 3000 });
-      return;
-    }
-  }
-
   submitting.value = true;
   currentTeamId = null;
 
@@ -400,6 +413,11 @@ async function submit() {
     });
 
     if (teamResponse.status !== 201) {
+      showError("Falha ao criar equipa");
+      return;
+    }
+
+    if (!('id' in teamResponse.data)) {
       showError("Falha ao criar equipa");
       return;
     }
@@ -470,14 +488,16 @@ async function submit() {
       router.push("/");
     }, 1500);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
-    showError(error?.response?.data?.detail || "Erro durante o registo");
+    const err = error as { response?: { data?: { detail?: string } } };
+    showError(err.response?.data?.detail || "Erro durante o registo");
     
     if (currentTeamId) {
       try {
         await cancelRegistration(currentTeamId);
       } catch {
+        // ignore cancellation errors
       }
     }
   } finally {

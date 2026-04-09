@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
 
-import { type User, CreateUser, ChangePassword } from "@router/backend/services/user/types";
+import { type User, type ChangePassword } from "@router/backend/services/user/types";
 import * as userService from "@router/backend/services/user";
 import { createGenericStore } from "@stores/base";
 
@@ -15,7 +15,7 @@ export const useUserStore = defineStore("usersStore", () => {
 
   async function deleteUser(userId: string) {
     try {
-      const { status } = await userService.deleteUser(userId);
+      await userService.deleteUser(userId);
       return { success: true, content: null };
     } catch {
       return { success: false, content: null };
@@ -24,7 +24,7 @@ export const useUserStore = defineStore("usersStore", () => {
 
   async function changePassword(userId: string, passwordData: ChangePassword) {
     try {
-      const { status } = await userService.changePassword(userId, passwordData);
+      await userService.changePassword(userId, passwordData);
       return { success: true, content: null };
     } catch {
       return { success: false, content: null };

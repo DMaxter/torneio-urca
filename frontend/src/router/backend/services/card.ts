@@ -11,6 +11,6 @@ export async function assignCard(data: {
   staff_id?: string;
   card: "Yellow" | "Red";
   minute: number;
-}): Promise<AxiosResponse<any | Error>> {
+}): Promise<AxiosResponse<unknown | Error>> {
   return await http.post("/cards", data);
 }

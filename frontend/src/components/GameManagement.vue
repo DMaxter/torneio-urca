@@ -1,12 +1,12 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal :header="creating ? 'Criar Jogo' : 'Editar Jogo'" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5">
     <P-FloatLabel class="field" variant="on">
-      <P-Select v-model="game.tournament" id="tournament" :options="tournamentStore.tournaments"
+      <P-Select v-model="gameForm.tournament" id="tournament" :options="tournamentStore.tournaments"
         optionLabel="name" optionValue="id" fluid />
       <label for="tournament">Torneio</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
-      <P-DatePicker id="date" v-model="game.scheduled_date" showTime hourFormat="24" fluid />
+      <P-DatePicker id="date" v-model="gameForm.scheduled_date" showTime hourFormat="24" fluid />
       <label for="date">Data e Hora do Jogo</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
@@ -35,7 +35,7 @@
 import { computed, onMounted, ref } from "vue";
 import { useToast } from "primevue/usetoast";
 
-import { CreateGame, type Game, type GameCall } from "@router/backend/services/game/types";
+import { CreateGame, type Game } from "@router/backend/services/game/types";
 import { useGameStore } from "@stores/games";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
@@ -49,27 +49,27 @@ const props = defineProps<{
 const creating = computed(() => props.game === undefined);
 
 // Use only CreateGame type for the form
-const game = ref<CreateGame>(new CreateGame());
+const gameForm = ref<CreateGame>(new CreateGame());
 
 // Computed properties for v-model to handle optional calls
 const homeTeam = computed({
-  get: () => game.value.home_call?.team ?? '',
+  get: () => gameForm.value.home_call?.team ?? '',
   set: (val: string) => {
-    if (!game.value.home_call) {
-      game.value.home_call = { team: val };
+    if (!gameForm.value.home_call) {
+      gameForm.value.home_call = { team: val };
     } else {
-      game.value.home_call.team = val;
+      gameForm.value.home_call.team = val;
     }
   }
 });
 
 const awayTeam = computed({
-  get: () => game.value.away_call?.team ?? '',
+  get: () => gameForm.value.away_call?.team ?? '',
   set: (val: string) => {
-    if (!game.value.away_call) {
-      game.value.away_call = { team: val };
+    if (!gameForm.value.away_call) {
+      gameForm.value.away_call = { team: val };
     } else {
-      game.value.away_call.team = val;
+      gameForm.value.away_call.team = val;
     }
   }
 });
@@ -78,7 +78,7 @@ onMounted(() => {
   if (props.game) {
     const g = props.game;
     // Convert Game to CreateGame format for the form
-    game.value = {
+    gameForm.value = {
       tournament: g.tournament,
       scheduled_date: g.scheduled_date,
       home_call: g.home_call ? { team: g.home_call.team } : null,
@@ -103,7 +103,7 @@ async function createOrUpdate() {
 }
 
 async function create() {
-  const result = await gameStore.createGame(game.value);
+  const result = await gameStore.createGame(gameForm.value);
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo criado com sucesso", life: 3000 });
     close();

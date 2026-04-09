@@ -1,4 +1,4 @@
-import { ref, type Ref } from "vue";
+import { type Ref } from "vue";
 import type { AxiosError } from "axios";
 import type { AxiosResponse } from "axios";
 import type { APIResponse } from "@router/backend/types";
@@ -7,9 +7,10 @@ export interface Entity {
   id: string;
 }
 
+/* eslint-disable @typescript-eslint/no-empty-object-type */
 export interface CreateEntity {
-  // marker interface for create DTOs
 }
+/* eslint-enable @typescript-eslint/no-empty-object-type */
 
 export interface CRUDService<T extends Entity, C extends CreateEntity, E = unknown> {
   getAll(): Promise<AxiosResponse<T[] | E>>;

@@ -72,19 +72,18 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useStaffStore } from "@stores/staff";
 import { http } from "@router/backend/api";
+import type { Staff } from "@router/backend/services/staff/types";
 
-const router = useRouter();
 const toast = useToast();
 const staffStore = useStaffStore();
 
 const showFormDialog = ref(false);
 const showDeleteDialog = ref(false);
-const editingStaff = ref<any>(null);
-const deletingStaff = ref<any>(null);
+const editingStaff = ref<Staff | null>(null);
+const deletingStaff = ref<Staff | null>(null);
 const saving = ref(false);
 
 const staffForm = ref({
@@ -119,7 +118,7 @@ function openCreateDialog() {
   showFormDialog.value = true;
 }
 
-function openEditDialog(staff: any) {
+function openEditDialog(staff: Staff) {
   editingStaff.value = staff;
   staffForm.value = {
     name: staff.name,
@@ -130,7 +129,7 @@ function openEditDialog(staff: any) {
   showFormDialog.value = true;
 }
 
-function confirmDelete(staff: any) {
+function confirmDelete(staff: Staff) {
   deletingStaff.value = staff;
   showDeleteDialog.value = true;
 }
@@ -159,8 +158,9 @@ async function saveStaff() {
     toast.add({ severity: "success", summary: "Sucesso", detail: editingStaff.value ? "Staff atualizado" : "Staff criado", life: 3000 });
     showFormDialog.value = false;
     await staffStore.getStaff();
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao guardar staff";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao guardar staff";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   } finally {
     saving.value = false;
@@ -175,8 +175,9 @@ async function deleteStaff() {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Staff eliminado", life: 3000 });
     showDeleteDialog.value = false;
     await staffStore.getStaff();
-  } catch (e: any) {
-    const msg = e.response?.data?.detail?.error || "Erro ao eliminar staff";
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { detail?: { error?: string } } } };
+    const msg = err.response?.data?.detail?.error || "Erro ao eliminar staff";
     toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
   } finally {
     saving.value = false;
