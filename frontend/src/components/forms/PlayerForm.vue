@@ -27,7 +27,7 @@
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
       <P-InputText :id="`${playerId}Address`" v-model="formData.address" fluid />
-      <label :for="`${playerId}Address`">Morada</label>
+      <label :for="`${playerId}Address`">Morada *</label>
     </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
       <P-InputText :id="`${playerId}PlaceOfBirth`" v-model="formData.place_of_birth" fluid />
@@ -55,10 +55,10 @@
       <P-Checkbox v-model="formData.is_federated" :binary="true" :inputId="`federated${playerId}`" />
       <label :for="`federated${playerId}`"> É federado?</label>
     </div>
-    <div v-if="formData.is_federated">
+    <div v-if="formData.is_federated" class="federated-section">
       <P-FloatLabel class="field" variant="on">
         <P-InputText :id="`${playerId}FederationTeam`" v-model="formData.federation_team" fluid />
-        <label :for="`${playerId}FederationTeam`">Equipa Federada</label>
+        <label :for="`${playerId}FederationTeam`">Equipa Federada *</label>
       </P-FloatLabel>
       <div class="field">
         <P-Checkbox v-model="formData.federation_exams_up_to_date" :binary="true" :inputId="`exams${playerId}`" />

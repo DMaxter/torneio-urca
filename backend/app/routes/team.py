@@ -20,7 +20,7 @@ from app.schemas.schemas import (
     PlayerDto,
 )
 from app.error import Error
-from app.constants import MIN_PLAYERS, MIN_AGE
+from app.constants import MIN_PLAYERS, MIN_AGE, MAX_FILE_SIZE
 from app.utils import calculate_age, get_logger, sanitize_for_serialization
 from app.utils.auth import get_current_user
 from datetime import datetime
@@ -96,11 +96,31 @@ async def process_files(files: List[UploadFile]) -> dict[str, str]:
     file_dict = {}
     for f in files:
         content = await f.read()
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=400,
+                detail=f"O ficheiro '{f.filename}' excede o limite de 5MB",
+            )
         filename = f.filename or "unknown"
         content_type = f.content_type or "application/octet-stream"
         file_id = await db.upload_file(filename, content_type, content)
         file_dict[filename] = file_id
     return file_dict
+
+
+async def upload_single_file(
+    file: UploadFile,
+    filename: str,
+) -> str:
+    """Upload a single file with size validation."""
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"O ficheiro '{file.filename}' excede o limite de 5MB",
+        )
+    content_type = file.content_type or "application/octet-stream"
+    return await db.upload_file(filename, content_type, content)
 
 
 async def create_staff_member(
@@ -420,20 +440,16 @@ async def register_add_staff(
 
     file_dict = {}
     if citizen_card:
-        content = await citizen_card.read()
-        file_id = await db.upload_file(
+        file_id = await upload_single_file(
+            citizen_card,
             f"staff_{team_id}_{staff_type}_citizen_card",
-            citizen_card.content_type or "application/octet-stream",
-            content,
         )
         file_dict["citizen_card_file_id"] = file_id
 
     if proof_of_residency:
-        content = await proof_of_residency.read()
-        file_id = await db.upload_file(
+        file_id = await upload_single_file(
+            proof_of_residency,
             f"staff_{team_id}_{staff_type}_proof_of_residency",
-            proof_of_residency.content_type or "application/octet-stream",
-            content,
         )
         file_dict["proof_of_residency_file_id"] = file_id
 
@@ -512,29 +528,23 @@ async def register_add_player(
     file_dict = {}
 
     if citizen_card:
-        content = await citizen_card.read()
-        file_id = await db.upload_file(
+        file_id = await upload_single_file(
+            citizen_card,
             f"player_{team_id}_{name}_citizen_card",
-            citizen_card.content_type or "application/octet-stream",
-            content,
         )
         file_dict["citizen_card_file_id"] = file_id
 
     if proof_of_residency:
-        content = await proof_of_residency.read()
-        file_id = await db.upload_file(
+        file_id = await upload_single_file(
+            proof_of_residency,
             f"player_{team_id}_{name}_proof_of_residency",
-            proof_of_residency.content_type or "application/octet-stream",
-            content,
         )
         file_dict["proof_of_residency_file_id"] = file_id
 
     if authorization:
-        content = await authorization.read()
-        file_id = await db.upload_file(
+        file_id = await upload_single_file(
+            authorization,
             f"player_{team_id}_{name}_authorization",
-            authorization.content_type or "application/octet-stream",
-            content,
         )
         file_dict["authorization_file_id"] = file_id
 
@@ -542,6 +552,12 @@ async def register_add_player(
         raise HTTPException(
             status_code=400,
             detail=f"O jogador {name} é menor de {MIN_AGE} anos e requer autorização",
+        )
+
+    if is_federated and not federation_team:
+        raise HTTPException(
+            status_code=400,
+            detail=f"O jogador {name} é federado e requer a equipa federada",
         )
 
     player_data = {

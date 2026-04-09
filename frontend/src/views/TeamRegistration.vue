@@ -19,7 +19,7 @@
           <h2>Informações da Equipa</h2>
           <P-FloatLabel class="field" variant="on">
             <P-InputText id="teamName" v-model="teamData.name" fluid />
-            <label for="teamName">Nome da Equipa</label>
+            <label for="teamName">Nome da Equipa *</label>
           </P-FloatLabel>
           <P-FloatLabel class="field" variant="on">
             <P-Select
@@ -30,7 +30,7 @@
               optionValue="id"
               fluid
             />
-            <label for="tournament">Torneio</label>
+            <label for="tournament">Torneio *</label>
           </P-FloatLabel>
         </div>
 
@@ -39,15 +39,15 @@
           <h2>Responsável da Equipa</h2>
           <P-FloatLabel class="field" variant="on">
             <P-InputText id="responsibleName" v-model="teamData.responsible_name" fluid />
-            <label for="responsibleName">Nome</label>
+            <label for="responsibleName">Nome *</label>
           </P-FloatLabel>
           <P-FloatLabel class="field" variant="on">
             <P-InputText id="responsibleEmail" v-model="teamData.responsible_email" type="email" fluid />
-            <label for="responsibleEmail">Email</label>
+            <label for="responsibleEmail">Email *</label>
           </P-FloatLabel>
           <P-FloatLabel class="field" variant="on">
             <P-InputText id="responsiblePhone" v-model="teamData.responsible_phone" fluid />
-            <label for="responsiblePhone">Telemóvel</label>
+            <label for="responsiblePhone">Telemóvel *</label>
           </P-FloatLabel>
         </div>
 
@@ -125,7 +125,6 @@
           <P-Button
             v-if="currentStep < steps.length - 1"
             @click="nextStep"
-            :disabled="!canProceed"
           >
             Próximo
             <span class="material-symbols-outlined">arrow_forward</span>
@@ -150,7 +149,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useTournamentStore } from "@stores/tournaments";
@@ -250,33 +249,6 @@ const playerForms = reactive<PlayerFormEntry[]>([]);
 
 const tournamentStore = useTournamentStore();
 
-const canProceed = computed(() => {
-  if (currentStep.value === 0) {
-    return !!teamData.name && !!teamData.tournament;
-  }
-  if (currentStep.value === 1) {
-    return !!teamData.responsible_name && !!teamData.responsible_email && !!teamData.responsible_phone;
-  }
-  if (currentStep.value === 2) {
-    if (playerForms.length < TOURNAMENT.MIN_PLAYERS) {
-      return false;
-    }
-    return playerForms.every(player => {
-      if (!player.data.name || !player.data.birth_date || !player.data.fiscal_number || !player.data.place_of_birth) {
-        return false;
-      }
-      if (!player.files.citizenCard || !player.files.proofOfResidency) {
-        return false;
-      }
-      if (isUnderAge(player.data.birth_date, TOURNAMENT.MIN_AGE) && !player.files.authorization) {
-        return false;
-      }
-      return true;
-    });
-  }
-  return true;
-});
-
 function createEmptyStaffMember(): StaffMemberData {
   return {
     name: "",
@@ -358,6 +330,10 @@ function nextStep() {
       if (!player.data.birth_date) errors.push(`Jogador ${i + 1}: Data de Nascimento é obrigatória`);
       if (!player.data.fiscal_number) errors.push(`Jogador ${i + 1}: NIF é obrigatório`);
       if (!player.data.place_of_birth) errors.push(`Jogador ${i + 1}: Local de Nascimento é obrigatório`);
+      if (!player.data.address) errors.push(`Jogador ${i + 1}: Morada é obrigatória`);
+      if (player.data.is_federated && !player.data.federation_team) {
+        errors.push(`Jogador ${i + 1}: Equipa Federada é obrigatória`);
+      }
       if (!player.files.citizenCard) errors.push(`Jogador ${i + 1}: Cartão de Cidadão é obrigatório`);
       if (!player.files.proofOfResidency) errors.push(`Jogador ${i + 1}: Comprovativo de Residência é obrigatório`);
       if (isUnderAge(player.data.birth_date, TOURNAMENT.MIN_AGE) && !player.files.authorization) {

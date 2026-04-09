@@ -3,6 +3,9 @@ MIN_PLAYERS = 5
 MAX_PLAYERS = 14
 MIN_AGE = 16
 
+# File upload constraints
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB in bytes
+
 # File naming prefixes used in team registration
 STAFF_FILE_PREFIXES = ["main_coach", "physiotherapist", "first_deputy", "second_deputy"]
 PLAYER_FILE_PREFIX = "player"
