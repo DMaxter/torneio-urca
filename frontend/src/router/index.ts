@@ -75,14 +75,23 @@ const routes = [
      }
    },
    {
-     path: "/admin/staff",
-     name: "staffManagement",
-     component: () => import("@views/StaffManagement.vue"),
-     meta: {
-       title: "Gestão de Staff | " + import.meta.env.VUE_APP_NAME,
-       requiresAuth: true,
-     }
-   }
+    path: "/admin/staff",
+    name: "staffManagement",
+    component: () => import("@views/StaffManagement.vue"),
+    meta: {
+      title: "Gestão de Staff | " + import.meta.env.VUE_APP_NAME,
+      requiresAuth: true,
+    }
+  },
+  {
+    path: "/privacidade",
+    name: "privacyPolicy",
+    component: () => import("@views/PrivacyPolicy.vue"),
+    meta: {
+      title: "Política de Privacidade | " + import.meta.env.VUE_APP_NAME,
+      requiresAuth: false,
+    }
+  }
 ];
 
 const router = createRouter({

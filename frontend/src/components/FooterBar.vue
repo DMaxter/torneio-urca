@@ -5,10 +5,16 @@
         <span class="footer-logo">⚽</span>
         <div class="footer-info">
           <span class="footer-title">Torneio de Futsal de São Pedro</span>
-          <span class="footer-subtitle">Organizado por URCA - Porto de Mós</span>
+          <span class="footer-subtitle">Organizado by URCA - Porto de Mós</span>
         </div>
       </div>
       <div class="footer-contact">
+        <P-Button 
+          label="Política de Privacidade" 
+          link 
+          class="privacy-link"
+          @click="goToPrivacy"
+        />
         <span class="footer-year">2026</span>
       </div>
     </div>
@@ -16,6 +22,13 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+
+function goToPrivacy() {
+  router.push("/privacidade");
+}
 </script>
 
 <style scoped>
@@ -63,6 +76,17 @@
 .footer-year {
   font-size: 1.25rem;
   font-weight: 700;
+  color: var(--p-primary-400);
+}
+
+.privacy-link {
+  font-size: 0.875rem;
+  color: var(--p-surface-300);
+  text-decoration: underline;
+  margin-right: 1rem;
+}
+
+.privacy-link:hover {
   color: var(--p-primary-400);
 }
 
