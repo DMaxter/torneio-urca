@@ -21,7 +21,7 @@
         <router-link to="/classifications" class="nav-link" @click="menuOpen = false">
           Classificações
         </router-link>
-        <router-link to="/calendario" class="nav-link" @click="menuOpen = false">
+        <router-link to="/calendar" class="nav-link" @click="menuOpen = false">
           Calendário
         </router-link>
         <router-link v-if="isRegistrationOpen" to="/register" class="nav-link cta-link" @click="menuOpen = false">

@@ -18,15 +18,28 @@
         <div v-show="currentStep === 0" class="step-content">
           <h2>Instruções</h2>
           <ul class="list-disc list-inside space-y-2 mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 text-stone-700">
-            <li>O registo da equipa deve ser feito <strong>todo de uma só vez</strong>, se for necessário efetuar alterações, por favor contacte a organização.</li>
+            <li>O registo da equipa deve ser feito <strong>todo de uma só vez</strong>, se for necessário selecionar alterações, por favor contacte a organização.</li>
             <li>O registo requer um <strong>responsável de equipa</strong> que será o ponto de contacto entre a organização e a equipa.</li>
             <li>Caso haja problemas com a validação da informação dos jogadores, certifique-se de que a informação de contacto do responsável pela equipa está <strong>correcta</strong>, pois pode levar à <strong>não participação da equipa</strong>.</li>
             <li>As equipas têm um número mínimo de <strong>{{ TOURNAMENT.MIN_PLAYERS }} jogadores</strong> e um máximo de <strong>{{ TOURNAMENT.MAX_PLAYERS }} jogadores</strong>.</li>
-            <li>É também possível registar o staff que fará parte da equipa e que corresponderão às pessoas que poderão estar em campo em dia de jogo: <strong>treinador</strong>, <strong>treinador adjunto</strong>, <strong>fisioterapeuta</strong> e <strong>2 delegados de jogo</strong>, no entanto estes são <strong>opcionais</strong> para este registo.</li>
+            <li>É também possível selecionar o staff que fará parte da equipa e que corresponderão às pessoas que poderão estar em campo em dia de jogo: <strong>treinador</strong>, <strong>treinador adjunto</strong>, <strong>fisioterapeuta</strong> e <strong>2 delegados de jogo</strong>, no entanto estes são <strong>opcionais</strong> para este registo.</li>
             <li>Para cada jogador é obrigatório preencher: <strong>nome completo</strong>, <strong>data de nascimento</strong>, <strong>NIF</strong>, <strong>morada</strong>, <strong>local de nascimento</strong>, <strong>PDF com cartão de cidadão</strong> <span class="tooltip-wrapper"><button @click="citizenCardTooltipVisible = !citizenCardTooltipVisible" class="help-tooltip"><span class="material-symbols-outlined">help</span></button><span v-if="citizenCardTooltipVisible" class="tooltip-box">Pode digitalizar o cartão de cidadão com uma aplicação como o Adobe Scan.<button class="tooltip-close" @click.stop="citizenCardTooltipVisible = false"><span class="material-symbols-outlined">close</span></button></span></span>, <strong>PDF com comprovativo de residência</strong> <span class="tooltip-wrapper"><button @click="proofOfResidenceTooltipVisible = !proofOfResidenceTooltipVisible" class="help-tooltip"><span class="material-symbols-outlined">help</span></button><span v-if="proofOfResidenceTooltipVisible" class="tooltip-box">Portal das Finanças > Login > Serviços > Documentos e Certidões > Requerer Certidão > Domicílio Fiscal > Confirmar > Obter<button class="tooltip-close" @click.stop="proofOfResidenceTooltipVisible = false"><span class="material-symbols-outlined">close</span></button></span></span> e <strong>se pertence a uma equipa federada ou não</strong>.</li>
             <li>Se precisar de registar membros adicionais (jogadores ou staff) após o primeiro registo, contacte a organização.</li>
-            <li>Se uma equipa não tiver um treinador associado no início do torneio, <strong>não poderá participar</strong>, por isso se não registar um treinador agora, certifique-se que contacta a organização para o fazer.</li>
+            <li>Se uma equipa não tiver um selecionador associado no início do torneo, <strong>não poderá participar</strong>, por isso se não selecionar um selecionador agora, certifique-se que contacta a organização para o fazer.</li>
           </ul>
+
+          <div class="privacy-acceptance mt-6 p-4 border border-surface-200 rounded-lg bg-surface-50">
+            <div class="flex align-items-start gap-3">
+              <P-Checkbox v-model="privacyAccepted" :binary="true" inputId="privacyAccept" />
+              <label for="privacyAccept" class="text-surface-700 leading-7">
+                Declaro que li e aceito a
+                <span class="text-primary font-medium cursor-pointer hover:underline" @click="goToPrivacy">
+                  Política de Privacidade
+                </span>
+                e que todos os jogadores e membros do staff da minha equipa tomaram conhecimento e aceitam os termos da mesma. Todos os dados fornecidos são verdadeiros e atuais.
+              </label>
+            </div>
+          </div>
         </div>
 
         <!-- Step 1: Team Info -->
@@ -240,6 +253,7 @@ interface StaffFormEntry {
 }
 
 const currentStep = ref(0);
+const privacyAccepted = ref(false);
 const submitting = ref(false);
 const registrationProgress = ref({ current: 0, total: 0, step: "" });
 let currentTeamId: string | null = null;
@@ -325,6 +339,10 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substring(2);
 }
 
+function goToPrivacy() {
+  router.push("/privacy");
+}
+
 function addPlayer() {
   if (playerForms.length < TOURNAMENT.MAX_PLAYERS) {
     playerForms.push({
@@ -343,6 +361,10 @@ function removePlayer(id: string) {
 }
 
 function nextStep() {
+  if (currentStep.value === 0 && !privacyAccepted.value) {
+    toast.add({ severity: "error", summary: "Erro", detail: "Tem de aceitar a Política de Privacidade para continuar", life: 3000 });
+    return;
+  }
   if (currentStep.value === 1 && (!teamData.name || !teamData.tournament)) {
     toast.add({ severity: "error", summary: "Erro", detail: "Preencha o nome da equipa e selecione o torneio", life: 3000 });
     return;

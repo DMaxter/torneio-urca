@@ -39,7 +39,7 @@ const routes = [
     }
   },
   {
-    path: "/calendario",
+    path: "/calendar",
     name: "calendar",
     component: () => import("@views/CalendarView.vue"),
     meta: {
@@ -84,7 +84,7 @@ const routes = [
     }
   },
   {
-    path: "/privacidade",
+    path: "/privacy",
     name: "privacyPolicy",
     component: () => import("@views/PrivacyPolicy.vue"),
     meta: {
@@ -102,7 +102,7 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore();
   await authStore.init();
-  
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return next("/login");
   }

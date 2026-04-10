@@ -9,9 +9,9 @@
         </div>
       </div>
       <div class="footer-contact">
-        <P-Button 
-          label="Política de Privacidade" 
-          link 
+        <P-Button
+          label="Política de Privacidade"
+          link
           class="privacy-link"
           @click="goToPrivacy"
         />
@@ -27,7 +27,7 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 
 function goToPrivacy() {
-  router.push("/privacidade");
+  router.push("/privacy");
 }
 </script>
 
