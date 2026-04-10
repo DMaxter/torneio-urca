@@ -24,7 +24,9 @@
             <div class="p-3">
               <div v-if="selectedGame.home_call" class="space-y-2">
                 <div v-if="selectedGame.home_call.players.length === 0" class="text-center py-4">
-                  <P-Button label="Popular Chamada" icon="group_add" severity="info" @click="populateCall('home')" />
+                  <P-Button label="Popular Chamada" severity="info" @click="populateCall('home')">
+                    <span class="material-symbols-outlined">group_add</span>
+                  </P-Button>
                 </div>
                 <div
                   v-for="playerEntry in selectedGame.home_call.players"
@@ -46,7 +48,7 @@
                     size="small"
                     @click="removePlayer('home', playerEntry.player)"
                   >
-                    <span class="material-symbols-outlined text-sm">delete</span>
+                    <span class="material-symbols-outlined text-sm text-red-600">delete</span>
                   </P-Button>
                 </div>
               </div>
@@ -62,7 +64,9 @@
             <div class="p-3">
               <div v-if="selectedGame.away_call" class="space-y-2">
                 <div v-if="selectedGame.away_call.players.length === 0" class="text-center py-4">
-                  <P-Button label="Popular Chamada" icon="group_add" severity="info" @click="populateCall('away')" />
+                  <P-Button label="Popular Chamada" severity="info" @click="populateCall('away')">
+                    <span class="material-symbols-outlined">group_add</span>
+                  </P-Button>
                 </div>
                 <div
                   v-for="playerEntry in selectedGame.away_call.players"
@@ -84,7 +88,7 @@
                     size="small"
                     @click="removePlayer('away', playerEntry.player)"
                   >
-                    <span class="material-symbols-outlined text-sm">delete</span>
+                    <span class="material-symbols-outlined text-sm text-red-600">delete</span>
                   </P-Button>
                 </div>
               </div>
@@ -98,9 +102,15 @@
           A guardar...
         </div>
         <div v-else class="flex gap-2">
-          <P-Button label="Guardar Chamada" icon="save" severity="secondary" @click="submitCall" />
-          <P-Button label="Fechar Chamada" icon="check_circle" severity="success" @click="showConfirmDialog = true" />
-          <P-Button label="Cancelar Jogo" icon="close" severity="danger" @click="showCancelDialog = true" />
+          <P-Button label="Guardar Chamada" severity="secondary" @click="submitCall">
+            <span class="material-symbols-outlined">save</span>
+          </P-Button>
+          <P-Button label="Fechar Chamada" severity="success" @click="showConfirmDialog = true">
+            <span class="material-symbols-outlined text-orange-500">check_circle</span>
+          </P-Button>
+          <P-Button label="Cancelar Jogo" severity="danger" @click="showCancelDialog = true">
+            <span class="material-symbols-outlined">close</span>
+          </P-Button>
         </div>
       </div>
 

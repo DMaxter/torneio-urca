@@ -35,7 +35,7 @@
     <p>Tem a certeza que deseja eliminar o utilizador <strong>{{ userToDelete?.username }}</strong>?</p>
     <template #footer>
       <P-Button severity="danger" @click="handleDelete">
-        <span class="material-symbols-outlined">delete</span>
+        <span class="material-symbols-outlined text-red-600">delete</span>
         Eliminar
       </P-Button>
       <P-Button severity="secondary" @click="deleteDialog = false">

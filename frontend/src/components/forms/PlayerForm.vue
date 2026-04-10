@@ -2,14 +2,8 @@
   <fieldset class="player-fieldset">
     <div class="fieldset-header">
       <legend>Jogador {{ index + 1 }}</legend>
-      <P-Button
-        severity="secondary"
-        size="small"
-        text
-        class="delete-btn"
-        @click="$emit('remove')"
-      >
-        <span class="material-symbols-outlined">delete</span>
+      <P-Button severity="secondary" size="small" text class="delete-btn" @click="$emit('remove')">
+        <span class="material-symbols-outlined text-red-600">delete</span>
       </P-Button>
     </div>
 

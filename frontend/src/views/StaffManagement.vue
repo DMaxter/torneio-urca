@@ -7,7 +7,7 @@
       </div>
       <div class="flex gap-2">
         <P-Button text rounded @click="refreshStaff" v-tooltip.top="'Atualizar'">
-          <span class="material-symbols-outlined">refresh</span>
+          <span class="material-symbols-outlined text-orange-500">refresh</span>
         </P-Button>
         <P-Button label="Adicionar Staff" severity="success" @click="openCreateDialog" />
       </div>
@@ -36,10 +36,10 @@
           <template #body="{ data }">
             <div class="flex gap-1">
               <P-Button text rounded size="small" @click="openEditDialog(data)" v-tooltip.top="'Editar'">
-                <span class="material-symbols-outlined text-lg">edit</span>
+                <span class="material-symbols-outlined text-lg text-orange-500">edit</span>
               </P-Button>
               <P-Button text rounded size="small" @click="confirmDelete(data)" v-tooltip.top="'Eliminar'">
-                <span class="material-symbols-outlined text-lg">delete</span>
+                <span class="material-symbols-outlined text-lg text-red-600">delete</span>
               </P-Button>
             </div>
           </template>

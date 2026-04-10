@@ -24,33 +24,27 @@
           <P-Tag :value="`${data.players?.length || 0}`" :severity="(data.players?.length || 0) >= 5 ? 'success' : 'danger'" />
         </template>
       </P-Column>
-      <P-Column header="Ver Jogadores" class="w-8rem">
+      <P-Column header="Ações" style="width: 100px">
         <template #body="{ data }">
-          <P-Button size="small" severity="info" @click.stop="openTeamPlayers(data.id)">
-            <span class="material-symbols-outlined">visibility</span>
-          </P-Button>
-        </template>
-      </P-Column>
-      <P-Column header="Editar" class="w-3rem">
-        <template #body="{ data }">
-          <span
-            class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-blue-600 hover:bg-blue-50"
-            @click.stop="promptEditTeam(data)"
-            v-tooltip.top="'Editar equipa'"
-          >
-            edit
-          </span>
-        </template>
-      </P-Column>
-      <P-Column header="Eliminar" class="w-5rem">
-        <template #body="{ data }">
-          <span
-            class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
-            @click.stop="deleteTeam(data.id, data.name)"
-            v-tooltip.top="'Eliminar equipa'"
-          >
-            delete
-          </span>
+          <div class="flex gap-1 items-center">
+            <P-Button size="small" text @click.stop="openTeamPlayers(data.id)">
+              <span class="material-symbols-outlined text-orange-500" v-tooltip.top="'Ver jogadores'">visibility</span>
+            </P-Button>
+            <span
+              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-orange-500 hover:bg-orange-50"
+              @click.stop="promptEditTeam(data)"
+              v-tooltip.top="'Editar equipa'"
+            >
+              edit
+            </span>
+            <span
+              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
+              @click.stop="deleteTeam(data.id, data.name)"
+              v-tooltip.top="'Eliminar equipa'"
+            >
+              delete
+            </span>
+          </div>
         </template>
       </P-Column>
     </P-DataTable>
@@ -155,7 +149,7 @@
           <div class="flex gap-1">
             <span
               v-if="!data.is_confirmed"
-              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-green-600 hover:bg-green-50"
+              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-orange-500 hover:bg-orange-50"
               @click="promptConfirmPlayer(data.id, data.name)"
               v-tooltip.top="'Confirmar jogador'"
             >

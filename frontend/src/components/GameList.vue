@@ -35,46 +35,47 @@
       <P-Column header="Ação" style="width: 150px">
         <template #body="{ data }">
            <div class="flex gap-1" v-if="data.status !== GameStatus.Finished">
-             <P-Button 
-               v-if="data.status === GameStatus.Scheduled" 
-               label="Iniciar Chamadas" 
-               size="small" 
+             <P-Button
+               v-if="data.status === GameStatus.Scheduled"
+               label="Iniciar Chamadas"
+               size="small"
                severity="info"
-               @click="startCalls(data.id)" 
+               @click="startCalls(data.id)"
                v-tooltip.top="'Iniciar chamadas de jogadores'"
              />
-             <P-Button 
-               v-else-if="data.status === GameStatus.CallsPending" 
-               label="Confirmar" 
-               size="small" 
+             <P-Button
+               v-else-if="data.status === GameStatus.CallsPending"
+               label="Confirmar"
+               size="small"
                severity="success"
-               @click="confirmCalls(data.id)" 
+               @click="confirmCalls(data.id)"
                v-tooltip.top="'Confirmar chamadas (mín. 5 jogadores)'"
              />
-             <P-Button 
-               v-else-if="data.status === GameStatus.ReadyToStart" 
-               label="Iniciar Jogo" 
-               size="small" 
+             <P-Button
+               v-else-if="data.status === GameStatus.ReadyToStart"
+               label="Iniciar Jogo"
+               size="small"
                severity="success"
-               @click="startGame(data.id)" 
+               @click="startGame(data.id)"
                v-tooltip.top="'Iniciar o jogo'"
              />
-             <P-Button 
-               v-else-if="data.status === GameStatus.InProgress" 
-               label="Live" 
-               size="small" 
+             <P-Button
+               v-else-if="data.status === GameStatus.InProgress"
+               label="Live"
+               size="small"
                severity="warn"
-               @click="goToLiveGame(data.id)" 
+               @click="goToLiveGame(data.id)"
                v-tooltip.top="'Abrir vista de jogo ao vivo'"
              />
-             <P-Button 
-               v-if="data.status !== GameStatus.InProgress && data.status !== GameStatus.Finished" 
-               icon="close" 
-               size="small" 
-               severity="danger"
-               @click="cancelGame(data.id)" 
-               v-tooltip.top="'Cancelar jogo'"
-             />
+              <P-Button
+                v-if="data.status !== GameStatus.InProgress && data.status !== GameStatus.Finished"
+                size="small"
+                severity="danger"
+                @click="cancelGame(data.id)"
+                v-tooltip.top="'Cancelar jogo'"
+              >
+                <span class="material-symbols-outlined text-base text-red-600">close</span>
+              </P-Button>
            </div>
         </template>
       </P-Column>

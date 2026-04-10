@@ -25,7 +25,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineModel, defineProps } from "vue";
 import { useToast } from "primevue/usetoast";
 
 defineProps<{

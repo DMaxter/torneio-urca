@@ -23,7 +23,7 @@
     <template #footer>
       <div class="flex gap-2">
         <P-Button severity="danger" @click="promptDeleteAll" :disabled="groupStore.groups.length === 0 || deleting">
-          <span class="material-symbols-outlined">delete_sweep</span>
+          <span class="material-symbols-outlined text-red-600">delete_sweep</span>
           Eliminar tudo
         </P-Button>
         <P-Button @click="groupStore.getGroups()">

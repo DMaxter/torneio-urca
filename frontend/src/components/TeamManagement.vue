@@ -43,7 +43,9 @@
         <div v-if="!creating" class="border border-stone-200 rounded-lg p-3">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-semibold text-stone-700">Jogadores ({{ playerCount }})</h3>
-            <P-Button label="Adicionar Jogador" icon="add" size="small" severity="info" @click="showAddPlayerDialog = true" />
+            <P-Button label="Adicionar Jogador" size="small" severity="info" @click="showAddPlayerDialog = true">
+              <span class="material-symbols-outlined">person_add</span>
+            </P-Button>
           </div>
           <div class="max-h-48 overflow-y-auto space-y-1">
             <div v-for="player in teamPlayers" :key="player.id" 
@@ -52,8 +54,9 @@
                 <span class="text-sm">{{ player.name }}</span>
                 <span class="text-xs text-stone-400">{{ calculateAge(player.birth_date) }} anos</span>
               </div>
-              <P-Button icon="close" severity="danger" text rounded size="small" 
-                @click="removePlayer(player.id)" v-tooltip.top="'Remover jogador'" />
+              <P-Button severity="danger" text rounded size="small" @click="removePlayer(player.id)" v-tooltip.top="'Remover jogador'">
+                <span class="material-symbols-outlined text-base text-red-600">close</span>
+              </P-Button>
             </div>
             <div v-if="teamPlayers.length === 0" class="text-sm text-stone-400 text-center py-4">
               Nenhum jogador atribuído

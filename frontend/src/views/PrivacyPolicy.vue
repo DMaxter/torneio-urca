@@ -126,12 +126,9 @@
       </section>
 
       <div class="mt-8 pt-6 border-t border-surface-200">
-        <P-Button
-          label="Voltar"
-          icon="pi pi-arrow-left"
-          @click="goBack"
-          severity="secondary"
-        />
+        <P-Button label="Voltar" severity="secondary" @click="goBack">
+          <span class="material-symbols-outlined">arrow_back</span>
+        </P-Button>
       </div>
     </div>
   </div>

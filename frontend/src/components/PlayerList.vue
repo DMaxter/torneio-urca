@@ -37,7 +37,7 @@
           <div class="flex gap-2 items-center">
             <span
               v-if="!data.is_confirmed"
-              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-green-600 hover:bg-green-50"
+              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-orange-500 hover:bg-orange-50"
               @click.stop="promptConfirmPlayer(data.id, data.name)"
               v-tooltip.top="'Confirmar jogador'"
             >
