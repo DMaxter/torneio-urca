@@ -14,8 +14,23 @@
       </div>
 
       <div class="form-container">
-        <!-- Step 1: Team Info -->
+        <!-- Step 0: Instructions -->
         <div v-show="currentStep === 0" class="step-content">
+          <h2>Instruções</h2>
+          <ul class="list-disc list-inside space-y-2 mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 text-stone-700">
+            <li>O registo da equipa deve ser feito <strong>todo de uma só vez</strong>, se for necessário efetuar alterações, por favor contacte a organização.</li>
+            <li>O registo requer um <strong>responsável de equipa</strong> que será o ponto de contacto entre a organização e a equipa.</li>
+            <li>Caso haja problemas com a validação da informação dos jogadores, certifique-se de que a informação de contacto do responsável pela equipa está <strong>correcta</strong>, pois pode levar à <strong>não participação da equipa</strong>.</li>
+            <li>As equipas têm um número mínimo de <strong>{{ TOURNAMENT.MIN_PLAYERS }} jogadores</strong> e um máximo de <strong>{{ TOURNAMENT.MAX_PLAYERS }} jogadores</strong>.</li>
+            <li>É também possível registar o staff que fará parte da equipa e que corresponderão às pessoas que poderão estar em campo em dia de jogo: <strong>treinador</strong>, <strong>treinador adjunto</strong>, <strong>fisioterapeuta</strong> e <strong>2 delegados de jogo</strong>, no entanto estes são <strong>opcionais</strong> para este registo.</li>
+            <li>Para cada jogador é obrigatório preencher: <strong>nome completo</strong>, <strong>data de nascimento</strong>, <strong>NIF</strong>, <strong>morada</strong>, <strong>local de nascimento</strong>, <strong>PDF com cartão de cidadão</strong> <span class="tooltip-wrapper"><button @click="citizenCardTooltipVisible = !citizenCardTooltipVisible" class="help-tooltip"><span class="material-symbols-outlined">help</span></button><span v-if="citizenCardTooltipVisible" class="tooltip-box">Pode digitalizar o cartão de cidadão com uma aplicação como o Adobe Scan.<button class="tooltip-close" @click.stop="citizenCardTooltipVisible = false"><span class="material-symbols-outlined">close</span></button></span></span>, <strong>PDF com comprovativo de residência</strong> <span class="tooltip-wrapper"><button @click="proofOfResidenceTooltipVisible = !proofOfResidenceTooltipVisible" class="help-tooltip"><span class="material-symbols-outlined">help</span></button><span v-if="proofOfResidenceTooltipVisible" class="tooltip-box">Portal das Finanças > Login > Serviços > Documentos e Certidões > Requerer Certidão > Domicílio Fiscal > Confirmar > Obter<button class="tooltip-close" @click.stop="proofOfResidenceTooltipVisible = false"><span class="material-symbols-outlined">close</span></button></span></span> e <strong>se pertence a uma equipa federada ou não</strong>.</li>
+            <li>Se precisar de registar membros adicionais (jogadores ou staff) após o primeiro registo, contacte a organização.</li>
+            <li>Se uma equipa não tiver um treinador associado no início do torneio, <strong>não poderá participar</strong>, por isso se não registar um treinador agora, certifique-se que contacta a organização para o fazer.</li>
+          </ul>
+        </div>
+
+        <!-- Step 1: Team Info -->
+        <div v-show="currentStep === 1" class="step-content">
           <h2>Informações da Equipa</h2>
           <P-FloatLabel class="field" variant="on">
             <P-InputText id="teamName" v-model="teamData.name" fluid />
@@ -35,7 +50,7 @@
         </div>
 
         <!-- Step 2: Responsible Info -->
-        <div v-show="currentStep === 1" class="step-content">
+        <div v-show="currentStep === 2" class="step-content">
           <h2>Responsável da Equipa</h2>
           <P-FloatLabel class="field" variant="on">
             <P-InputText id="responsibleName" v-model="teamData.responsible_name" fluid />
@@ -52,7 +67,7 @@
         </div>
 
         <!-- Step 3: Players -->
-        <div v-show="currentStep === 2" class="step-content">
+        <div v-show="currentStep === 3" class="step-content">
           <div class="step-header">
             <h2>Jogadores ({{ TOURNAMENT.MIN_PLAYERS }} a {{ TOURNAMENT.MAX_PLAYERS }})</h2>
           </div>
@@ -79,7 +94,7 @@
         </div>
 
         <!-- Step 4: Staff Info -->
-        <div v-show="currentStep === 3" class="step-content">
+        <div v-show="currentStep === 4" class="step-content">
           <h2>Equipa Técnica (Opcional)</h2>
           <p class="optional-note">Todos os campos são opcionais</p>
 
@@ -88,25 +103,36 @@
               id="coach"
               legend="Treinador Principal"
               v-model="staffForms.main_coach.data"
-              :files="staffForms.main_coach.files"
+              v-model:enabled="staffForms.main_coach.enabled"
+              v-model:files="staffForms.main_coach.files"
             />
             <StaffMemberForm
-              id="physio"
-              legend="Fisioterapeuta"
-              v-model="staffForms.physiotherapist.data"
-              :files="staffForms.physiotherapist.files"
+              id="assistantCoach"
+              legend="Treinador Adjunto"
+              v-model="staffForms.assistant_coach.data"
+              v-model:enabled="staffForms.assistant_coach.enabled"
+              v-model:files="staffForms.assistant_coach.files"
             />
             <StaffMemberForm
               id="deputy1"
               legend="Primeiro Delegado"
               v-model="staffForms.first_deputy.data"
-              :files="staffForms.first_deputy.files"
+              v-model:enabled="staffForms.first_deputy.enabled"
+              v-model:files="staffForms.first_deputy.files"
             />
             <StaffMemberForm
               id="deputy2"
               legend="Segundo Delegado"
               v-model="staffForms.second_deputy.data"
-              :files="staffForms.second_deputy.files"
+              v-model:enabled="staffForms.second_deputy.enabled"
+              v-model:files="staffForms.second_deputy.files"
+            />
+            <StaffMemberForm
+              id="physio"
+              legend="Fisioterapeuta"
+              v-model="staffForms.physiotherapist.data"
+              v-model:enabled="staffForms.physiotherapist.enabled"
+              v-model:files="staffForms.physiotherapist.files"
             />
           </div>
         </div>
@@ -168,6 +194,9 @@ import {
   type RegisterPlayerData,
 } from "@router/backend/services/team";
 
+const citizenCardTooltipVisible = ref(false);
+const proofOfResidenceTooltipVisible = ref(false);
+
 interface PlayerFormData {
   name: string;
   birth_date: Date | null;
@@ -205,6 +234,7 @@ interface PlayerFormEntry {
 }
 
 interface StaffFormEntry {
+  enabled: boolean;
   data: StaffMemberData;
   files: StaffFiles;
 }
@@ -215,6 +245,7 @@ const registrationProgress = ref({ current: 0, total: 0, step: "" });
 let currentTeamId: string | null = null;
 
 const steps = [
+  { label: "Instruções" },
   { label: "Equipa" },
   { label: "Responsável" },
   { label: "Jogadores" },
@@ -231,14 +262,16 @@ const teamData = reactive({
 
 const staffForms = reactive<{
   main_coach: StaffFormEntry;
+  assistant_coach: StaffFormEntry;
   physiotherapist: StaffFormEntry;
   first_deputy: StaffFormEntry;
   second_deputy: StaffFormEntry;
 }>({
-  main_coach: { data: createEmptyStaffMember(), files: {} },
-  physiotherapist: { data: createEmptyStaffMember(), files: {} },
-  first_deputy: { data: createEmptyStaffMember(), files: {} },
-  second_deputy: { data: createEmptyStaffMember(), files: {} }
+  main_coach: { enabled: false, data: createEmptyStaffMember(), files: {} },
+  assistant_coach: { enabled: false, data: createEmptyStaffMember(), files: {} },
+  physiotherapist: { enabled: false, data: createEmptyStaffMember(), files: {} },
+  first_deputy: { enabled: false, data: createEmptyStaffMember(), files: {} },
+  second_deputy: { enabled: false, data: createEmptyStaffMember(), files: {} }
 });
 
 const toast = useToast();
@@ -310,15 +343,15 @@ function removePlayer(id: string) {
 }
 
 function nextStep() {
-  if (currentStep.value === 0 && (!teamData.name || !teamData.tournament)) {
+  if (currentStep.value === 1 && (!teamData.name || !teamData.tournament)) {
     toast.add({ severity: "error", summary: "Erro", detail: "Preencha o nome da equipa e selecione o torneio", life: 3000 });
     return;
   }
-  if (currentStep.value === 1 && (!teamData.responsible_name || !teamData.responsible_email || !teamData.responsible_phone)) {
+  if (currentStep.value === 2 && (!teamData.responsible_name || !teamData.responsible_email || !teamData.responsible_phone)) {
     toast.add({ severity: "error", summary: "Erro", detail: "Preencha todos os campos do responsável", life: 3000 });
     return;
   }
-  if (currentStep.value === 2) {
+  if (currentStep.value === 3) {
     if (playerForms.length < TOURNAMENT.MIN_PLAYERS) {
       toast.add({ severity: "error", summary: "Erro", detail: `É necessário um mínimo de ${TOURNAMENT.MIN_PLAYERS} jogadores`, life: 3000 });
       return;
@@ -345,6 +378,31 @@ function nextStep() {
       }
     }
   }
+  if (currentStep.value === 4) {
+    const staffTypes = [
+      { key: "main_coach", label: "Treinador Principal", form: staffForms.main_coach },
+      { key: "assistant_coach", label: "Treinador Adjunto", form: staffForms.assistant_coach },
+      { key: "physiotherapist", label: "Fisioterapeuta", form: staffForms.physiotherapist },
+      { key: "first_deputy", label: "Primeiro Delegado", form: staffForms.first_deputy },
+      { key: "second_deputy", label: "Segundo Delegado", form: staffForms.second_deputy },
+    ];
+    for (const staff of staffTypes) {
+      if (staff.form.enabled) {
+        const errors: string[] = [];
+        if (!staff.form.data.name) errors.push(`${staff.label}: Nome é obrigatório`);
+        if (!staff.form.data.birth_date) errors.push(`${staff.label}: Data de Nascimento é obrigatória`);
+        if (!staff.form.data.fiscal_number) errors.push(`${staff.label}: NIF é obrigatório`);
+        if (!staff.form.data.place_of_birth) errors.push(`${staff.label}: Local de Nascimento é obrigatório`);
+        if (!staff.form.data.address) errors.push(`${staff.label}: Morada é obrigatória`);
+        if (!staff.form.files.citizenCard) errors.push(`${staff.label}: Cartão de Cidadão é obrigatório`);
+        if (!staff.form.files.proofOfResidency) errors.push(`${staff.label}: Comprovativo de Residência é obrigatório`);
+        if (errors.length > 0) {
+          toast.add({ severity: "error", summary: "Erro", detail: errors[0], life: 5000 });
+          return;
+        }
+      }
+    }
+  }
   if (currentStep.value < steps.length - 1) {
     currentStep.value++;
   }
@@ -362,10 +420,11 @@ async function submit() {
 
   const staffCount = [
     staffForms.main_coach,
+    staffForms.assistant_coach,
     staffForms.physiotherapist,
     staffForms.first_deputy,
     staffForms.second_deputy,
-  ].filter(s => s.data.name).length;
+  ].filter(s => s.enabled && s.data.name).length;
   const totalSteps = 1 + staffCount + playerForms.length + 1;
   let currentStep = 0;
 
@@ -402,15 +461,27 @@ async function submit() {
 
     const staffTypes = [
       { key: "main_coach", type: "Coach" as const, form: staffForms.main_coach },
+      { key: "assistant_coach", type: "AssistantCoach" as const, form: staffForms.assistant_coach },
       { key: "physiotherapist", type: "Physiotherapist" as const, form: staffForms.physiotherapist },
       { key: "first_deputy", type: "GameDeputy" as const, form: staffForms.first_deputy },
       { key: "second_deputy", type: "GameDeputy" as const, form: staffForms.second_deputy },
     ];
 
     for (const staff of staffTypes) {
-      if (staff.form.data.name && currentTeamId) {
-        updateProgress(`A adicionar ${staff.key === "main_coach" ? "treinador" : staff.key === "physiotherapist" ? "fisioterapeuta" : "delegado"}...`);
-        
+      if (staff.form.enabled && staff.form.data.name && currentTeamId) {
+        if (!staff.form.data.name ||
+            !staff.form.data.birth_date ||
+            !staff.form.data.fiscal_number ||
+            !staff.form.data.place_of_birth ||
+            !staff.form.data.address ||
+            !staff.form.files?.citizenCard ||
+            !staff.form.files?.proofOfResidency) {
+          showError(`Preencha todos os campos do ${staff.key === "main_coach" ? "treinador" : staff.key === "assistant_coach" ? "treinador adjunto" : staff.key === "physiotherapist" ? "fisioterapeuta" : "delegado"}`);
+          return;
+        }
+
+        updateProgress(`A adicionar ${staff.key === "main_coach" ? "treinador" : staff.key === "assistant_coach" ? "treinador adjunto" : staff.key === "physiotherapist" ? "fisioterapeuta" : "delegado"}...`);
+
         const staffData: RegisterStaffData = {
           team_id: currentTeamId,
           staff_type: staff.type,
@@ -431,9 +502,9 @@ async function submit() {
 
     for (let i = 0; i < playerForms.length; i++) {
       if (!currentTeamId) break;
-      
+
       updateProgress(`A adicionar jogador ${i + 1}/${playerForms.length}...`);
-      
+
       const playerData: RegisterPlayerData = {
         team_id: currentTeamId,
         name: playerForms[i].data.name,
@@ -468,7 +539,7 @@ async function submit() {
     console.error(error);
     const err = error as { response?: { data?: { detail?: string } } };
     showError(err.response?.data?.detail || "Erro durante o registo");
-    
+
     if (currentTeamId) {
       try {
         await cancelRegistration(currentTeamId);
@@ -747,5 +818,77 @@ async function submit() {
     padding: 2rem;
     border-radius: 16px;
   }
+}
+
+.help-tooltip {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 0 0.25rem;
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+}
+
+.help-tooltip:hover {
+  color: var(--p-primary-600);
+}
+
+.help-tooltip .material-symbols-outlined {
+  font-size: 1rem;
+}
+
+.tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.tooltip-box {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--p-surface-800);
+  color: var(--p-surface-0);
+  padding: 0.75rem 2rem 0.75rem 0.75rem;
+  border-radius: 6px;
+  font-weight: normal;
+  font-size: 0.875rem;
+  width: max-content;
+  max-width: 300px;
+  z-index: 100;
+  margin-bottom: 0.5rem;
+}
+
+.tooltip-box::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--p-surface-800);
+}
+
+.tooltip-box .tooltip-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: var(--p-surface-300);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: flex-start;
+}
+
+.tooltip-box .tooltip-close:hover {
+  color: var(--p-surface-0);
+}
+
+.tooltip-box .tooltip-close .material-symbols-outlined {
+  font-size: 1rem;
 }
 </style>

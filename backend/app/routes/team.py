@@ -467,6 +467,7 @@ async def register_add_staff(
 
     staff_field_map = {
         StaffType.Coach: "main_coach",
+        StaffType.AssistantCoach: "assistant_coach",
         StaffType.Physiotherapist: "physiotherapist",
         StaffType.GameDeputy: None,
     }

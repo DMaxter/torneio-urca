@@ -23,6 +23,7 @@ class StaffType(str, Enum):
     """Types of staff members that can be associated with a team."""
 
     Coach = "Coach"
+    AssistantCoach = "AssistantCoach"
     Physiotherapist = "Physiotherapist"
     GameDeputy = "GameDeputy"
 

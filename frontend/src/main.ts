@@ -41,12 +41,14 @@ import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Menubar from "primevue/menubar";
 import MultiSelect from "primevue/multiselect";
+import ProgressBar from "primevue/progressbar";
 import ProgressSpinner from "primevue/progressspinner";
 import Select from "primevue/select";
 import Steps from "primevue/steps";
 import Tag from "primevue/tag";
 import Toast from "primevue/toast";
 import ToastService from "primevue/toastservice";
+import ToggleSwitch from "primevue/toggleswitch";
 import Tooltip from "primevue/tooltip";
 
 app.component("P-Accordion", Accordion);
@@ -64,11 +66,13 @@ app.component("P-InputNumber", InputNumber);
 app.component("P-InputText", InputText);
 app.component("P-Menubar", Menubar);
 app.component("P-MultiSelect", MultiSelect);
+app.component("P-ProgressBar", ProgressBar);
 app.component("P-ProgressSpinner", ProgressSpinner);
 app.component("P-Select", Select);
 app.component("P-Steps", Steps);
 app.component("P-Tag", Tag);
 app.component("P-Toast", Toast);
+app.component("P-ToggleSwitch", ToggleSwitch);
 
 app.directive("tooltip", Tooltip);
 

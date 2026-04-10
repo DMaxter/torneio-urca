@@ -40,7 +40,7 @@ export interface RegisterTeamStartData {
 
 export interface RegisterStaffData {
   team_id: string;
-  staff_type: "Coach" | "Physiotherapist" | "GameDeputy";
+  staff_type: "Coach" | "AssistantCoach" | "Physiotherapist" | "GameDeputy";
   name: string;
   birth_date: string;
   address?: string;

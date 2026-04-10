@@ -1,95 +1,47 @@
 <template>
-  <fieldset>
-    <legend>{{ legend }}</legend>
-    <PersonFields v-model="personData" :id="id" />
-    <FileUpload
-      v-model="citizenCardFile"
-      @fileError="handleFileError"
-      :id="`${id}CitizenCard`"
-      label="Cartão de Cidadão (PDF)"
-    />
-    <FileUpload
-      v-model="proofOfResidencyFile"
-      @fileError="handleFileError"
-      :id="`${id}ProofResidency`"
-      label="Comprovativo de Residência (PDF)"
-    />
+  <fieldset :class="{ 'disabled': !enabled }">
+    <legend>
+      <label class="toggle-label">{{ legend }}</label>
+      <P-ToggleSwitch v-model="enabled" />
+    </legend>
+    <div v-if="enabled">
+      <PersonFields v-model="modelValue" :id="id" />
+      <FileUpload
+        :modelValue="files?.citizenCard"
+        @update:modelValue="files.citizenCard = $event"
+        @fileError="handleFileError"
+        :id="`${id}CitizenCard`"
+        label="Cartão de Cidadão (PDF)"
+      />
+      <FileUpload
+        :modelValue="files?.proofOfResidency"
+        @update:modelValue="files.proofOfResidency = $event"
+        @fileError="handleFileError"
+        :id="`${id}ProofResidency`"
+        label="Comprovativo de Residência (PDF)"
+      />
+    </div>
   </fieldset>
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, ref } from "vue";
+import { defineModel, defineProps } from "vue";
 import { useToast } from "primevue/usetoast";
 
-interface StaffMemberData {
-  name: string;
-  birth_date: Date | null;
-  address: string;
-  place_of_birth: string;
-  fiscal_number: string;
-}
-
-interface StaffMemberFiles {
-  citizenCard?: File | null;
-  proofOfResidency?: File | null;
-}
-
-const props = defineProps<{
+defineProps<{
   id: string;
   legend: string;
-  modelValue?: StaffMemberData;
-  files?: StaffMemberFiles;
 }>();
 
-const emit = defineEmits<{
-  (e: "update:modelValue", value: StaffMemberData): void;
-  (e: "update:files", value: StaffMemberFiles): void;
-}>();
+const [modelValue] = defineModel<Record<string, unknown>>();
+const enabled = defineModel<boolean>("enabled", { default: false });
+const files = defineModel<Record<string, unknown>>("files", { default: {} });
 
-const personData = reactive<StaffMemberData>({
-  name: "",
-  birth_date: null,
-  address: "",
-  place_of_birth: "",
-  fiscal_number: ""
-});
-
-const citizenCardFile = ref<File | null>(null);
-const proofOfResidencyFile = ref<File | null>(null);
 const toast = useToast();
 
 function handleFileError(message: string) {
   toast.add({ severity: "error", summary: "Erro", detail: message, life: 5000 });
 }
-
-if (props.modelValue) {
-  Object.assign(personData, props.modelValue);
-}
-
-if (props.files) {
-  citizenCardFile.value = props.files.citizenCard || null;
-  proofOfResidencyFile.value = props.files.proofOfResidency || null;
-}
-
-watch(
-  personData,
-  (newValue) => {
-    emit("update:modelValue", { ...newValue });
-  },
-  { deep: true }
-);
-
-watch(
-  [citizenCardFile, proofOfResidencyFile],
-  () => {
-    const files: StaffMemberFiles = {
-      citizenCard: citizenCardFile.value,
-      proofOfResidency: proofOfResidencyFile.value
-    };
-    emit("update:files", files);
-  },
-  { deep: true }
-);
 </script>
 
 <style lang="scss" scoped>
@@ -98,10 +50,23 @@ fieldset {
   padding: 10px;
   margin-top: 15px;
   border-radius: 4px;
+  transition: opacity 0.3s;
+
+  &.disabled {
+    opacity: 0.6;
+  }
 
   legend {
     font-weight: bold;
     padding: 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: space-between;
+  }
+
+  .toggle-label {
+    font-weight: 600;
   }
 }
 </style>
