@@ -68,6 +68,7 @@ class StaffDto(BaseModel):
     citizen_card_file_id: Optional[str] = None
     proof_of_residency_file_id: Optional[str] = None
     authorization_file_id: Optional[str] = None
+    team_name: Optional[str] = None
 
 
 class CreateTeamDto(BaseModel):

@@ -131,27 +131,12 @@ async def confirm_player(player_id: str, current_user=Depends(get_current_user))
     if not player:
         raise Error.not_found("Player")
 
-    file_ids_to_delete = [
-        player.get("citizen_card_file_id"),
-        player.get("proof_of_residency_file_id"),
-    ]
-    for file_id in file_ids_to_delete:
-        if file_id:
-            try:
-                await db.gridfs.delete(ObjectId(file_id))
-                get_logger().info(f"Deleted file '{file_id}'")
-            except Exception as e:
-                get_logger().warning(f"Failed to delete file '{file_id}': {e}")
-
     try:
         result = await db.db[PLAYERS_COLLECTION].find_one_and_update(
             {"_id": ObjectId(player_id)},
             {
                 "$set": {
                     "is_confirmed": True,
-                    "fiscal_number": "",
-                    "citizen_card_file_id": None,
-                    "proof_of_residency_file_id": None,
                 }
             },
             return_document=True,

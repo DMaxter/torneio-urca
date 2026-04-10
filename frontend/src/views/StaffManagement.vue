@@ -5,12 +5,22 @@
         <h1 class="text-xl font-bold text-stone-900 mb-1 md:text-2xl">Gestão de Staff</h1>
         <p class="text-stone-500 text-sm">Adicionar, editar ou eliminar membros de staff</p>
       </div>
-      <P-Button label="Adicionar Staff" icon="add" severity="success" @click="openCreateDialog" />
+      <div class="flex gap-2">
+        <P-Button text rounded @click="refreshStaff" v-tooltip.top="'Atualizar'">
+          <span class="material-symbols-outlined">refresh</span>
+        </P-Button>
+        <P-Button label="Adicionar Staff" severity="success" @click="openCreateDialog" />
+      </div>
     </div>
 
     <div class="bg-white border border-stone-300 rounded-xl overflow-hidden">
       <P-DataTable :value="staffStore.staff" striped-rows size="small" responsiveLayout="scroll">
         <P-Column header="Nome" field="name" />
+        <P-Column header="Equipa" style="min-width: 150px">
+          <template #body="{ data }">
+            {{ getTeamName(data) }}
+          </template>
+        </P-Column>
         <P-Column header="Tipo" field="staff_type">
           <template #body="{ data }">
             <P-Tag :value="getStaffTypeLabel(data.staff_type)" severity="info" />
@@ -25,8 +35,12 @@
         <P-Column header="Ações" style="width: 120px">
           <template #body="{ data }">
             <div class="flex gap-1">
-              <P-Button icon="edit" severity="info" text rounded size="small" @click="openEditDialog(data)" v-tooltip.top="'Editar'" />
-              <P-Button icon="delete" severity="danger" text rounded size="small" @click="confirmDelete(data)" v-tooltip.top="'Eliminar'" />
+              <P-Button text rounded size="small" @click="openEditDialog(data)" v-tooltip.top="'Editar'">
+                <span class="material-symbols-outlined text-lg">edit</span>
+              </P-Button>
+              <P-Button text rounded size="small" @click="confirmDelete(data)" v-tooltip.top="'Eliminar'">
+                <span class="material-symbols-outlined text-lg">delete</span>
+              </P-Button>
             </div>
           </template>
         </P-Column>
@@ -36,7 +50,7 @@
     <!-- Create/Edit Dialog -->
     <P-Dialog v-model:visible="showFormDialog" modal :header="editingStaff ? 'Editar Staff' : 'Criar Staff'" class="w-11/12 md:w-6/12">
       <div class="space-y-3">
-        <P-FloatLabel variant="on">
+        <P-FloatLabel class="mt-3" variant="on">
           <P-InputText id="staffName" v-model="staffForm.name" fluid />
           <label for="staffName">Nome</label>
         </P-FloatLabel>
@@ -51,6 +65,10 @@
         <P-FloatLabel variant="on">
           <P-InputText id="staffFiscal" v-model="staffForm.fiscal_number" fluid />
           <label for="staffFiscal">Nº Fiscal</label>
+        </P-FloatLabel>
+        <P-FloatLabel variant="on">
+          <P-Select id="staffTeam" v-model="staffForm.selected_team_id" :options="teamOptions" optionLabel="label" optionValue="value" fluid />
+          <label for="staffTeam">Equipa</label>
         </P-FloatLabel>
       </div>
       <template #footer>
@@ -71,14 +89,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useStaffStore } from "@stores/staff";
+import { useTeamStore } from "@stores/teams";
 import { http } from "@router/backend/api";
 import type { Staff } from "@router/backend/services/staff/types";
 
 const toast = useToast();
 const staffStore = useStaffStore();
+const teamStore = useTeamStore();
 
 const showFormDialog = ref(false);
 const showDeleteDialog = ref(false);
@@ -91,19 +111,28 @@ const staffForm = ref({
   birth_date: null as Date | null,
   staff_type: "",
   fiscal_number: "",
+  selected_team_id: null as string | null,
 });
 
 const staffTypeOptions = [
-  { label: "Treinador Principal", value: "main_coach" },
-  { label: "Treinador Adjunto", value: "assistant_coach" },
-  { label: "Fisioterapeuta", value: "physiotherapist" },
-  { label: "1º Substituto", value: "first_deputy" },
-  { label: "2º Substituto", value: "second_deputy" },
+  { label: "Treinador Principal", value: "Coach" },
+  { label: "Treinador Adjunto", value: "AssistantCoach" },
+  { label: "Fisioterapeuta", value: "Physiotherapist" },
+  { label: "1º Delegado", value: "GameDeputy" },
 ];
+
+const teamOptions = computed(() => [
+  { label: "Sem Equipa", value: "" },
+  ...teamStore.teams.map(t => ({ label: t.name, value: t.id }))
+]);
 
 function getStaffTypeLabel(type: string): string {
   const opt = staffTypeOptions.find(o => o.value === type);
   return opt ? opt.label : type;
+}
+
+function getTeamName(staff: Staff): string {
+  return staff.team_name || "-";
 }
 
 function formatDate(dateStr: string): string {
@@ -112,26 +141,53 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString("pt-PT");
 }
 
+async function refreshStaff() {
+  await staffStore.getStaff();
+}
+
 function openCreateDialog() {
   editingStaff.value = null;
-  staffForm.value = { name: "", birth_date: null, staff_type: "", fiscal_number: "" };
+  staffForm.value = { name: "", birth_date: null, staff_type: "", fiscal_number: "", selected_team_id: null };
   showFormDialog.value = true;
 }
 
 function openEditDialog(staff: Staff) {
   editingStaff.value = staff;
+  const teamId = findTeamWithStaff(staff.id);
   staffForm.value = {
     name: staff.name,
     birth_date: staff.birth_date ? new Date(staff.birth_date) : null,
     staff_type: staff.staff_type,
     fiscal_number: staff.fiscal_number,
+    selected_team_id: teamId,
   };
   showFormDialog.value = true;
+}
+
+function findTeamWithStaff(staffId: string): string | null {
+  const team = teamStore.teams.find(t =>
+    t.main_coach === staffId ||
+    t.assistant_coach === staffId ||
+    t.physiotherapist === staffId ||
+    t.first_deputy === staffId ||
+    t.second_deputy === staffId
+  );
+  return team ? team.id : null;
 }
 
 function confirmDelete(staff: Staff) {
   deletingStaff.value = staff;
   showDeleteDialog.value = true;
+}
+
+function getStaffFieldForType(staffType: string): string | null {
+  const mapping: Record<string, string> = {
+    "Coach": "main_coach",
+    "AssistantCoach": "assistant_coach",
+    "Physiotherapist": "physiotherapist",
+    "GameDeputy": "first_deputy",
+  };
+  return mapping[staffType] || null;
 }
 
 async function saveStaff() {
@@ -150,14 +206,41 @@ async function saveStaff() {
     };
 
     if (editingStaff.value) {
-      // For now, delete and recreate since there's no PUT endpoint
-      await http.delete(`/staff/${editingStaff.value.id}`);
-    }
-    await http.post("/staff", payload);
+      await http.put(`/staff/${editingStaff.value.id}`, payload);
 
-    toast.add({ severity: "success", summary: "Sucesso", detail: editingStaff.value ? "Staff atualizado" : "Staff criado", life: 3000 });
+      const staffField = getStaffFieldForType(editingStaff.value.staff_type);
+      if (staffField) {
+        const oldTeam = teamStore.teams.find(t => t[staffField as keyof typeof t] === editingStaff.value!.id);
+        if (oldTeam && oldTeam.id !== staffForm.value.selected_team_id) {
+          await http.patch(`/teams/${oldTeam.id}/staff/${staffField}?staff_id=`);
+        }
+      }
+
+      if (staffForm.value.selected_team_id) {
+        const staffField = getStaffFieldForType(staffForm.value.staff_type);
+        if (staffField) {
+          await http.patch(`/teams/${staffForm.value.selected_team_id}/staff/${staffField}?staff_id=${editingStaff.value.id}`);
+        }
+      }
+
+      toast.add({ severity: "success", summary: "Sucesso", detail: "Staff atualizado", life: 3000 });
+    } else {
+      const { data } = await http.post("/staff", payload);
+      const newStaffId = (data as any).id;
+
+      if (staffForm.value.selected_team_id) {
+        const staffField = getStaffFieldForType(staffForm.value.staff_type);
+        if (staffField) {
+          await http.patch(`/teams/${staffForm.value.selected_team_id}/staff/${staffField}?staff_id=${newStaffId}`);
+        }
+      }
+
+      toast.add({ severity: "success", summary: "Sucesso", detail: "Staff criado", life: 3000 });
+    }
+
     showFormDialog.value = false;
     await staffStore.getStaff();
+    await teamStore.getTeams();
   } catch (e: unknown) {
     const err = e as { response?: { data?: { detail?: { error?: string } } } };
     const msg = err.response?.data?.detail?.error || "Erro ao guardar staff";
@@ -185,7 +268,7 @@ async function deleteStaff() {
 }
 
 onMounted(async () => {
-  await staffStore.getStaff();
+  await Promise.all([staffStore.getStaff(), teamStore.getTeams()]);
 });
 </script>
 
