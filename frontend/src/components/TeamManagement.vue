@@ -79,6 +79,10 @@
                 <span class="text-sm">{{ player.name }}</span>
                 <span class="text-xs text-stone-400">{{ calculateAge(player.birth_date) }} anos</span>
               </div>
+              <div class="flex gap-1 text-xs text-stone-500">
+                <span v-if="player.address" class="text-xs text-stone-400">📍</span>
+                <span v-if="player.place_of_birth" class="text-xs text-stone-400">🏠</span>
+              </div>
               <div v-if="viewMode" class="flex gap-1">
                 <P-Button v-if="player.citizen_card_file_id" size="small" severity="secondary" @click="viewFile(player.citizen_card_file_id)">
                   <span class="material-symbols-outlined text-sm">picture_as_pdf</span>

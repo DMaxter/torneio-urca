@@ -105,6 +105,16 @@
           {{ data.fiscal_number }}
         </template>
       </P-Column>
+      <P-Column field="place_of_birth" header="Local Nascimento" class="w-24rem md:w-auto">
+        <template #body="{ data }">
+          {{ data.place_of_birth || '—' }}
+        </template>
+      </P-Column>
+      <P-Column field="address" header="Morada" class="w-32rem md:w-auto">
+        <template #body="{ data }">
+          {{ data.address || '—' }}
+        </template>
+      </P-Column>
       <P-Column header="Federado" class="w-20rem">
         <template #body="{ data }">
           <div v-if="data.is_federated" class="flex flex-col gap-1">

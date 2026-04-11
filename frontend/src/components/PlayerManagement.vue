@@ -173,8 +173,12 @@ async function savePlayer() {
     birth_date: playerFormData.value.birth_date,
     team: playerFormData.value.team,
     tournament: playerTournament.value,
+    fiscal_number: playerFormData.value.fiscal_number,
+    address: playerFormData.value.address,
+    place_of_birth: playerFormData.value.place_of_birth,
     is_federated: playerFormData.value.is_federated,
     federation_team: playerFormData.value.federation_team,
+    federation_exams_up_to_date: playerFormData.value.federation_exams_up_to_date,
   };
 
   const result = await playerStore.createAdminPlayer(

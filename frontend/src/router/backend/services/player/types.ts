@@ -14,8 +14,12 @@ export class CreateAdminPlayer {
   birth_date: Date | null = null;
   team: string = "";
   tournament: string = "";
+  fiscal_number: string = "";
+  address: string = "";
+  place_of_birth: string = "";
   is_federated: boolean = false;
   federation_team: string = "";
+  federation_exams_up_to_date: boolean = false;
 };
 
 export class Player {

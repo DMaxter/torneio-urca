@@ -22,10 +22,14 @@ export async function createAdminPlayer(player: CreateAdminPlayer, citizenCard?:
   formData.append("name", player.name);
   formData.append("birth_date", player.birth_date?.toISOString() || "");
   formData.append("tournament", player.tournament);
+  formData.append("fiscal_number", player.fiscal_number || "");
+  formData.append("address", player.address || "");
+  formData.append("place_of_birth", player.place_of_birth || "");
   formData.append("is_federated", String(player.is_federated));
   if (player.federation_team) {
     formData.append("federation_team", player.federation_team);
   }
+  formData.append("federation_exams_up_to_date", String(player.federation_exams_up_to_date || false));
   if (citizenCard) {
     formData.append("citizen_card", citizenCard);
   }
