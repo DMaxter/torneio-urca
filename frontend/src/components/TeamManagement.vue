@@ -152,7 +152,7 @@ const props = defineProps<{
 }>();
 
 const creating = computed(() => props.team === undefined);
-const viewMode = computed(() => props.viewOnly === true || !creating.value);
+const viewMode = computed(() => props.viewOnly === true);
 const teamForm = ref<Team | CreateTeam>(new CreateTeam());
 const teamPlayers = ref<Player[]>([]);
 const showAddPlayerDialog = ref(false);
