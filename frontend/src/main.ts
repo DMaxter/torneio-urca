@@ -103,6 +103,7 @@ import TournamentList from "@components/TournamentList.vue";
 import TournamentManagement from "@components/TournamentManagement.vue";
 import UserList from "@components/UserList.vue";
 import UserManagement from "@components/UserManagement.vue";
+import RoleManagement from "@components/RoleManagement.vue";
 import ViewGamesDialog from "@components/ViewGamesDialog.vue";
 
 app.component("ChangePasswordDialog", ChangePasswordDialog);
@@ -131,6 +132,7 @@ app.component("TournamentList", TournamentList);
 app.component("TournamentManagement", TournamentManagement);
 app.component("UserList", UserList);
 app.component("UserManagement", UserManagement);
+app.component("RoleManagement", RoleManagement);
 app.component("ViewGamesDialog", ViewGamesDialog);
 
 app.mount("#app");

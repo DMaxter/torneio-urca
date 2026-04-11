@@ -76,7 +76,7 @@
           <template #body="{ data }">
             <div class="flex flex-wrap gap-1 items-center justify-center">
               <P-Button
-                v-if="isScheduled(data.status)"
+                v-if="canStartCalls() && isScheduled(data.status)"
                 label="Iniciar Chamadas"
                 size="small"
                 severity="info"
@@ -84,7 +84,7 @@
                 v-tooltip.top="'Iniciar o processo de chamadas de jogadores'"
               />
               <P-Button
-                v-else-if="isCallsPending(data.status)"
+                v-if="canFillCalls(data.id) && isCallsPending(data.status)"
                 label="Preencher Chamadas"
                 size="small"
                 severity="warn"
@@ -92,7 +92,7 @@
                 v-tooltip.top="'Gerir as chamadas de jogadores'"
               />
               <P-Button
-                v-else-if="isReadyToStart(data.status)"
+                v-if="canStartGameForId(data.id) && isReadyToStart(data.status)"
                 label="Iniciar Jogo"
                 size="small"
                 severity="success"
@@ -100,7 +100,7 @@
                 v-tooltip.top="'Iniciar o jogo'"
               />
               <P-Button
-                v-else-if="isInProgress(data.status)"
+                v-if="canViewLiveGameForId(data.id) && isInProgress(data.status)"
                 label="Ver Jogo"
                 size="small"
                 severity="success"
@@ -108,7 +108,7 @@
                 v-tooltip.top="'Ver detalhes do jogo'"
               />
               <P-Button
-                v-else-if="isFinished(data.status)"
+                v-if="canManageGames && isFinished(data.status)"
                 label="Ver Resultados"
                 size="small"
                 severity="secondary"
@@ -126,7 +126,7 @@
     </div>
 
     <template #footer>
-      <div class="flex gap-2 w-full justify-between">
+      <div class="mt-3 flex gap-2 w-full justify-between">
         <P-Button severity="secondary" @click="enabled = false">
           <span class="material-symbols-outlined">close</span>
           Fechar
@@ -148,8 +148,11 @@ import { useGameStore } from "@stores/games";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 import { usePlayerStore } from "@stores/players";
+import { useAuthStore } from "@stores/auth";
 import { GameStatus, type Game } from "@router/backend/services/game/types";
 import * as gameService from "@router/backend/services/game";
+
+const authStore = useAuthStore();
 
 const enabled = defineModel<boolean>();
 const router = useRouter();
@@ -261,6 +264,34 @@ function getStatusLabel(status: string) {
   if (s === "Finished" || s === "4") return "Terminado";
   if (s === "Canceled" || s === "5") return "Cancelado";
   return "?";
+}
+
+const canManageGames = computed(() => authStore.canManageGames);
+const canManageGameEvents = computed(() => authStore.canManageGameEvents);
+const canFillGameCalls = computed(() => authStore.canFillGameCalls);
+
+function canStartCalls(): boolean {
+  return authStore.canManageGames;
+}
+
+function canFillCalls(gameId: string): boolean {
+  return authStore.canManageGames || (authStore.canFillGameCalls && authStore.hasCallAccess(gameId));
+}
+
+function canStartGame(): boolean {
+  return authStore.canManageGames;
+}
+
+function canStartGameForId(gameId: string): boolean {
+  return authStore.canManageGames || (authStore.canManageGameEvents && authStore.hasGameAccess(gameId));
+}
+
+function canViewLiveGame(): boolean {
+  return authStore.canManageGames;
+}
+
+function canViewLiveGameForId(gameId: string): boolean {
+  return authStore.canManageGames || (authStore.canManageGameEvents && authStore.hasGameAccess(gameId));
 }
 
 async function startCalls(gameId: string) {

@@ -20,10 +20,58 @@ from app.schemas.schemas import (
 )
 from app.models.models import GameStatus, GamePhase
 from app.error import Error
-from app.utils.auth import get_current_user
+from app.utils.auth import (
+    get_current_user,
+    get_user_from_db,
+    require_manage_games,
+    require_manage_game_events,
+    require_game_access,
+    require_call_access,
+    require_start_game,
+)
+from app.schemas.schemas import UserRoles
+from fastapi import HTTPException, status
 from app.utils import get_logger, sanitize_for_serialization
 
 router = APIRouter(prefix="/games", tags=["Games"])
+
+
+async def check_call_permission(current_user: dict, game_id: str) -> None:
+    """Check if user can modify game call: needs manage_games OR (fill_game_calls + game assigned)."""
+    if current_user.get("username") == "admin":
+        return
+
+    db_user = await get_user_from_db(current_user["username"])
+    user_roles = db_user.get("roles", [])
+
+    has_manage_games = UserRoles.MANAGE_GAMES in user_roles
+    has_fill_calls = UserRoles.FILL_GAME_CALLS in user_roles
+    game_assigned = game_id in db_user.get("assigned_games_for_calls", [])
+
+    if not (has_manage_games or (has_fill_calls and game_assigned)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"error": "Sem permissão para gerir chamadas deste jogo"},
+        )
+
+
+async def check_game_permission(current_user: dict, game_id: str) -> None:
+    """Check if user can manage game events: needs manage_games OR (manage_game_events + game assigned)."""
+    if current_user.get("username") == "admin":
+        return
+
+    db_user = await get_user_from_db(current_user["username"])
+    user_roles = db_user.get("roles", [])
+
+    has_manage_games = UserRoles.MANAGE_GAMES in user_roles
+    has_game_events = UserRoles.MANAGE_GAME_EVENTS in user_roles
+    game_assigned = game_id in db_user.get("assigned_games", [])
+
+    if not (has_manage_games or (has_game_events and game_assigned)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"error": "Sem permissão para gerir eventos deste jogo"},
+        )
 
 
 def game_call_to_dto(call: dict) -> GameCallDto:
@@ -84,7 +132,7 @@ def game_to_dto(game: dict, home_call: dict | None, away_call: dict | None) -> G
 
 
 @router.post("", response_model=GameDto, status_code=201)
-async def add_game(game: CreateGameDto, current_user=Depends(get_current_user)):
+async def add_game(game: CreateGameDto, current_user=Depends(require_manage_games)):
     from app.routes.tournament import get_tournament
 
     get_logger().info(
@@ -220,7 +268,7 @@ async def get_game_by_id(game_id: str):
 
 @router.patch("/{game_id}", response_model=GameDto)
 async def update_game(
-    game_id: str, body: UpdateGameDto, current_user=Depends(get_current_user)
+    game_id: str, body: UpdateGameDto, current_user=Depends(require_manage_games)
 ):
     game = await get_game(game_id)
     await db.db[GAMES_COLLECTION].update_one(
@@ -242,7 +290,7 @@ async def update_game(
 
 
 @router.delete("/{game_id}", status_code=204)
-async def delete_game(game_id: str, current_user=Depends(get_current_user)):
+async def delete_game(game_id: str, current_user=Depends(require_manage_game_events)):
     game = await get_game(game_id)
     await db.db[GAME_CALLS_COLLECTION].delete_many(
         {"_id": {"$in": [game.get("home_call"), game.get("away_call")]}}
@@ -261,6 +309,16 @@ async def update_game_status(
     game = await get_game(game_id)
     current_status = game.get("status", GameStatus.Scheduled)
     new_status = body.status
+
+    # Check permissions based on target status
+    if new_status == GameStatus.CallsPending or new_status == GameStatus.ReadyToStart:
+        await check_call_permission(current_user, game_id)
+    elif new_status == GameStatus.InProgress or new_status == GameStatus.Finished:
+        await check_game_permission(current_user, game_id)
+    elif new_status == GameStatus.Canceled:
+        await check_call_permission(current_user, game_id)
+    else:
+        raise HTTPException(status_code=400, detail="Transição inválida")
 
     valid_transitions = {
         GameStatus.Scheduled: [GameStatus.CallsPending, GameStatus.Canceled],
@@ -312,6 +370,7 @@ async def update_game_status(
 
 @router.patch("/{game_id}/confirm-calls", response_model=GameDto)
 async def confirm_game_calls(game_id: str, current_user=Depends(get_current_user)):
+    await check_call_permission(current_user, game_id)
     game = await get_game(game_id)
 
     if game.get("status") != GameStatus.CallsPending:
@@ -606,7 +665,7 @@ async def update_period(
 
 @router.delete("/{game_id}/events/{event_index}", status_code=204)
 async def delete_game_event(
-    game_id: str, event_index: int, current_user=Depends(get_current_user)
+    game_id: str, event_index: int, _=Depends(require_manage_game_events)
 ):
     """Delete a specific game event by its index in the events list."""
     get_logger().info(
@@ -641,6 +700,9 @@ async def update_game_call(
     if not call:
         raise Error.not_found("Game call")
 
+    game_id = str(call.get("game"))
+    await check_call_permission(current_user, game_id)
+
     players_to_store = []
     for p in body.players:
         player_entry = {"player": ObjectId(p["player"]), "number": p.get("number")}
@@ -663,6 +725,9 @@ async def populate_game_call(call_id: str, current_user=Depends(get_current_user
         raise Error.invalid_id("game call")
     if not call:
         raise Error.not_found("Game call")
+
+    game_id = str(call.get("game"))
+    await check_call_permission(current_user, game_id)
 
     team = await db.db["teams"].find_one({"_id": call["team"]})
     if not team:

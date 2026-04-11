@@ -5,7 +5,7 @@
         <span class="footer-logo">⚽</span>
         <div class="footer-info">
           <span class="footer-title">Torneio de Futsal de São Pedro</span>
-          <span class="footer-subtitle">Organizado by URCA - Porto de Mós</span>
+          <span class="footer-subtitle">Organizado pela União Recreativa dos Casais Garridos e Andainho (URCA) - Casais Garridos, Porto de Mós</span>
         </div>
       </div>
       <div class="footer-contact">

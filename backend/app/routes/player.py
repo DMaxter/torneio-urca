@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from database import db, PLAYERS_COLLECTION
 from app.schemas.schemas import CreatePlayerDto, PlayerDto
 from app.error import Error
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, require_manage_players
 from app.utils import (
     get_logger,
     sanitize_for_serialization,
@@ -38,7 +38,9 @@ def player_to_dto(player: dict) -> PlayerDto:
 
 
 @router.post("", response_model=PlayerDto, status_code=201)
-async def add_player(player: CreatePlayerDto, current_user=Depends(get_current_user)):
+async def add_player(
+    player: CreatePlayerDto, current_user=Depends(require_manage_players)
+):
     get_logger().info(f"[{current_user['username']}] Creating player '{player.name}'")
     player_dict = player.model_dump()
     result = await db.db[PLAYERS_COLLECTION].insert_one(player_dict)
@@ -64,7 +66,7 @@ async def add_player_admin(
     citizen_card: UploadFile | None = File(None),
     proof_of_residency: UploadFile | None = File(None),
     authorization: UploadFile | None = File(None),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_manage_players),
 ):
     get_logger().info(
         f"[{current_user['username']}] Creating player '{name}' for team '{team}'"
@@ -177,7 +179,7 @@ async def _get_player(player_id: str):
 
 
 @router.patch("/{player_id}/confirm", response_model=PlayerDto)
-async def confirm_player(player_id: str, current_user=Depends(get_current_user)):
+async def confirm_player(player_id: str, current_user=Depends(require_manage_players)):
     get_logger().info(f"[{current_user['username']}] Confirming player '{player_id}'")
     try:
         player = await db.db[PLAYERS_COLLECTION].find_one({"_id": ObjectId(player_id)})
@@ -206,7 +208,7 @@ async def confirm_player(player_id: str, current_user=Depends(get_current_user))
 
 
 @router.delete("/{player_id}", status_code=204)
-async def delete_player(player_id: str, current_user=Depends(get_current_user)):
+async def delete_player(player_id: str, current_user=Depends(require_manage_players)):
     get_logger().info(f"[{current_user['username']}] Deleting player '{player_id}'")
     try:
         result = await db.db[PLAYERS_COLLECTION].delete_one(
@@ -232,7 +234,9 @@ async def delete_player(player_id: str, current_user=Depends(get_current_user)):
 
 @router.put("/{player_id}", response_model=PlayerDto)
 async def update_player(
-    player_id: str, player_data: CreatePlayerDto, current_user=Depends(get_current_user)
+    player_id: str,
+    player_data: CreatePlayerDto,
+    current_user=Depends(require_manage_players),
 ):
     get_logger().info(f"[{current_user['username']}] Updating player '{player_id}'")
     try:

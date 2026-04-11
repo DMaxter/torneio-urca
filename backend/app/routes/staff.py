@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from database import db, STAFF_COLLECTION, TEAMS_COLLECTION
 from app.schemas.schemas import StaffDto, CreateStaffDto
 from app.models.models import StaffType
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, require_manage_players
 from app.utils import get_logger, sanitize_for_serialization
 
 router = APIRouter(prefix="/staff", tags=["Staff"])
@@ -80,7 +80,7 @@ async def get_all_staff():
 
 
 @router.post("", response_model=StaffDto, status_code=201)
-async def create_staff(staff: CreateStaffDto, current_user=Depends(get_current_user)):
+async def create_staff(staff: CreateStaffDto, current_user = Depends(require_manage_players)):
     get_logger().info(f"[{current_user['username']}] Creating staff '{staff.name}'")
     staff_dict = staff.model_dump()
     result = await db.db[STAFF_COLLECTION].insert_one(staff_dict)
@@ -115,7 +115,7 @@ async def update_staff(
 
 
 @router.delete("/{staff_id}", status_code=204)
-async def delete_staff(staff_id: str, current_user=Depends(get_current_user)):
+async def delete_staff(staff_id: str, current_user = Depends(require_manage_players)):
     get_logger().info(f"[{current_user['username']}] Deleting staff '{staff_id}'")
     try:
         staff = await db.db[STAFF_COLLECTION].find_one({"_id": ObjectId(staff_id)})

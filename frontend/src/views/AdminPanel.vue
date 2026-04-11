@@ -18,14 +18,14 @@
     </div>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-      <div v-for="section in sections" :key="section.title" class="admin-card bg-white border border-stone-300 rounded-xl p-4 md:p-5">
+      <div v-for="section in sections.filter(s => s.show())" :key="section.title" class="admin-card bg-white border border-stone-300 rounded-xl p-4 md:p-5">
         <div class="card-header flex items-center gap-3 pb-3 mb-3 border-b border-stone-100">
           <span class="text-xl md:text-2xl">{{ section.icon }}</span>
           <h2 class="text-base font-semibold text-stone-900 m-0">{{ section.title }}</h2>
         </div>
         <div class="flex gap-2">
           <P-Button
-            v-for="action in section.actions"
+            v-for="action in section.actions.filter(a => !a.requiredRole || a.requiredRole())"
             :key="action.label"
             :severity="action.severity"
             size="small"
@@ -58,15 +58,18 @@
     <TournamentManagement v-model="manageTournament" />
     <UserList v-model="listUsers" />
     <UserManagement v-model="manageUser" />
+    <RoleManagement v-model="manageRoles" />
     <ChangePasswordDialog v-model="changePassword" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 
 import { useAuthStore } from "@stores/auth";
+import { useUserStore } from "@stores/users";
+import { USER_ROLES } from "@router/backend/services/user/types";
 import type { Game } from "@router/backend/services/game/types";
 
 const router = useRouter();
@@ -101,18 +104,21 @@ const gameDays = ref(false);
 const generateGames = ref(false);
 const gameCalendar = ref(false);
 const viewGames = ref(false);
+const manageRoles = ref(false);
 
 interface Action {
   label: string;
   icon: string;
   severity?: "secondary" | "success" | "info" | "warn" | "danger" | "help" | "contrast";
   handler: () => void;
+  requiredRole?: () => boolean;
 }
 
 interface Section {
   title: string;
   icon: string;
   actions: Action[];
+  show: () => boolean;
 }
 
 const sections: Section[] = [
@@ -122,15 +128,18 @@ const sections: Section[] = [
     actions: [
       { label: "Criar", icon: "add", severity: "success", handler: () => manageTournament.value = true },
       { label: "Listar", icon: "list", handler: () => listTournaments.value = true }
-    ]
+    ],
+    show: () => authStore.canManagePlayers
   },
   {
     title: "Utilizadores",
     icon: "👥",
     actions: [
       { label: "Criar", icon: "add", severity: "success", handler: () => manageUser.value = true },
-      { label: "Listar", icon: "list", handler: () => listUsers.value = true }
-    ]
+      { label: "Listar", icon: "list", handler: () => listUsers.value = true },
+      { label: "Funções", icon: "admin_panel_settings", severity: "info", handler: () => manageRoles.value = true }
+    ],
+    show: () => authStore.isAdmin
   },
   {
     title: "Equipas",
@@ -138,7 +147,8 @@ const sections: Section[] = [
     actions: [
       { label: "Criar", icon: "add", severity: "success", handler: () => manageTeam.value = true },
       { label: "Listar", icon: "list", handler: () => listTeams.value = true }
-    ]
+    ],
+    show: () => authStore.canManagePlayers
   },
   {
     title: "Jogadores",
@@ -146,7 +156,8 @@ const sections: Section[] = [
     actions: [
       { label: "Criar", icon: "add", severity: "success", handler: () => createPlayer.value = true },
       { label: "Listar", icon: "list", handler: () => listPlayers.value = true }
-    ]
+    ],
+    show: () => authStore.canManagePlayers
   },
   {
     title: "Grupos",
@@ -155,7 +166,8 @@ const sections: Section[] = [
       { label: "Gerar", icon: "auto_awesome", severity: "success", handler: () => generateGroups.value = true },
       { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGroups.value = true },
       { label: "Listar", icon: "list", handler: () => listGroups.value = true }
-    ]
+    ],
+    show: () => authStore.canManageGames
   },
   {
     title: "Calendário",
@@ -163,24 +175,27 @@ const sections: Section[] = [
     actions: [
       { label: "Calendário", icon: "calendar_month", severity: "info", handler: () => gameCalendar.value = true },
       { label: "Dias de Jogo", icon: "edit_calendar", severity: "secondary", handler: () => gameDays.value = true }
-    ]
+    ],
+    show: () => authStore.canManageGames
   },
    {
     title: "Gestão de Jogos",
     icon: "🎮",
     actions: [
-      { label: "Criar", icon: "add", severity: "success", handler: () => manageGame.value = true },
-      { label: "Gerir", icon: "manage_search", severity: "info", handler: () => manageGames.value = true },
-      { label: "Gerar", icon: "sports_soccer", severity: "secondary", handler: () => generateGames.value = true },
-      { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGames.value = true }
-    ]
+      { label: "Criar", icon: "add", severity: "success", handler: () => manageGame.value = true, requiredRole: () => authStore.canManageGames },
+      { label: "Gerir", icon: "manage_search", severity: "info", handler: () => manageGames.value = true, requiredRole: () => authStore.canManageGames || authStore.canManageGameEvents || authStore.canFillGameCalls },
+      { label: "Gerar", icon: "sports_soccer", severity: "secondary", handler: () => generateGames.value = true, requiredRole: () => authStore.canManageGames },
+      { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGames.value = true, requiredRole: () => authStore.canManageGames }
+    ],
+    show: () => authStore.canManageGames || authStore.canManageGameEvents || authStore.canFillGameCalls
    },
    {
     title: "Gestão de Staff de Equipas",
     icon: "👥",
     actions: [
       { label: "Gerir", icon: "manage_accounts", severity: "info", handler: () => router.push('/admin/staff') }
-    ]
+    ],
+    show: () => authStore.canManagePlayers
    }
 ];
 </script>

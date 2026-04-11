@@ -10,9 +10,33 @@ class CreateUserDto(BaseModel):
     password: str
 
 
+class UserRoles:
+    MANAGE_PLAYERS = "manage_players"
+    MANAGE_GAMES = "manage_games"
+    MANAGE_GAME_EVENTS = "manage_game_events"
+    FILL_GAME_CALLS = "fill_game_calls"
+
+    ALL = [MANAGE_PLAYERS, MANAGE_GAMES, MANAGE_GAME_EVENTS, FILL_GAME_CALLS]
+
+
+class AssignUserGamesForCallsDto(BaseModel):
+    assigned_games_for_calls: List[str] = []
+
+
 class UserDto(BaseModel):
     id: str
     username: str
+    roles: List[str] = []
+    assigned_games: List[str] = []
+    assigned_games_for_calls: List[str] = []
+
+
+class UpdateUserRolesDto(BaseModel):
+    roles: List[str] = []
+
+
+class AssignUserGamesDto(BaseModel):
+    assigned_games: List[str] = []
 
 
 class ChangePasswordDto(BaseModel):

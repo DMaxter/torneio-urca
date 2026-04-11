@@ -12,7 +12,7 @@ from database import (
 )
 from app.schemas.schemas import CreateGroupDto, GroupDto
 from app.error import Error
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, require_manage_games
 from app.utils import get_logger, sanitize_for_serialization
 from app.models.models import GameStatus
 
@@ -30,7 +30,7 @@ def group_to_dto(group: dict) -> GroupDto:
 
 
 @router.post("", response_model=GroupDto, status_code=201)
-async def add_group(group: CreateGroupDto, current_user=Depends(get_current_user)):
+async def add_group(group: CreateGroupDto, current_user = Depends(require_manage_games)):
     from app.routes.tournament import get_tournament
 
     get_logger().info(f"[{current_user['username']}] Creating group '{group.name}'")
@@ -143,7 +143,7 @@ async def update_group(
 
 
 @router.delete("/{group_id}", status_code=204)
-async def delete_group(group_id: str, current_user=Depends(get_current_user)):
+async def delete_group(group_id: str, current_user = Depends(require_manage_games)):
     try:
         group = await db.db[GROUPS_COLLECTION].find_one({"_id": ObjectId(group_id)})
     except Exception:

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from database import db, GAME_DAYS_COLLECTION
 from app.schemas.schemas import CreateGameDayDto, GameDayDto
 from app.error import Error
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, require_manage_games
 from app.utils import get_logger
 
 router = APIRouter(prefix="/game-days", tags=["GameDays"])
@@ -28,8 +28,12 @@ async def get_game_days():
 
 
 @router.post("", response_model=GameDayDto, status_code=201)
-async def create_game_day(day: CreateGameDayDto, current_user=Depends(get_current_user)):
-    get_logger().info(f"[{current_user['username']}] Creating game day for tournament '{day.tournament}'")
+async def create_game_day(
+    day: CreateGameDayDto, current_user=Depends(get_current_user)
+):
+    get_logger().info(
+        f"[{current_user['username']}] Creating game day for tournament '{day.tournament}'"
+    )
     doc = {
         "tournament": ObjectId(day.tournament),
         "date": day.date,
@@ -42,7 +46,7 @@ async def create_game_day(day: CreateGameDayDto, current_user=Depends(get_curren
 
 
 @router.delete("/{day_id}", status_code=204)
-async def delete_game_day(day_id: str, current_user=Depends(get_current_user)):
+async def delete_game_day(day_id: str, current_user = Depends(require_manage_games)):
     try:
         oid = ObjectId(day_id)
     except Exception:

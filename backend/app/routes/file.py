@@ -4,12 +4,13 @@ from fastapi.responses import StreamingResponse
 from database import db
 from app.error import Error
 from app.utils import get_logger
+from app.utils.auth import require_manage_players
 
 router = APIRouter(prefix="/files", tags=["Files"])
 
 
 @router.get("/{file_id}")
-async def get_file(file_id: str):
+async def get_file(file_id: str, _=require_manage_players):
     """Download a file by its ID."""
     get_logger().info(f"Downloading file '{file_id}'")
     if not file_id or file_id == "null" or file_id == "undefined":

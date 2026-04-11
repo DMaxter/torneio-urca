@@ -3,7 +3,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends
 from database import db, TOURNAMENTS_COLLECTION, TEAMS_COLLECTION
 from app.schemas.schemas import CreateTournamentDto, TournamentDto
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, require_manage_games
 from app.utils import get_logger, sanitize_for_serialization
 
 router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
@@ -54,7 +54,7 @@ async def get_tournaments():
 
 
 @router.delete("/{tournament_id}", status_code=204)
-async def delete_tournament(tournament_id: str, current_user=Depends(get_current_user)):
+async def delete_tournament(tournament_id: str, current_user = Depends(require_manage_games)):
     from app.error import Error
 
     tournament = await get_tournament(tournament_id)
