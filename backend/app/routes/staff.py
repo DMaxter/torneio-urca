@@ -10,11 +10,10 @@ from app.utils import get_logger, sanitize_for_serialization
 router = APIRouter(prefix="/staff", tags=["Staff"])
 
 FIELD_TO_STAFF_TYPE = {
-    "main_coach": StaffType.Coach,
-    "assistant_coach": StaffType.AssistantCoach,
-    "physiotherapist": StaffType.Physiotherapist,
-    "first_deputy": StaffType.GameDeputy,
-    "second_deputy": StaffType.GameDeputy,
+    "Coach": StaffType.Coach,
+    "AssistantCoach": StaffType.AssistantCoach,
+    "Physiotherapist": StaffType.Physiotherapist,
+    "GameDeputy": StaffType.GameDeputy,
 }
 
 

@@ -24,11 +24,14 @@
           <P-Tag :value="`${data.players?.length || 0}`" :severity="(data.players?.length || 0) >= 5 ? 'success' : 'danger'" />
         </template>
       </P-Column>
-      <P-Column header="Ações" style="width: 100px">
+      <P-Column header="Ações" style="width: 120px">
         <template #body="{ data }">
           <div class="flex gap-1 items-center">
+            <P-Button size="small" text @click.stop="viewTeam(data)">
+              <span class="material-symbols-outlined text-orange-500" v-tooltip.top="'Ver detalhes'">visibility</span>
+            </P-Button>
             <P-Button size="small" text @click.stop="openTeamPlayers(data.id)">
-              <span class="material-symbols-outlined text-orange-500" v-tooltip.top="'Ver jogadores'">visibility</span>
+              <span class="material-symbols-outlined text-orange-500" v-tooltip.top="'Ver jogadores'">group</span>
             </P-Button>
             <span
               class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-orange-500 hover:bg-orange-50"
@@ -65,7 +68,7 @@
     </template>
   </P-Dialog>
 
-  <TeamManagement v-model="showEditTeam" :team="editingTeam" />
+  <TeamManagement v-model="showEditTeam" :team="editingTeam" :viewOnly="viewOnlyMode" />
 
   <P-Dialog v-model:visible="showConfirmPlayer" modal header="Confirmar Jogador" class="w-11/12 md:w-8/12">
     <p>Tem a certeza que deseja confirmar o jogador <strong>{{ playerToAction?.name }}</strong>?</p>
@@ -89,7 +92,7 @@
     <P-DataTable :value="teamPlayers" striped-rows size="small">
       <P-Column field="name" header="Nome">
         <template #body="{ data }">
-          <span class="font-medium">{{ data.name }}</span>
+          <span class="font-semibold">{{ data.name }}</span>
         </template>
       </P-Column>
       <P-Column field="birth_date" header="Nascimento" class="w-24rem md:w-auto">
@@ -97,12 +100,31 @@
           {{ new Date(data.birth_date).toLocaleDateString('pt-PT') }}
         </template>
       </P-Column>
+      <P-Column field="fiscal_number" header="NIF" class="w-20rem">
+        <template #body="{ data }">
+          {{ data.fiscal_number }}
+        </template>
+      </P-Column>
+      <P-Column header="Federado" class="w-20rem">
+        <template #body="{ data }">
+          <div v-if="data.is_federated" class="flex flex-col gap-1">
+            <P-Tag severity="info" :value='"Federado: " + data.federation_team' class="w-fit" />
+          </div>
+          <P-Tag v-else severity="secondary" value="Não" class="w-fit" />
+        </template>
+      </P-Column>
+      <P-Column header="Exames" class="w-16rem">
+        <template #body="{ data }">
+          <P-Tag v-if="data.is_federated" :severity="data.federation_exams_up_to_date ? 'success' : 'danger'" :value="data.federation_exams_up_to_date ? 'OK' : 'Expirado'" />
+          <span v-else class="text-muted">-</span>
+        </template>
+      </P-Column>
       <P-Column header="Cartão" class="w-6rem md:w-auto">
         <template #body="{ data }">
-          <P-Button 
-            v-if="data.citizen_card_file_id" 
-            size="small" 
-            severity="secondary" 
+          <P-Button
+            v-if="data.citizen_card_file_id"
+            size="small"
+            severity="secondary"
             @click="viewFile(data.citizen_card_file_id)"
           >
             <span class="material-symbols-outlined">picture_as_pdf</span>
@@ -113,10 +135,10 @@
       </P-Column>
       <P-Column header="Residência" class="w-6rem md:w-auto">
         <template #body="{ data }">
-          <P-Button 
-            v-if="data.proof_of_residency_file_id" 
-            size="small" 
-            severity="secondary" 
+          <P-Button
+            v-if="data.proof_of_residency_file_id"
+            size="small"
+            severity="secondary"
             @click="viewFile(data.proof_of_residency_file_id)"
           >
             <span class="material-symbols-outlined">picture_as_pdf</span>
@@ -127,10 +149,10 @@
       </P-Column>
       <P-Column header="Autoriz." class="w-5rem md:w-auto">
         <template #body="{ data }">
-          <P-Button 
-            v-if="data.authorization_file_id" 
-            size="small" 
-            severity="secondary" 
+          <P-Button
+            v-if="data.authorization_file_id"
+            size="small"
+            severity="secondary"
             @click="viewFile(data.authorization_file_id)"
           >
             <span class="material-symbols-outlined">picture_as_pdf</span>
@@ -180,7 +202,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useTeamStore } from "@stores/teams";
 import { usePlayerStore } from "@stores/players";
@@ -203,6 +225,7 @@ const showDeleteConfirm = ref(false);
 const showConfirmPlayer = ref(false);
 const showRemovePlayer = ref(false);
 const showEditTeam = ref(false);
+const viewOnlyMode = ref(false);
 const selectedTeamId = ref("");
 const selectedTeamName = ref("");
 const teamPlayers = ref<unknown[]>([]);
@@ -210,6 +233,12 @@ const fileUrl = ref("");
 const teamToDelete = ref<{ id: string; name: string } | null>(null);
 const playerToAction = ref<{ id: string; name: string } | null>(null);
 const editingTeam = ref<Team | undefined>(undefined);
+
+watch(showEditTeam, (val) => {
+  if (!val) {
+    viewOnlyMode.value = false;
+  }
+});
 
 function getTournamentName(tournamentId: string): string {
   const tournament = tournamentStore.tournaments.find(t => t.id === tournamentId);
@@ -238,8 +267,15 @@ async function confirmDeleteTeam() {
   }
 }
 
+function viewTeam(team: Team) {
+  editingTeam.value = team;
+  viewOnlyMode.value = true;
+  showEditTeam.value = true;
+}
+
 function promptEditTeam(team: Team) {
   editingTeam.value = team;
+  viewOnlyMode.value = false;
   showEditTeam.value = true;
 }
 
