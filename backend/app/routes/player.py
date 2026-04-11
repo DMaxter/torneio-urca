@@ -1,11 +1,18 @@
+from datetime import datetime
 from typing import List
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from database import db, PLAYERS_COLLECTION
-from app.schemas.schemas import CreatePlayerDto, CreateAdminPlayerDto, PlayerDto
+from app.schemas.schemas import CreatePlayerDto, PlayerDto
 from app.error import Error
 from app.utils.auth import get_current_user
-from app.utils import get_logger, sanitize_for_serialization
+from app.utils import (
+    get_logger,
+    sanitize_for_serialization,
+    calculate_age,
+    upload_single_file,
+)
+from app.constants import MIN_AGE
 
 router = APIRouter(prefix="/players", tags=["Players"])
 
@@ -44,39 +51,81 @@ async def add_player(player: CreatePlayerDto, current_user=Depends(get_current_u
 
 @router.post("/admin", response_model=PlayerDto, status_code=201)
 async def add_player_admin(
-    player_data: CreateAdminPlayerDto,
+    team: str = Form(...),
+    name: str = Form(...),
+    birth_date: str = Form(...),
+    tournament: str = Form(...),
+    is_federated: bool = Form(False),
+    federation_team: str | None = Form(None),
+    citizen_card: UploadFile | None = File(None),
+    proof_of_residency: UploadFile | None = File(None),
+    authorization: UploadFile | None = File(None),
     current_user=Depends(get_current_user),
 ):
     get_logger().info(
-        f"[{current_user['username']}] Creating player '{player_data.name}' for team '{player_data.team}'"
+        f"[{current_user['username']}] Creating player '{name}' for team '{team}'"
     )
+
+    player_birth_date = datetime.fromisoformat(birth_date.replace("Z", "+00:00"))
+    age = calculate_age(player_birth_date)
+
+    if age < MIN_AGE and authorization is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"O jogador {name} é menor de {MIN_AGE} anos e requer autorização parental",
+        )
+
+    file_dict = {}
+
+    if citizen_card:
+        file_id = await upload_single_file(
+            citizen_card,
+            f"admin_{team}_{name}_citizen_card",
+        )
+        file_dict["citizen_card_file_id"] = file_id
+
+    if proof_of_residency:
+        file_id = await upload_single_file(
+            proof_of_residency,
+            f"admin_{team}_{name}_proof_of_residency",
+        )
+        file_dict["proof_of_residency_file_id"] = file_id
+
+    if authorization:
+        file_id = await upload_single_file(
+            authorization,
+            f"admin_{team}_{name}_authorization",
+        )
+        file_dict["authorization_file_id"] = file_id
+
     player_dict = {
-        "name": player_data.name,
-        "birth_date": player_data.birth_date,
+        "name": name,
+        "birth_date": player_birth_date,
         "fiscal_number": "",
-        "is_federated": player_data.is_federated,
-        "federation_team": player_data.federation_team,
+        "is_federated": is_federated,
+        "federation_team": federation_team,
         "federation_exams_up_to_date": False,
-        "is_confirmed": True,
+        "is_confirmed": False,
+        **file_dict,
     }
     result = await db.db[PLAYERS_COLLECTION].insert_one(player_dict)
     player_dict["_id"] = result.inserted_id
 
     from app.routes.team import get_team
 
-    get_logger().info(f"Adding player to team '{player_data.team}'")
-    team = await get_team(player_data.team)
+    get_logger().info(f"Adding player to team '{team}'")
+    team_doc = await get_team(team)
     player_id_str = str(result.inserted_id)
-    if player_id_str not in team["players"]:
+    if player_id_str not in team_doc["players"]:
         from database import db as database_db
 
         await database_db.db["teams"].update_one(
-            {"_id": ObjectId(player_data.team)},
+            {"_id": ObjectId(team)},
             {"$push": {"players": player_id_str}},
         )
 
     get_logger().info(
-        f"[{current_user['username']}] Player '{player_data.name}' created and added to team successfully"
+        f"[{current_user['username']}] Player '{name}' created and added to team successfully"
     )
     return player_to_dto(player_dict)
 

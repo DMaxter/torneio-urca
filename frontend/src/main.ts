@@ -77,7 +77,6 @@ app.component("P-ToggleSwitch", ToggleSwitch);
 app.directive("tooltip", Tooltip);
 
 // Custom components
-import AdminPlayerForm from "@components/AdminPlayerForm.vue";
 import ChangePasswordDialog from "@components/ChangePasswordDialog.vue";
 import CustomFileUpload from "@components/forms/FileUpload.vue";
 import DistributeGamesDialog from "@components/DistributeGamesDialog.vue";
@@ -95,6 +94,7 @@ import GroupView from "@components/GroupView.vue";
 import PersonFields from "@components/forms/PersonFields.vue";
 import PlayerForm from "@components/forms/PlayerForm.vue";
 import PlayerList from "@components/PlayerList.vue";
+import PlayerManagement from "@components/PlayerManagement.vue";
 import StaffMemberForm from "@components/forms/StaffMemberForm.vue";
 import TeamList from "@components/TeamList.vue";
 import TeamManagement from "@components/TeamManagement.vue";
@@ -105,7 +105,6 @@ import UserList from "@components/UserList.vue";
 import UserManagement from "@components/UserManagement.vue";
 import ViewGamesDialog from "@components/ViewGamesDialog.vue";
 
-app.component("AdminPlayerForm", AdminPlayerForm);
 app.component("ChangePasswordDialog", ChangePasswordDialog);
 app.component("DistributeGamesDialog", DistributeGamesDialog);
 app.component("FileUpload", CustomFileUpload);
@@ -123,6 +122,7 @@ app.component("GroupView", GroupView);
 app.component("PersonFields", PersonFields);
 app.component("PlayerForm", PlayerForm);
 app.component("PlayerList", PlayerList);
+app.component("PlayerManagement", PlayerManagement);
 app.component("StaffMemberForm", StaffMemberForm);
 app.component("TeamList", TeamList);
 app.component("TeamManagement", TeamManagement);

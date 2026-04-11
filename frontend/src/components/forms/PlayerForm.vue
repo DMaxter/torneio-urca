@@ -1,12 +1,17 @@
 <template>
   <fieldset class="player-fieldset">
-    <div class="fieldset-header">
-      <legend>Jogador {{ index + 1 }}</legend>
-      <P-Button severity="secondary" size="small" text class="delete-btn" @click="$emit('remove')">
-        <span class="material-symbols-outlined text-red-600">delete</span>
+    <div v-if="showLegend || showDelete" class="fieldset-header">
+      <legend v-if="showLegend">{{ `Jogador ${(index ?? 0) + 1}` }}</legend>
+      <legend v-else class="sr-only">Jogador</legend>
+      <P-Button v-if="showDelete" class="delete-btn" @click="$emit('remove')">
+        <span class="material-symbols-outlined">delete</span>
       </P-Button>
     </div>
 
+    <P-FloatLabel v-if="showTeam" class="field" variant="on">
+      <P-Select :id="`${playerId}Team`" v-model="formData.team" :options="teamOptions" optionLabel="name" optionValue="id" fluid />
+      <label :for="`${playerId}Team`">Equipa *</label>
+    </P-FloatLabel>
     <P-FloatLabel class="field" variant="on">
       <P-InputText :id="`${playerId}Name`" v-model="formData.name" fluid />
       <label :for="`${playerId}Name`">Nome *</label>
@@ -81,6 +86,7 @@ import { isUnderAge } from "@/utils";
 import { TOURNAMENT } from "@/constants";
 
 interface PlayerFormData {
+  team?: string;
   name: string;
   birth_date: Date | null;
   address: string;
@@ -98,9 +104,13 @@ interface PlayerFiles {
 }
 
 const props = defineProps<{
-  index: number;
+  index?: number;
   modelValue?: PlayerFormData;
   files?: PlayerFiles;
+  showLegend?: boolean;
+  showDelete?: boolean;
+  showTeam?: boolean;
+  teamOptions?: { name: string; id: string }[];
 }>();
 
 const emit = defineEmits<{
@@ -109,10 +119,15 @@ const emit = defineEmits<{
   (e: "remove"): void;
 }>();
 
-const playerId = `player${props.index}`;
+const playerId = `player${props.index ?? 0}`;
 const toast = useToast();
 
+const showLegend = props.showLegend !== undefined ? props.showLegend : true;
+const showDelete = props.showDelete !== undefined ? props.showDelete : true;
+const showTeam = props.showTeam !== undefined ? props.showTeam : false;
+
 const formData = reactive<PlayerFormData>({
+  team: "",
   name: "",
   birth_date: null,
   address: "",
@@ -227,25 +242,36 @@ fieldset {
 }
 
 .fieldset-header {
-  display: flex;
+  display: flex !important;
   justify-content: space-between;
   align-items: center;
   position: absolute;
-  top: -12px;
-  left: 20px;
-  right: 20px;
+  top: -14px;
+  left: 10px;
+  right: 10px;
+  padding: 0 5px;
 }
 
 legend {
   font-weight: bold;
   padding: 0 10px;
   margin: 0;
-  background: white;
+  background: var(--p-surface-50) !important;
+  position: relative;
+  z-index: 1;
 }
 
 .delete-btn {
-  padding: 4px;
-  background: white !important;
+  position: relative;
+  z-index: 1;
+  background: var(--p-surface-50) !important;
+  color: #ea580c !important;
   border-radius: 50%;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.delete-btn .material-symbols-outlined {
+  color: #ea580c !important;
 }
 </style>

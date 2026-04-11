@@ -4,8 +4,10 @@ from bson import ObjectId
 from contextvars import ContextVar
 from datetime import datetime, timezone
 from fastapi import HTTPException, status
+from fastapi import UploadFile
+from database import db
 
-from app.constants import MIN_AGE
+from app.constants import MIN_AGE, MAX_FILE_SIZE
 
 ALGORITHM = "HS256"
 REQUEST_ID: ContextVar[str] = ContextVar("request_id", default="no-request-id")
@@ -66,3 +68,18 @@ def decode_token(token: str, secret: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail={"error": "Token inválido"}
         )
+
+
+async def upload_single_file(
+    file: UploadFile,
+    filename: str,
+) -> str:
+    """Upload a single file with size validation."""
+    content = await file.read()
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"O ficheiro '{file.filename}' excede o limite de 5MB",
+        )
+    content_type = file.content_type or "application/octet-stream"
+    return await db.upload_file(filename, content_type, content)

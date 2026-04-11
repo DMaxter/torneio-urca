@@ -13,9 +13,9 @@ export const usePlayerStore = defineStore("playersStore", () => {
     create: playerService.createPlayer,
   });
 
-  async function createAdminPlayer(player: CreateAdminPlayer) {
+  async function createAdminPlayer(player: CreateAdminPlayer, citizenCard?: File, proofOfResidency?: File, authorization?: File) {
     try {
-      const { status, data } = await playerService.createAdminPlayer(player);
+      const { status, data } = await playerService.createAdminPlayer(player, citizenCard, proofOfResidency, authorization);
       if (status === 201) {
         return { success: true, content: data as Player };
       }

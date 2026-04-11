@@ -53,7 +53,7 @@
     <TeamList v-model="listTeams" />
     <TeamManagement v-model="manageTeam" />
     <PlayerList v-model="listPlayers" />
-    <AdminPlayerForm v-model="createPlayer" />
+    <PlayerManagement v-model="createPlayer" />
     <TournamentList v-model="listTournaments" />
     <TournamentManagement v-model="manageTournament" />
     <UserList v-model="listUsers" />

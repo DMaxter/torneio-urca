@@ -88,6 +88,8 @@
           <div v-for="player in playerForms" :key="player.id" class="player-fieldset">
             <PlayerForm
               :index="playerForms.indexOf(player)"
+              :showLegend="true"
+              :showDelete="true"
               v-model="player.data"
               :files="player.files"
               @update:files="player.files = $event"

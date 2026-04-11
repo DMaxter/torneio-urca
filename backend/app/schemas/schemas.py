@@ -244,6 +244,7 @@ class CreateAdminPlayerDto(BaseModel):
     tournament: str
     is_federated: bool = False
     federation_team: Optional[str] = None
+    fiscal_number: Optional[str] = None
 
 
 class RegisterTeamStartDto(BaseModel):
