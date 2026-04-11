@@ -75,52 +75,44 @@
           </template>
           <template #body="{ data }">
             <div class="flex flex-wrap gap-1 items-center justify-center">
-              <P-Button 
-                v-if="isScheduled(data.status)" 
-                label="Iniciar Chamadas" 
-                size="small" 
+              <P-Button
+                v-if="isScheduled(data.status)"
+                label="Iniciar Chamadas"
+                size="small"
                 severity="info"
-                @click="startCalls(data.id)" 
+                @click="startCalls(data.id)"
                 v-tooltip.top="'Iniciar o processo de chamadas de jogadores'"
               />
-              <P-Button 
-                v-else-if="isCallsPending(data.status) && !data.home_call && !data.away_call" 
-                label="Preencher Chamadas" 
-                size="small" 
+              <P-Button
+                v-else-if="isCallsPending(data.status)"
+                label="Preencher Chamadas"
+                size="small"
                 severity="warn"
-                @click="goToGameCallsForGame(data)" 
+                @click="goToGameCallsForGame(data)"
                 v-tooltip.top="'Gerir as chamadas de jogadores'"
               />
-              <P-Button 
-                v-else-if="isCallsPending(data.status)" 
-                label="Confirmar" 
-                size="small" 
+              <P-Button
+                v-else-if="isReadyToStart(data.status)"
+                label="Iniciar Jogo"
+                size="small"
                 severity="success"
-                @click="confirmCalls(data.id)" 
-                v-tooltip.top="'Confirmar chamadas (mín. 5 jogadores)'"
-              />
-              <P-Button 
-                v-else-if="isReadyToStart(data.status)" 
-                label="Iniciar Jogo" 
-                size="small" 
-                severity="success"
-                @click="startGame(data.id)" 
+                @click="startGame(data.id)"
                 v-tooltip.top="'Iniciar o jogo'"
               />
-              <P-Button 
-                v-else-if="isInProgress(data.status)" 
-                label="Ver Jogo" 
-                size="small" 
+              <P-Button
+                v-else-if="isInProgress(data.status)"
+                label="Ver Jogo"
+                size="small"
                 severity="success"
-                @click="viewLiveGame(data.id)" 
+                @click="viewLiveGame(data.id)"
                 v-tooltip.top="'Ver detalhes do jogo'"
               />
-              <P-Button 
-                v-else-if="isFinished(data.status)" 
-                label="Ver Resultados" 
-                size="small" 
+              <P-Button
+                v-else-if="isFinished(data.status)"
+                label="Ver Resultados"
+                size="small"
                 severity="secondary"
-                @click="viewGameLog(data.id)" 
+                @click="viewGameLog(data.id)"
                 v-tooltip.top="'Ver registo do jogo'"
               />
             </div>
@@ -184,21 +176,21 @@ const tournaments = computed(() => tournamentStore.tournaments);
 
 const filteredGames = computed(() => {
   let games = gameStore.games;
-  
+
   if (selectedTournamentId.value) {
     games = games.filter(g => g.tournament === selectedTournamentId.value);
   }
-  
+
   if (selectedStatusFilter.value) {
     games = games.filter(g => g.status === selectedStatusFilter.value);
   }
-  
+
   return games;
 });
 
 const sortedGames = computed(() => {
   const activeStatuses = ["Scheduled", "CallsPending", "ReadyToStart", "InProgress"];
-  
+
   const activeGames = [...filteredGames.value]
     .filter(g => activeStatuses.includes(String(g.status)))
     .sort((a, b) => {
@@ -206,7 +198,7 @@ const sortedGames = computed(() => {
       if (!b.scheduled_date) return -1;
       return new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime();
     });
-  
+
   const finishedGames = [...filteredGames.value]
     .filter(g => !activeStatuses.includes(String(g.status)))
     .sort((a, b) => {
@@ -214,7 +206,7 @@ const sortedGames = computed(() => {
       if (!b.scheduled_date) return -1;
       return new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime();
     });
-  
+
   return [...activeGames, ...finishedGames];
 });
 

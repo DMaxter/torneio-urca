@@ -1,7 +1,7 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal header="Dias de Jogo" class="w-11/12 md:w-8/12 lg:w-6/12">
     <div class="flex flex-col gap-4">
-      <P-FloatLabel variant="on">
+      <P-FloatLabel class="mt-3" variant="on">
         <P-Select
           id="tournament"
           v-model="selectedTournament"

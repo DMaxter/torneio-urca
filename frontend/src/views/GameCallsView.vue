@@ -102,14 +102,17 @@
           A guardar...
         </div>
         <div v-else class="flex gap-2">
-          <P-Button label="Guardar Chamada" severity="secondary" @click="submitCall">
+          <P-Button severity="secondary" @click="submitCall">
             <span class="material-symbols-outlined">save</span>
+            <span class="ml-1">Guardar</span>
           </P-Button>
-          <P-Button label="Fechar Chamada" severity="success" @click="showConfirmDialog = true">
-            <span class="material-symbols-outlined text-orange-500">check_circle</span>
+          <P-Button severity="success" @click="showConfirmDialog = true">
+            <span class="material-symbols-outlined">check</span>
+            <span class="ml-1">Confirmar</span>
           </P-Button>
-          <P-Button label="Cancelar Jogo" severity="danger" @click="showCancelDialog = true">
+          <P-Button severity="danger" @click="showCancelDialog = true">
             <span class="material-symbols-outlined">close</span>
+            <span class="ml-1">Cancelar Jogo</span>
           </P-Button>
         </div>
       </div>
