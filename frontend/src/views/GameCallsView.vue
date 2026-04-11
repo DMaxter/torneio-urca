@@ -22,34 +22,73 @@
               <span class="font-semibold text-blue-800">Equipa da Casa - {{ getTeamName(selectedGame.home_call?.team) }}</span>
             </div>
             <div class="p-3">
-              <div v-if="selectedGame.home_call" class="space-y-2">
-                <div v-if="selectedGame.home_call.players.length === 0" class="text-center py-4">
-                  <P-Button label="Popular Chamada" severity="info" @click="populateCall('home')">
-                    <span class="material-symbols-outlined">group_add</span>
-                  </P-Button>
-                </div>
-                <div
-                  v-for="playerEntry in selectedGame.home_call.players"
-                  :key="playerEntry.player"
-                  class="flex items-center gap-2"
-                >
-                  <span class="text-sm text-stone-600 flex-1 truncate">{{ getPlayerName(playerEntry.player, selectedGame.home_call.team) }}</span>
-                  <P-InputNumber
-                    v-model="playerEntry.number"
-                    :min="1"
-                    :max="99"
-                    placeholder="#"
-                    class="w-16"
-                  />
-                  <P-Button
-                    severity="danger"
-                    text
-                    rounded
-                    size="small"
-                    @click="removePlayer('home', playerEntry.player)"
+              <div v-if="selectedGame.home_call" class="space-y-4">
+                <div class="space-y-2">
+                  <div
+                    v-for="playerEntry in selectedGame.home_call.players"
+                    :key="playerEntry.player"
+                    class="flex items-center gap-2"
                   >
-                    <span class="material-symbols-outlined text-sm text-red-600">delete</span>
-                  </P-Button>
+                    <span class="text-sm text-stone-600 flex-1 truncate">{{ getPlayerName(playerEntry.player, selectedGame.home_call.team) }}</span>
+                    <P-InputNumber
+                      v-model="playerEntry.number"
+                      :min="1"
+                      :max="99"
+                      placeholder="#"
+                      class="w-16"
+                    />
+                    <P-Button
+                      severity="danger"
+                      text
+                      rounded
+                      size="small"
+                      @click="removePlayer('home', playerEntry.player)"
+                    >
+                      <span class="material-symbols-outlined text-sm text-red-600">delete</span>
+                    </P-Button>
+                  </div>
+                </div>
+
+                <div class="pt-4 border-t border-stone-100 space-y-3">
+                  <div class="flex gap-2">
+                    <P-Select
+                      v-model="selectedPlayerToAddHome"
+                      :options="getAvailablePlayers('home')"
+                      optionLabel="name"
+                      optionValue="id"
+                      placeholder="Adicionar jogador..."
+                      filter
+                      class="flex-1"
+                    />
+                    <P-Button
+                      severity="secondary"
+                      @click="addIndividualPlayer('home')"
+                      :disabled="!selectedPlayerToAddHome"
+                    >
+                      <span class="material-symbols-outlined">add</span>
+                    </P-Button>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <P-Button
+                      severity="info"
+                      text
+                      size="small"
+                      @click="addAllRemainingPlayers('home')"
+                      :disabled="getAvailablePlayers('home').length === 0"
+                    >
+                      <span class="material-symbols-outlined">group_add</span>
+                      <span class="ml-1">Adicionar Restantes</span>
+                    </P-Button>
+                    <P-Button
+                      severity="warn"
+                      text
+                      size="small"
+                      @click="confirmReset('home')"
+                    >
+                      <span class="material-symbols-outlined">restart_alt</span>
+                      <span class="ml-1 text-xs">Reset</span>
+                    </P-Button>
+                  </div>
                 </div>
               </div>
               <p v-else class="text-sm text-stone-400">Sem chamada definida</p>
@@ -62,34 +101,73 @@
               <span class="font-semibold text-red-800">Equipa Visitante - {{ getTeamName(selectedGame.away_call?.team) }}</span>
             </div>
             <div class="p-3">
-              <div v-if="selectedGame.away_call" class="space-y-2">
-                <div v-if="selectedGame.away_call.players.length === 0" class="text-center py-4">
-                  <P-Button label="Popular Chamada" severity="info" @click="populateCall('away')">
-                    <span class="material-symbols-outlined">group_add</span>
-                  </P-Button>
-                </div>
-                <div
-                  v-for="playerEntry in selectedGame.away_call.players"
-                  :key="playerEntry.player"
-                  class="flex items-center gap-2"
-                >
-                  <span class="text-sm text-stone-600 flex-1 truncate">{{ getPlayerName(playerEntry.player, selectedGame.away_call.team) }}</span>
-                  <P-InputNumber
-                    v-model="playerEntry.number"
-                    :min="1"
-                    :max="99"
-                    placeholder="#"
-                    class="w-16"
-                  />
-                  <P-Button
-                    severity="danger"
-                    text
-                    rounded
-                    size="small"
-                    @click="removePlayer('away', playerEntry.player)"
+              <div v-if="selectedGame.away_call" class="space-y-4">
+                <div class="space-y-2">
+                  <div
+                    v-for="playerEntry in selectedGame.away_call.players"
+                    :key="playerEntry.player"
+                    class="flex items-center gap-2"
                   >
-                    <span class="material-symbols-outlined text-sm text-red-600">delete</span>
-                  </P-Button>
+                    <span class="text-sm text-stone-600 flex-1 truncate">{{ getPlayerName(playerEntry.player, selectedGame.away_call.team) }}</span>
+                    <P-InputNumber
+                      v-model="playerEntry.number"
+                      :min="1"
+                      :max="99"
+                      placeholder="#"
+                      class="w-16"
+                    />
+                    <P-Button
+                      severity="danger"
+                      text
+                      rounded
+                      size="small"
+                      @click="removePlayer('away', playerEntry.player)"
+                    >
+                      <span class="material-symbols-outlined text-sm text-red-600">delete</span>
+                    </P-Button>
+                  </div>
+                </div>
+
+                <div class="pt-4 border-t border-stone-100 space-y-3">
+                  <div class="flex gap-2">
+                    <P-Select
+                      v-model="selectedPlayerToAddAway"
+                      :options="getAvailablePlayers('away')"
+                      optionLabel="name"
+                      optionValue="id"
+                      placeholder="Adicionar jogador..."
+                      filter
+                      class="flex-1"
+                    />
+                    <P-Button
+                      severity="secondary"
+                      @click="addIndividualPlayer('away')"
+                      :disabled="!selectedPlayerToAddAway"
+                    >
+                      <span class="material-symbols-outlined">add</span>
+                    </P-Button>
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <P-Button
+                      severity="info"
+                      text
+                      size="small"
+                      @click="addAllRemainingPlayers('away')"
+                      :disabled="getAvailablePlayers('away').length === 0"
+                    >
+                      <span class="material-symbols-outlined">group_add</span>
+                      <span class="ml-1">Adicionar Restantes</span>
+                    </P-Button>
+                    <P-Button
+                      severity="warn"
+                      text
+                      size="small"
+                      @click="confirmReset('away')"
+                    >
+                      <span class="material-symbols-outlined">restart_alt</span>
+                      <span class="ml-1 text-xs">Reset</span>
+                    </P-Button>
+                  </div>
                 </div>
               </div>
               <p v-else class="text-sm text-stone-400">Sem chamada definida</p>
@@ -141,6 +219,15 @@
       <P-Button severity="danger" :loading="saving" @click="cancelGame">Cancelar Jogo</P-Button>
     </template>
   </P-Dialog>
+
+  <P-Dialog v-model:visible="showResetDialog" modal header="Reiniciar Chamada" class="w-11/12 md:w-6/12">
+    <p>Deseja mesmo reiniciar esta chamada?</p>
+    <p class="text-orange-600 mt-2 text-sm">Todos os números de camisola atribuídos serão perdidos e a chamada será preenchida com todos os jogadores da equipa.</p>
+    <template #footer>
+      <P-Button severity="secondary" @click="showResetDialog = false">Cancelar</P-Button>
+      <P-Button severity="warn" @click="handleReset">Confirmar Reinício</P-Button>
+    </template>
+  </P-Dialog>
 </template>
 
 <script setup lang="ts">
@@ -170,6 +257,61 @@ const selectedGame = ref<Game | null>(null);
 const saving = ref(false);
 const showConfirmDialog = ref(false);
 const showCancelDialog = ref(false);
+const showResetDialog = ref(false);
+const resetSide = ref<"home" | "away" | null>(null);
+
+const selectedPlayerToAddHome = ref<string | null>(null);
+const selectedPlayerToAddAway = ref<string | null>(null);
+
+function getAvailablePlayers(side: "home" | "away") {
+  const game = selectedGame.value;
+  if (!game) return [];
+
+  const call = side === "home" ? game.home_call : game.away_call;
+  if (!call) return [];
+
+  const teamPlayers = playerStore.players.filter(p => p.team === call.team);
+  const playersInCall = new Set(call.players.map(p => p.player));
+
+  return teamPlayers
+    .filter(p => !playersInCall.has(p.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function addIndividualPlayer(side: "home" | "away") {
+  const playerId = side === "home" ? selectedPlayerToAddHome.value : selectedPlayerToAddAway.value;
+  if (!playerId || !selectedGame.value) return;
+
+  const call = side === "home" ? selectedGame.value.home_call : selectedGame.value.away_call;
+  if (!call) return;
+
+  call.players.push({ player: playerId, number: null });
+
+  if (side === "home") selectedPlayerToAddHome.value = null;
+  else selectedPlayerToAddAway.value = null;
+}
+
+function addAllRemainingPlayers(side: "home" | "away") {
+  const available = getAvailablePlayers(side);
+  const call = side === "home" ? selectedGame.value?.home_call : selectedGame.value?.away_call;
+  if (!call) return;
+
+  available.forEach(p => {
+    call.players.push({ player: p.id, number: null });
+  });
+}
+
+function confirmReset(side: "home" | "away") {
+  resetSide.value = side;
+  showResetDialog.value = true;
+}
+
+async function handleReset() {
+  if (!resetSide.value) return;
+  await populateCall(resetSide.value);
+  showResetDialog.value = false;
+  resetSide.value = null;
+}
 
 function getTeamName(teamId: string | undefined) {
   if (!teamId) return "";
