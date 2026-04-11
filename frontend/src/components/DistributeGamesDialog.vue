@@ -24,7 +24,7 @@
           <div class="divide-y divide-stone-100 max-h-80 overflow-y-auto">
             <div v-for="slot in slots" :key="slot.date" class="p-3">
               <p class="font-semibold text-stone-700 text-sm mb-1">
-                {{ formatDate(slot.date) }}
+                {{ formatDateLong(slot.date) }}
                 <span class="text-stone-400 font-normal text-xs ml-1">{{ slot.startTime }} · {{ slot.games.length }} jogo{{ slot.games.length !== 1 ? 's' : '' }}</span>
               </p>
               <ul class="space-y-1">
@@ -104,9 +104,11 @@ import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 import type { Game } from "@router/backend/services/game/types";
+import { useDateFormatter } from "@/composables/useDateFormatter";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
+const { formatDateLong } = useDateFormatter();
 
 const gameStore = useGameStore();
 const gameDayStore = useGameDayStore();
@@ -147,11 +149,7 @@ function getTeamName(id: string) {
   return teamStore.teams.find(t => t.id === id)?.name ?? id;
 }
 
-function formatDate(dateKey: string) {
-  return new Date(dateKey + "T12:00:00").toLocaleDateString("pt-PT", {
-    weekday: "long", day: "numeric", month: "long",
-  });
-}
+
 
 function formatGameTime(startTime: string, index: number): string {
   const [h, m] = startTime.split(":").map(Number);

@@ -22,17 +22,17 @@
           </div>
         </template>
       </P-Column>
-      <P-Column header="Fase" style="width: 100px">
+      <P-Column header="Fase" class="w-[100px]">
         <template #body="{ data }">
           <span class="text-sm text-stone-500">{{ getPhaseLabel(data.phase) }}</span>
         </template>
       </P-Column>
-      <P-Column header="Estado" style="width: 120px">
+      <P-Column header="Estado" class="w-[120px]">
         <template #body="{ data }">
           <P-Tag :severity="getStatusSeverity(data.status)" :value="getStatusLabel(data.status)" />
         </template>
       </P-Column>
-      <P-Column header="Ação" style="width: 150px">
+      <P-Column header="Ação" class="w-[150px]">
         <template #body="{ data }">
            <div class="flex gap-1" v-if="data.status !== GameStatus.Finished">
              <P-Button
@@ -79,7 +79,7 @@
            </div>
         </template>
       </P-Column>
-      <P-Column header="Eliminar todos" style="width: 110px">
+      <P-Column header="Eliminar todos" class="w-[110px]">
         <template #body="{ data }">
           <span
             v-if="!tournamentHasScheduledGames(data.tournament)"
@@ -122,6 +122,7 @@ import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 import { GameStatus } from "@router/backend/services/game/types";
 import * as gameService from "@router/backend/services/game";
+import { useApiErrorToast } from "@/composables/useApiErrorToast";
 
 const router = useRouter();
 const enabled = defineModel<boolean>();
@@ -129,6 +130,7 @@ const toast = useToast();
 const gameStore = useGameStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
+const { handleApiError } = useApiErrorToast();
 
 const showDeleteConfirm = ref(false);
 const tournamentToDelete = ref("");
@@ -183,9 +185,7 @@ async function startCalls(gameId: string) {
       await gameStore.getGames();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao iniciar chamadas";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao iniciar chamadas");
   }
 }
 
@@ -197,9 +197,7 @@ async function confirmCalls(gameId: string) {
       await gameStore.getGames();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao confirmar chamadas";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao confirmar chamadas");
   }
 }
 
@@ -211,9 +209,7 @@ async function startGame(gameId: string) {
       await gameStore.getGames();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao iniciar jogo";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao iniciar jogo");
   }
 }
 
@@ -225,9 +221,7 @@ async function cancelGame(gameId: string) {
       await gameStore.getGames();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao cancelar jogo";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao cancelar jogo");
   }
 }
 

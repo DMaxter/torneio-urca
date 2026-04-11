@@ -1,5 +1,5 @@
 <template>
-  <div class="staff-management p-4 w-full mx-auto bg-stone-50 md:p-6">
+  <div class="max-w-[1200px] p-4 w-full mx-auto bg-stone-50 md:p-6">
     <div class="mb-6 flex items-center justify-between">
       <div>
         <h1 class="text-xl font-bold text-stone-900 mb-1 md:text-2xl">Gestão de Staff</h1>
@@ -16,7 +16,7 @@
     <div class="bg-white border border-stone-300 rounded-xl overflow-hidden">
       <P-DataTable :value="staffStore.staff" striped-rows size="small" responsiveLayout="scroll">
         <P-Column header="Nome" field="name" />
-        <P-Column header="Equipa" style="min-width: 150px">
+        <P-Column header="Equipa" class="min-w-[150px]">
           <template #body="{ data }">
             {{ getTeamName(data) }}
           </template>
@@ -32,7 +32,7 @@
           </template>
         </P-Column>
         <P-Column header="Nº Fiscal" field="fiscal_number" />
-        <P-Column header="Ações" style="width: 120px">
+        <P-Column header="Ações" class="w-[120px]">
           <template #body="{ data }">
             <div class="flex gap-1">
               <P-Button text rounded size="small" @click="openEditDialog(data)" v-tooltip.top="'Editar'">
@@ -95,10 +95,14 @@ import { useStaffStore } from "@stores/staff";
 import { useTeamStore } from "@stores/teams";
 import { http } from "@router/backend/api";
 import type { Staff } from "@router/backend/services/staff/types";
+import { useDateFormatter } from "@/composables/useDateFormatter";
+import { useApiErrorToast } from "@/composables/useApiErrorToast";
 
 const toast = useToast();
 const staffStore = useStaffStore();
 const teamStore = useTeamStore();
+const { formatDate } = useDateFormatter();
+const { handleApiError } = useApiErrorToast();
 
 const showFormDialog = ref(false);
 const showDeleteDialog = ref(false);
@@ -135,11 +139,7 @@ function getTeamName(staff: Staff): string {
   return staff.team_name || "-";
 }
 
-function formatDate(dateStr: string): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("pt-PT");
-}
+
 
 async function refreshStaff() {
   await staffStore.getStaff();
@@ -226,7 +226,7 @@ async function saveStaff() {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Staff atualizado", life: 3000 });
     } else {
       const { data } = await http.post("/staff", payload);
-      const newStaffId = (data as any).id;
+      const newStaffId = (data as { id: string }).id;
 
       if (staffForm.value.selected_team_id) {
         const staffField = getStaffFieldForType(staffForm.value.staff_type);
@@ -242,9 +242,7 @@ async function saveStaff() {
     await staffStore.getStaff();
     await teamStore.getTeams();
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao guardar staff";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao guardar staff");
   } finally {
     saving.value = false;
   }
@@ -259,9 +257,7 @@ async function deleteStaff() {
     showDeleteDialog.value = false;
     await staffStore.getStaff();
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao eliminar staff";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao eliminar staff");
   } finally {
     saving.value = false;
   }
@@ -272,9 +268,3 @@ onMounted(async () => {
 });
 </script>
 
-<style lang="scss" scoped>
-.staff-management {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-</style>

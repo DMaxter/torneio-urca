@@ -1,29 +1,29 @@
 <template>
-  <P-Dialog v-model:visible="enabled" modal :header="viewMode ? 'Ver Equipa' : (creating ? 'Criar Equipa' : 'Editar Equipa')" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5" :style="{ maxHeight: '90vh' }">
+  <P-Dialog v-model:visible="enabled" modal :header="viewMode ? 'Ver Equipa' : (creating ? 'Criar Equipa' : 'Editar Equipa')" class="w-11/12 md:w-10/12 lg:w-8/10 xl:w-4/5 max-h-[90vh]">
     <div class="flex flex-col md:flex-row gap-4">
       <!-- Left: Basic Info -->
       <div class="w-full md:w-1/3 space-y-3">
         <h3 class="font-semibold text-stone-700">Informação Básica</h3>
-        <P-FloatLabel class="field" variant="on">
+        <P-FloatLabel class="mt-[10px]" variant="on">
           <P-InputText id="name" v-model="teamForm.name" :disabled="viewMode" fluid />
           <label for="name">Nome</label>
         </P-FloatLabel>
-        <P-FloatLabel class="field" variant="on">
+        <P-FloatLabel class="mt-[10px]" variant="on">
           <P-Select id="tournament" v-model="teamForm.tournament" :options="tournamentStore.tournaments"
             optionLabel="name" optionValue="id" :disabled="viewMode" fluid />
           <label for="tournament">Torneio</label>
         </P-FloatLabel>
         
         <h3 class="font-semibold text-stone-700 mt-4">Responsável</h3>
-        <P-FloatLabel class="field" variant="on">
+        <P-FloatLabel class="mt-[10px]" variant="on">
           <P-InputText id="responsibleName" v-model="teamForm.responsible_name" :disabled="viewMode" fluid />
           <label for="responsibleName">Nome do Responsável</label>
         </P-FloatLabel>
-        <P-FloatLabel class="field" variant="on">
+        <P-FloatLabel class="mt-[10px]" variant="on">
           <P-InputText id="responsibleEmail" v-model="teamForm.responsible_email" type="email" :disabled="viewMode" fluid />
           <label for="responsibleEmail">Email do Responsável</label>
         </P-FloatLabel>
-        <P-FloatLabel class="field" variant="on">
+        <P-FloatLabel class="mt-[10px]" variant="on">
           <P-InputText id="responsiblePhone" v-model="teamForm.responsible_phone" :disabled="viewMode" fluid />
           <label for="responsiblePhone">Telemóvel do Responsável</label>
         </P-FloatLabel>
@@ -143,8 +143,10 @@ import { usePlayerStore } from "@stores/players";
 import { useStaffStore } from "@stores/staff";
 import { http } from "@router/backend/api";
 import { calculateAge } from "@/utils";
+import { useApiErrorToast } from "@/composables/useApiErrorToast";
 
 const toast = useToast();
+const { handleApiError } = useApiErrorToast();
 const enabled = defineModel<boolean>();
 const props = defineProps<{
   team?: Team
@@ -250,9 +252,7 @@ async function addPlayer() {
       showAddPlayerDialog.value = false;
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao adicionar jogador";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao adicionar jogador");
   }
 }
 
@@ -265,9 +265,7 @@ async function removePlayer(playerId: string) {
       await loadTeamPlayers();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao remover jogador";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao remover jogador");
   }
 }
 
@@ -318,8 +316,4 @@ function close() {
 }
 </script>
 
-<style lang="scss" scoped>
-.field {
-  margin-top: 10px;
-}
-</style>
+

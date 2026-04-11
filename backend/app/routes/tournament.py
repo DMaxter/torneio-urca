@@ -10,6 +10,14 @@ router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
 
 
 def tournament_to_dto(tournament: dict) -> TournamentDto:
+    """
+    Map a MongoDB tournament document dictionary to a serialized TournamentDto.
+    
+    Args:
+        tournament: The raw MongoDB dictionary document.
+    Returns:
+        Structured TournamentDto model mapping ObjectIds to strings.
+    """
     clean = sanitize_for_serialization(tournament)
     return TournamentDto(
         id=clean["_id"],
@@ -26,6 +34,13 @@ def tournament_to_dto(tournament: dict) -> TournamentDto:
 async def add_tournament(
     tournament: CreateTournamentDto, current_user=Depends(get_current_user)
 ):
+    """
+    Create a new tournament. Initializes the base relations for teams, games, groups,
+    goals, and cards to empty lists.
+    
+    Returns:
+        The newly created tournament represented as a Dto.
+    """
     get_logger().info(
         f"[{current_user['username']}] Creating tournament '{tournament.name}'"
     )
@@ -47,6 +62,12 @@ async def add_tournament(
 
 @router.get("", response_model=List[TournamentDto])
 async def get_tournaments():
+    """
+    Fetch a list of all globally available tournaments in the database.
+    
+    Returns:
+        A list of mapped TournamentDto objects.
+    """
     get_logger().info("Retrieving all tournaments")
     tournaments = await db.db[TOURNAMENTS_COLLECTION].find().to_list(1000)
     get_logger().info(f"Retrieved {len(tournaments)} tournaments")
@@ -55,6 +76,13 @@ async def get_tournaments():
 
 @router.delete("/{tournament_id}", status_code=204)
 async def delete_tournament(tournament_id: str, current_user = Depends(require_manage_games)):
+    """
+    Delete a specific tournament from the database.
+    Prevents deletion if any child teams attached to the tournament have players assigned.
+    
+    Raises:
+        Error.bad_request if teams contain assigned players.
+    """
     from app.error import Error
 
     tournament = await get_tournament(tournament_id)
@@ -75,14 +103,17 @@ async def delete_tournament(tournament_id: str, current_user = Depends(require_m
 
 
 async def get_tournament(tournament_id: str) -> dict:
-    from app.error import Error
-
-    try:
-        tournament = await db.db[TOURNAMENTS_COLLECTION].find_one(
-            {"_id": ObjectId(tournament_id)}
-        )
-    except Exception:
-        raise Error.invalid_id("torneio")
-    if not tournament:
-        raise Error.not_found("Torneio")
-    return tournament
+    """
+    Internally resolve a single tournament dictionary dynamically querying the database.
+    
+    Args:
+        tournament_id: String MongoDB ObjectId identifier.
+    Returns:
+        The fetched MongoDB document mapped as a Python dictionary.
+    Raises:
+        Error.invalid_id if the format is ill-structured.
+        Error.not_found if no exact match exists.
+    """
+    from app.utils.db import get_entity_or_404
+    from database import TOURNAMENTS_COLLECTION
+    return await get_entity_or_404(TOURNAMENTS_COLLECTION, tournament_id, "Torneio")

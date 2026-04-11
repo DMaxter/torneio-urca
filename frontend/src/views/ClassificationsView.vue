@@ -34,7 +34,7 @@
         
         <div class="overflow-x-auto">
           <P-DataTable :value="classification.standings" stripedRows class="text-sm">
-            <P-Column header="#" style="width: 3rem">
+            <P-Column header="#" class="w-[3rem]">
               <template #body="slotProps">
                 <span class="font-bold">{{ (slotProps.rowIndex ?? 0) + 1 }}</span>
               </template>

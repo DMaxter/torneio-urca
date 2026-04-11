@@ -64,12 +64,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
 
 import { useAuthStore } from "@stores/auth";
-import { useUserStore } from "@stores/users";
-import { USER_ROLES } from "@router/backend/services/user/types";
 import type { Game } from "@router/backend/services/game/types";
 
 const router = useRouter();

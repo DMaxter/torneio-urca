@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from "vue";
+import { reactive, watch, computed } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useUserStore } from "@stores/users";
 import { useGameStore } from "@stores/games";

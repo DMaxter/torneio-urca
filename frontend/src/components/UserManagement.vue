@@ -3,13 +3,13 @@
     v-model:visible="enabled"
     modal
     :header="creating ? 'Criar Utilizador' : 'Alterar Palavra-passe'"
-    :style="{ width: '350px' }"
+    class="w-[350px]"
   >
-    <P-FloatLabel v-if="creating" class="field" variant="on">
+    <P-FloatLabel v-if="creating" class="mt-[10px]" variant="on">
       <P-InputText id="username" v-model="userForm.username" fluid />
       <label for="username">Nome de Utilizador</label>
     </P-FloatLabel>
-    <div v-if="creating" class="field">
+    <div v-if="creating" class="mt-[10px]">
       <P-FloatLabel variant="on">
         <P-InputText id="password" v-model="userForm.password" type="password" fluid />
         <label for="password">Palavra-passe</label>
@@ -106,9 +106,3 @@ function close() {
   passwords.value = { current_password: "", new_password: "" };
 }
 </script>
-
-<style lang="scss" scoped>
-.field {
-  margin-top: 10px;
-}
-</style>

@@ -9,7 +9,7 @@
           </div>
         </template>
       </P-Column>
-      <P-Column header="Ações" :style="{ width: '120px' }">
+      <P-Column header="Ações" class="w-[120px]">
         <template #body="{ data }">
           <div class="flex gap-2 items-center">
             <span

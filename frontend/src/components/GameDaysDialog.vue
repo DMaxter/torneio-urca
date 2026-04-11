@@ -32,7 +32,7 @@
           <ul class="divide-y divide-stone-100">
             <li v-for="day in sortedDays" :key="day.date" class="px-3 py-2">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-stone-700">{{ formatDate(day.date) }}</span>
+                <span class="text-sm font-medium text-stone-700">{{ formatDateLong(day.date) }}</span>
                 <span
                   v-if="scheduledCountForDay(day.date) === 0"
                   class="material-symbols-outlined text-base cursor-pointer text-red-500 hover:text-red-700"
@@ -100,12 +100,14 @@ import { useGameDayStore } from "@stores/game_days";
 import { useGameStore } from "@stores/games";
 import { useTournamentStore } from "@stores/tournaments";
 import { CreateGameDay } from "@router/backend/services/game_day/types";
+import { useDateFormatter } from "@/composables/useDateFormatter";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
 const gameDayStore = useGameDayStore();
 const gameStore = useGameStore();
 const tournamentStore = useTournamentStore();
+const { formatDateLong } = useDateFormatter();
 
 const selectedTournament = ref<string>("");
 const selectedDates = ref<Date[]>([]);
@@ -174,7 +176,7 @@ function onDatesChange() {
     toast.add({
       severity: "warn",
       summary: "Não permitido",
-      detail: `Não é possível remover dias com jogos agendados: ${blocked.map(d => formatDate(d.date)).join(", ")}`,
+      detail: `Não é possível remover dias com jogos agendados: ${blocked.map(d => formatDateLong(d.date)).join(", ")}`,
       life: 4000,
     });
     // Re-add blocked days back to selection
@@ -221,7 +223,7 @@ function checkOverlap(day: typeof pendingDays.value[0]): string | null {
       const hh = String(Math.floor(conflict / 60)).padStart(2, "0");
       const mm = String(conflict % 60).padStart(2, "0");
       const otherName = tournamentStore.tournaments.find(t => t.id === other.tournament)?.name ?? "outro torneio";
-      return `Sobreposição no dia ${formatDate(day.date)} às ${hh}:${mm} com "${otherName}". Ajusta a hora de início ou o número de jogos.`;
+      return `Sobreposição no dia ${formatDateLong(day.date)} às ${hh}:${mm} com "${otherName}". Ajusta a hora de início ou o número de jogos.`;
     }
   }
   return null;
@@ -299,11 +301,7 @@ function removeDay(dateKey: string) {
   selectedDates.value = pendingDays.value.map(d => new Date(d.date + "T12:00:00"));
 }
 
-function formatDate(dateKey: string): string {
-  return new Date(dateKey + "T12:00:00").toLocaleDateString("pt-PT", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
-  });
-}
+
 
 function close() {
   enabled.value = false;

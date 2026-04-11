@@ -21,7 +21,7 @@
         class="border border-stone-200 rounded-lg overflow-hidden bg-white shadow-sm"
       >
         <div class="bg-stone-100 px-1.5 py-1 border-b border-stone-200">
-          <span class="text-xs font-semibold text-stone-700 capitalize">{{ formatDate(day.date) }}</span>
+          <span class="text-xs font-semibold text-stone-700 capitalize">{{ formatDateShort(day.date) }}</span>
         </div>
         <div class="divide-y divide-stone-100">
           <div
@@ -46,9 +46,9 @@
             </div>
             <div v-if="slot.game" class="flex items-center gap-1 pl-8">
               <span class="w-1.5 h-1.5 rounded-full shrink-0" :class="getColor(slot.game.tournament).dot"></span>
-              <p class="text-xs text-stone-400 truncate flex-1" style="font-size:0.65rem">{{ getGameInfo(slot.game) }}</p>
-              <span v-if="slot.game.status === GameStatus.InProgress" class="font-bold text-green-600 shrink-0" style="font-size:0.65rem">● AO VIVO</span>
-              <span v-else-if="slot.game.status === GameStatus.Finished" class="font-semibold text-red-500 shrink-0" style="font-size:0.65rem">Terminado</span>
+              <p class="text-xs text-stone-400 truncate flex-1 text-[0.65rem]">{{ getGameInfo(slot.game) }}</p>
+              <span v-if="slot.game.status === GameStatus.InProgress" class="font-bold text-green-600 shrink-0 text-[0.65rem]">● AO VIVO</span>
+              <span v-else-if="slot.game.status === GameStatus.Finished" class="font-semibold text-red-500 shrink-0 text-[0.65rem]">Terminado</span>
             </div>
           </div>
         </div>
@@ -73,11 +73,13 @@ import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 import { useTournamentColors } from "@/composables/useTournamentColors";
+import { useDateFormatter } from "@/composables/useDateFormatter";
 import type { Game } from "@router/backend/services/game/types";
 import { GameStatus } from "@router/backend/services/game/types";
 import * as gameService from "@router/backend/services/game";
 
 const { getColor } = useTournamentColors();
+const { formatDateShort } = useDateFormatter();
 
 const gameStore = useGameStore();
 const gameDayStore = useGameDayStore();
@@ -168,11 +170,6 @@ function slotTime(startTime: string, slotIndex: number): string {
 }
 
 
-function formatDate(dateKey: string) {
-  return new Date(dateKey + "T12:00:00").toLocaleDateString("pt-PT", {
-    weekday: "short", day: "numeric", month: "short",
-  });
-}
 
 function getTeamName(id: string): string {
   return teamStore.teams.find(t => t.id === id)?.name ?? id;

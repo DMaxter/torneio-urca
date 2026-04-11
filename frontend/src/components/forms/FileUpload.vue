@@ -1,19 +1,19 @@
 <template>
-  <div class="field">
+  <div class="block mt-[15px]">
     <label>{{ label }} {{ required ? '*' : '' }}</label>
-    <div class="file-input-wrapper">
+    <div class="flex items-center gap-[10px] mt-[5px] flex-wrap">
       <P-Button size="small" @click="triggerFileInput">
         <span class="material-symbols-outlined">upload</span>
         Selecionar
       </P-Button>
-      <span class="file-name">{{ fileName }}</span>
-      <span class="file-size-limit">(máx. 5MB)</span>
+      <span class="flex-1 text-[0.9rem] text-stone-500 break-all">{{ fileName }}</span>
+      <span class="text-[0.75rem] text-stone-500 italic">(máx. 5MB)</span>
       <input
         type="file"
         :id="id"
         :accept="accept"
         @change="onFileChange"
-        style="display: none"
+        class="hidden"
       />
     </div>
   </div>
@@ -68,30 +68,3 @@ const fileName = computed(() => {
 });
 </script>
 
-<style lang="scss" scoped>
-.field {
-  margin-top: 15px;
-  display: block;
-}
-
-.file-input-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 5px;
-  flex-wrap: wrap;
-
-  .file-name {
-    flex: 1;
-    font-size: 0.9rem;
-    color: var(--p-text-muted-color);
-    word-break: break-all;
-  }
-
-  .file-size-limit {
-    font-size: 0.75rem;
-    color: var(--p-text-muted-color);
-    font-style: italic;
-  }
-}
-</style>

@@ -5,12 +5,19 @@
       <!-- Last action feedback -->
       <div v-if="lastAction && !selectedGame" class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5 text-sm text-green-700">
         <span class="material-symbols-outlined text-base shrink-0">check_circle</span>
-        <span v-html="lastAction" class="flex-1"></span>
+        <span class="flex-1">
+          {{ lastAction.prefix }}
+          <template v-for="(g, idx) in lastAction.games" :key="idx">
+            <strong>{{ g.teams }}</strong><template v-if="g.date"> <em class="text-xs opacity-75"><strong>{{ g.date }}</strong></em></template>
+            <template v-if="idx < lastAction.games.length - 1">{{ lastAction.separator }}</template>
+          </template>
+          {{ lastAction.suffix }}
+        </span>
         <P-Button size="small" severity="secondary" class="shrink-0 invisible pointer-events-none" aria-hidden="true">
           <span class="material-symbols-outlined text-sm">sports_score</span>
           Registar Jogo
         </P-Button>
-        <span class="material-symbols-outlined text-base cursor-pointer shrink-0" @click="lastAction = ''">close</span>
+        <span class="material-symbols-outlined text-base cursor-pointer shrink-0" @click="lastAction = null">close</span>
       </div>
 
       <!-- Selection hint -->
@@ -24,7 +31,7 @@
           <span class="material-symbols-outlined text-sm">sports_score</span>
           Registar Jogo
         </P-Button>
-        <span class="material-symbols-outlined text-base cursor-pointer shrink-0" @click="selectedGame = null; lastAction = ''">close</span>
+        <span class="material-symbols-outlined text-base cursor-pointer shrink-0" @click="selectedGame = null; lastAction = null">close</span>
       </div>
 
       <!-- Calendar -->
@@ -35,7 +42,7 @@
           class="border border-stone-200 rounded-lg overflow-hidden"
         >
           <div class="bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-600">
-            {{ formatDate(day.date) }}
+            {{ formatDateShort(day.date) }}
           </div>
           <div class="divide-y divide-stone-100">
             <div
@@ -142,6 +149,9 @@ import { useTournamentColors } from "@/composables/useTournamentColors";
 import type { Game } from "@router/backend/services/game/types";
 
 const { getColor } = useTournamentColors();
+import { useDateFormatter } from "@/composables/useDateFormatter";
+
+const { formatDateShort } = useDateFormatter();
 
 const toast = useToast();
 const emit = defineEmits<{ 'register-game': [game: Game] }>();
@@ -154,7 +164,7 @@ const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
 
 const selectedGame = ref<Game | null>(null);
-const lastAction = ref<string>("");
+const lastAction = ref<ActionLog | null>(null);
 const distributingTournamentId = ref<string | null>(null);
 const showClearConfirm = ref(false);
 const gameToRemove = ref<Game | null>(null);
@@ -163,6 +173,13 @@ interface Slot {
   time: string;
   game: Game | null;
   datetime: Date;
+}
+
+interface ActionLog {
+  prefix: string;
+  games: { teams: string; date: string }[];
+  separator?: string;
+  suffix?: string;
 }
 
 interface CalendarDay {
@@ -283,15 +300,13 @@ function getGameInfo(game: Game): string {
   return [getGroupName(game), getRoundName(game)].filter(Boolean).join(", ");
 }
 
-function formatGameLabel(game: Game, datetime?: Date): string {
+function getGameLog(game: Game, datetime?: Date | null): { teams: string; date: string } {
   const dt = datetime ?? (game.scheduled_date ? new Date(game.scheduled_date) : null);
   const datePart = dt
     ? dt.toLocaleDateString("pt-PT", { weekday: "short", day: "numeric", month: "2-digit" }) +
       " " + String(dt.getHours()).padStart(2, "0") + ":" + String(dt.getMinutes()).padStart(2, "0") + "h"
     : "sem data";
-  const teams = `<strong>${getGameLabel(game)}</strong>`;
-  const datePart2 = datePart ? ` <em class="text-xs opacity-75"><strong>${datePart}</strong></em>` : "";
-  return `${teams}${datePart2}`;
+  return { teams: getGameLabel(game), date: datePart };
 }
 
 function promptClearSchedule(game: Game) {
@@ -310,16 +325,12 @@ async function clearSchedule(game: Game) {
   if (!result.success) {
     toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível limpar o agendamento", life: 3000 });
   } else {
-    lastAction.value = `Agendamento removido: ${formatGameLabel(game)}`;
+    lastAction.value = { prefix: `Agendamento removido: `, games: [getGameLog(game)] };
   }
   loadCalendar(true);
 }
 
-function formatDate(dateKey: string) {
-  return new Date(dateKey + "T12:00:00").toLocaleDateString("pt-PT", {
-    weekday: "short", day: "numeric", month: "short",
-  });
-}
+
 
 // Build a global datetime key for deduplication and occupation checks
 function datetimeKey(date: string, time: string): string {
@@ -345,7 +356,7 @@ function slotTime(startTime: string, slotIndex: number): string {
 
 function loadCalendar(preserveAction = false) {
   selectedGame.value = null;
-  if (!preserveAction) lastAction.value = "";
+  if (!preserveAction) lastAction.value = null;
 
   // Merge all game days from all tournaments, deduplicated by datetime
   const dateSlotMap = new Map<string, Map<string, Slot>>();
@@ -463,14 +474,18 @@ async function onSlotClick(slot: Slot) {
     if (!r1.success || !r2.success) {
       toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível trocar os jogos", life: 3000 });
     } else {
-      lastAction.value = `Troca: ${formatGameLabel(movingGame, slot.datetime)} ↔ ${formatGameLabel(swapGame, movingGame.scheduled_date ? new Date(movingGame.scheduled_date) : undefined)}`;
+      lastAction.value = {
+        prefix: `Troca: `,
+        games: [getGameLog(movingGame, slot.datetime), getGameLog(swapGame, movingGame.scheduled_date ? new Date(movingGame.scheduled_date) : null)],
+        separator: ` ↔ `
+      };
     }
   } else {
     const result = await gameStore.updateGame(movingGame.id, slot.datetime);
     if (!result.success) {
       toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível mover o jogo", life: 3000 });
     } else {
-      lastAction.value = `Movido: ${formatGameLabel(movingGame, slot.datetime)}`;
+      lastAction.value = { prefix: `Movido: `, games: [getGameLog(movingGame, slot.datetime)] };
     }
   }
 
@@ -573,7 +588,10 @@ async function distribute(tournamentId: string) {
 
   if (allOk) {
     const assigned = Math.min(ordered.length, freeSlots.length);
-    lastAction.value = `${getTournamentName(tournamentId)}: ${assigned} jogo${assigned !== 1 ? 's' : ''} distribuídos com sucesso`;
+    lastAction.value = {
+      prefix: `${getTournamentName(tournamentId)}: ${assigned} jogo${assigned !== 1 ? 's' : ''} distribuídos com sucesso`,
+      games: []
+    };
   } else {
     toast.add({ severity: "error", summary: "Erro", detail: "Alguns jogos não foram agendados", life: 4000 });
   }
@@ -589,7 +607,7 @@ function onRegisterGame(game: Game) {
 function close() {
   enabled.value = false;
   selectedGame.value = null;
-  lastAction.value = "";
+  lastAction.value = null;
   calendarDays.value = [];
 }
 

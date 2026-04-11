@@ -665,7 +665,7 @@ async def update_period(
 
 @router.delete("/{game_id}/events/{event_index}", status_code=204)
 async def delete_game_event(
-    game_id: str, event_index: int, _=Depends(require_manage_game_events)
+    game_id: str, event_index: int, current_user: dict = Depends(require_manage_game_events)
 ):
     """Delete a specific game event by its index in the events list."""
     get_logger().info(

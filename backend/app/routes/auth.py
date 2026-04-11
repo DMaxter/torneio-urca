@@ -31,6 +31,15 @@ class CurrentUserDto(BaseModel):
 
 
 def create_access_token(data: dict) -> str:
+    """
+    Generate a JWT access token encoding the provided payload along with an expiration time.
+    
+    Args:
+        data: The dictionary payload intended for the token.
+              Should include 'sub' for the username and 'user_id'.
+    Returns:
+        Encoded JWT string.
+    """
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
@@ -39,6 +48,15 @@ def create_access_token(data: dict) -> str:
 
 @router.post("/login", response_model=TokenDto)
 async def login(credentials: LoginDto, response: Response):
+    """
+    Authenticate a user using their username and password.
+    
+    Upon successful authentication, a JWT is generated and set securely as an HTTP-only 
+    cookie. In a production environment, the cookie will be flagged as secure and same-site.
+    
+    Raises:
+        HTTPException(401) on invalid credentials.
+    """
     get_logger().info(f"Login attempt for user '{credentials.username}'")
     user = await db.db[USERS_COLLECTION].find_one({"username": credentials.username})
     if not user or not verify_password(credentials.password, user["password"]):
@@ -69,6 +87,10 @@ async def login(credentials: LoginDto, response: Response):
 
 @router.post("/logout")
 async def logout(response: Response):
+    """
+    Terminate the user session by explicitly clearing the configured JWT auth cookie.
+    Includes configuration branching to respect secure contexts in production.
+    """
     cookie_params = {"key": COOKIE_NAME}
     if settings.production:
         cookie_params["secure"] = True
@@ -81,6 +103,10 @@ async def logout(response: Response):
 
 @router.get("/me", response_model=CurrentUserDto | None)
 async def get_current_user(request: Request):
+    """
+    Retrieve the current authenticated user context directly from the request cookies.
+    Fails gracefully returning None if the token is non-existent, invalid, or expired.
+    """
     token = request.cookies.get(COOKIE_NAME)
     if not token:
         return None

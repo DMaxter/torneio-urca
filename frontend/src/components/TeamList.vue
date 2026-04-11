@@ -24,7 +24,7 @@
           <P-Tag :value="`${data.players?.length || 0}`" :severity="(data.players?.length || 0) >= 5 ? 'success' : 'danger'" />
         </template>
       </P-Column>
-      <P-Column header="Ações" style="width: 120px">
+      <P-Column header="Ações" class="w-[120px]">
         <template #body="{ data }">
           <div class="flex gap-1 items-center">
             <P-Button size="small" text @click.stop="viewTeam(data)">
@@ -206,8 +206,8 @@
     </template>
   </P-Dialog>
 
-  <P-Dialog v-model:visible="showFileViewer" modal header="Documento" :style="{ width: '80vw', height: '90vh' }">
-    <iframe v-if="fileUrl" :src="fileUrl" class="file-viewer"></iframe>
+  <P-Dialog v-model:visible="showFileViewer" modal header="Documento" class="w-[80vw] h-[90vh]">
+    <iframe v-if="fileUrl" :src="fileUrl" class="w-full h-[80vh] border-none"></iframe>
   </P-Dialog>
 </template>
 
@@ -362,11 +362,3 @@ onMounted(async () => {
   ]);
 });
 </script>
-
-<style scoped>
-.file-viewer {
-  width: 100%;
-  height: 80vh;
-  border: none;
-}
-</style>

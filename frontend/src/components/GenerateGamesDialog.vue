@@ -89,9 +89,19 @@
             <div class="divide-y divide-stone-100">
               <div v-for="game in knockoutPreview" :key="game.label" class="px-3 py-2 flex items-center gap-3">
                 <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
-                <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.home)"></span>
+                <span class="text-xs text-stone-600 truncate">
+                  <template v-if="getPlaceholderChunks(game.home).position">
+                    <strong>{{ getPlaceholderChunks(game.home).position }}</strong> {{ getPlaceholderChunks(game.home).baseStr }} — <strong>{{ getPlaceholderChunks(game.home).name }}</strong>
+                  </template>
+                  <template v-else>{{ game.home }}</template>
+                </span>
                 <span class="text-xs text-stone-400 shrink-0">vs</span>
-                <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.away)"></span>
+                <span class="text-xs text-stone-600 truncate">
+                  <template v-if="getPlaceholderChunks(game.away).position">
+                    <strong>{{ getPlaceholderChunks(game.away).position }}</strong> {{ getPlaceholderChunks(game.away).baseStr }} — <strong>{{ getPlaceholderChunks(game.away).name }}</strong>
+                  </template>
+                  <template v-else>{{ game.away }}</template>
+                </span>
               </div>
             </div>
           </div>
@@ -133,9 +143,19 @@
               <div class="bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">Fase a Eliminar</div>
               <div v-for="game in knockoutPreview" :key="game.label" class="px-3 py-2 flex items-center gap-3 border-t border-stone-100">
                 <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
-                <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.home)"></span>
+                <span class="text-xs text-stone-600 truncate">
+                  <template v-if="getPlaceholderChunks(game.home).position">
+                    <strong>{{ getPlaceholderChunks(game.home).position }}</strong> {{ getPlaceholderChunks(game.home).baseStr }} — <strong>{{ getPlaceholderChunks(game.home).name }}</strong>
+                  </template>
+                  <template v-else>{{ game.home }}</template>
+                </span>
                 <span class="text-xs text-stone-400 shrink-0">vs</span>
-                <span class="text-xs text-stone-600 truncate" v-html="formatPlaceholder(game.away)"></span>
+                <span class="text-xs text-stone-600 truncate">
+                  <template v-if="getPlaceholderChunks(game.away).position">
+                    <strong>{{ getPlaceholderChunks(game.away).position }}</strong> {{ getPlaceholderChunks(game.away).baseStr }} — <strong>{{ getPlaceholderChunks(game.away).name }}</strong>
+                  </template>
+                  <template v-else>{{ game.away }}</template>
+                </span>
               </div>
             </div>
           </template>
@@ -314,11 +334,12 @@ function buildRounds(teamIds: string[]): MatchPreview[][] {
   return rounds;
 }
 
-function formatPlaceholder(text: string): string {
-  return text.replace(
-    /^(\d+º)\s+(Classificado)\s+(.+)$/,
-    '<strong>$1</strong> $2 — <strong>$3</strong>'
-  );
+function getPlaceholderChunks(text: string): { position?: string, baseStr?: string, name?: string, original: string } {
+  const match = text.match(/^(\d+º)\s+(Classificado)\s+(.+)$/);
+  if (match) {
+    return { position: match[1], baseStr: match[2], name: match[3], original: text };
+  }
+  return { original: text };
 }
 
 function computeKnockoutPreview(groups: { name: string }[]) {

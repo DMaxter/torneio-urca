@@ -20,7 +20,7 @@
               v-tooltip.top="c.label"
               @click="setColor(data.id, c.value)"
             >
-              <span v-if="c.value === 'none'" class="text-stone-400 leading-none" style="font-size:9px">✕</span>
+              <span v-if="c.value === 'none'" class="text-stone-400 leading-none text-[9px]">✕</span>
             </button>
           </div>
         </template>

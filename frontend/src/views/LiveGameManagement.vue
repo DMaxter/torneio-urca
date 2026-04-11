@@ -338,6 +338,7 @@ import * as gameService from "@router/backend/services/game";
 import type { Game, GameEvent } from "@router/backend/services/game/types";
 import { GameStatus } from "@router/backend/services/game/types";
 import type { CardType } from "@router/backend/services/game/types";
+import { useApiErrorToast } from "@/composables/useApiErrorToast";
 
 const router = useRouter();
 const route = useRoute();
@@ -345,6 +346,7 @@ const toast = useToast();
 const gameStore = useGameStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
+const { handleApiError } = useApiErrorToast();
 
 const gameId = route.params.gameId as string;
 const game = ref<Game | null>(null);
@@ -877,9 +879,7 @@ async function submitEvent() {
     await loadGame();
     
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || 'Erro ao registar evento';
-    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+    handleApiError(e, 'Erro ao registar evento');
   } finally {
     saving.value = false;
     closeEventDialog();
@@ -896,9 +896,7 @@ async function startPeriod() {
       await loadGame();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || 'Erro ao iniciar período';
-    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+    handleApiError(e, 'Erro ao iniciar período');
   }
 }
 
@@ -914,9 +912,7 @@ async function resumePeriod() {
       await loadGame();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || 'Erro ao retomar cronómetro';
-    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+    handleApiError(e, 'Erro ao retomar cronómetro');
   }
 }
 
@@ -930,9 +926,7 @@ async function stopTimer() {
       await loadGame();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || 'Erro ao parar cronómetro';
-    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+    handleApiError(e, 'Erro ao parar cronómetro');
   }
 }
 
@@ -949,9 +943,7 @@ async function endPeriod() {
       await loadGame();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || 'Erro ao terminar período';
-    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+    handleApiError(e, 'Erro ao terminar período');
   }
 }
 
@@ -965,9 +957,7 @@ async function startPenalties() {
       await loadGame();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || 'Erro ao iniciar penalidades';
-    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+    handleApiError(e, 'Erro ao iniciar penalidades');
   }
 }
 
@@ -1004,9 +994,7 @@ async function finishGame() {
       router.push('/admin');
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || 'Erro ao terminar jogo';
-    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+    handleApiError(e, 'Erro ao terminar jogo');
   }
 }
 
@@ -1023,9 +1011,7 @@ async function deleteEvent(eventIndex: number) {
       await loadGame();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || 'Erro ao eliminar evento';
-    toast.add({ severity: 'error', summary: 'Erro', detail: msg, life: 3000 });
+    handleApiError(e, 'Erro ao eliminar evento');
   }
 }
 

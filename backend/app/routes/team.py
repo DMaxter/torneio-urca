@@ -190,7 +190,7 @@ async def create_players(players: list, file_dict: dict[str, str]) -> list[Objec
 
 
 @router.post("", response_model=TeamDto, status_code=201)
-async def add_team(team: CreateTeamDto, _=Depends(require_manage_players)):
+async def add_team(team: CreateTeamDto, current_user: dict = Depends(require_manage_players)):
     """Create a new team by providing full references to existing entities."""
     from app.routes.tournament import get_tournament
 
@@ -758,7 +758,7 @@ async def get_team_players(team_id: str):
 
 
 @router.delete("/{team_id}", status_code=204)
-async def delete_team(team_id: str, _=Depends(require_manage_players)):
+async def delete_team(team_id: str, current_user: dict = Depends(require_manage_players)):
     """Delete a team and all its players."""
     get_logger().info(f"[{current_user['username']}] Deleting team '{team_id}'")
     try:
@@ -791,7 +791,7 @@ async def delete_team(team_id: str, _=Depends(require_manage_players)):
 
 @router.put("/{team_id}", response_model=TeamDto)
 async def update_team(
-    team_id: str, team: CreateTeamDto, _=Depends(require_manage_players)
+    team_id: str, team: CreateTeamDto, current_user: dict = Depends(require_manage_players)
 ):
     """Update a team."""
     get_logger().info(f"[{current_user['username']}] Updating team '{team_id}'")
@@ -845,7 +845,7 @@ async def update_team(
 
 @router.post("/{team_id}/players", response_model=TeamDto)
 async def add_player_to_team(
-    team_id: str, player_id: str, _=Depends(require_manage_players)
+    team_id: str, player_id: str, current_user: dict = Depends(require_manage_players)
 ):
     """Add an existing player to a team."""
     get_logger().info(
@@ -883,7 +883,7 @@ async def add_player_to_team(
 
 @router.delete("/{team_id}/players/{player_id}", response_model=TeamDto)
 async def remove_player_from_team(
-    team_id: str, player_id: str, _=Depends(require_manage_players)
+    team_id: str, player_id: str, current_user: dict = Depends(require_manage_players)
 ):
     """Remove a player from a team."""
     get_logger().info(
@@ -916,7 +916,7 @@ async def update_team_staff(
     team_id: str,
     staff_field: str,
     staff_id: Optional[str] = None,
-    _=Depends(require_manage_players),
+    current_user: dict = Depends(require_manage_players),
 ):
     """Update a team's staff member (set or remove)."""
     valid_fields = [

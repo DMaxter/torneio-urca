@@ -242,6 +242,7 @@ import * as gameService from "@router/backend/services/game";
 import type { Game } from "@router/backend/services/game/types";
 import { GameStatus } from "@router/backend/services/game/types";
 import { http } from "@router/backend/api";
+import { useApiErrorToast } from "@/composables/useApiErrorToast";
 
 const router = useRouter();
 const route = useRoute();
@@ -250,6 +251,7 @@ const gameStore = useGameStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
 const playerStore = usePlayerStore();
+const { handleApiError } = useApiErrorToast();
 
 const selectedTournamentId = ref<string>("");
 const selectedGameId = ref<string>("");
@@ -397,9 +399,7 @@ async function closeAndConfirmCall() {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Chamada confirmada com sucesso", life: 3000 });
     router.push("/admin");
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao confirmar chamadas";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao confirmar chamadas");
   } finally {
     saving.value = false;
   }
@@ -417,9 +417,7 @@ async function cancelGame() {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo cancelado", life: 3000 });
     router.push("/admin");
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao cancelar jogo";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao cancelar jogo");
   } finally {
     saving.value = false;
   }

@@ -28,7 +28,7 @@
             <div class="w-full text-center font-semibold">Data</div>
           </template>
           <template #body="{ data }">
-            <div class="text-center">{{ formatDate(data.scheduled_date) }}</div>
+            <div class="text-center">{{ formatDateTime(data.scheduled_date) }}</div>
           </template>
         </P-Column>
         <P-Column>
@@ -59,7 +59,7 @@
             <div class="text-center">{{ getPhaseLabel(data.phase) }}</div>
           </template>
         </P-Column>
-        <P-Column style="width: 120px">
+        <P-Column class="w-[120px]">
           <template #header>
             <div class="w-full text-center font-semibold">Estado</div>
           </template>
@@ -69,7 +69,7 @@
             </div>
           </template>
         </P-Column>
-        <P-Column style="width: 200px">
+        <P-Column class="w-[200px]">
           <template #header>
             <div class="w-full text-center font-semibold">Ação</div>
           </template>
@@ -151,8 +151,12 @@ import { usePlayerStore } from "@stores/players";
 import { useAuthStore } from "@stores/auth";
 import { GameStatus, type Game } from "@router/backend/services/game/types";
 import * as gameService from "@router/backend/services/game";
+import { useDateFormatter } from "@/composables/useDateFormatter";
+import { useApiErrorToast } from "@/composables/useApiErrorToast";
 
 const authStore = useAuthStore();
+const { handleApiError } = useApiErrorToast();
+const { formatDateTime } = useDateFormatter();
 
 const enabled = defineModel<boolean>();
 const router = useRouter();
@@ -213,11 +217,7 @@ const sortedGames = computed(() => {
   return [...activeGames, ...finishedGames];
 });
 
-function formatDate(date: string | null) {
-  if (!date) return "-";
-  const d = new Date(date);
-  return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
+
 
 function getTeamName(teamId: string): string {
   return teamStore.teams.find(t => t.id === teamId)?.name ?? "N/A";
@@ -267,8 +267,6 @@ function getStatusLabel(status: string) {
 }
 
 const canManageGames = computed(() => authStore.canManageGames);
-const canManageGameEvents = computed(() => authStore.canManageGameEvents);
-const canFillGameCalls = computed(() => authStore.canFillGameCalls);
 
 function canStartCalls(): boolean {
   return authStore.canManageGames;
@@ -278,17 +276,13 @@ function canFillCalls(gameId: string): boolean {
   return authStore.canManageGames || (authStore.canFillGameCalls && authStore.hasCallAccess(gameId));
 }
 
-function canStartGame(): boolean {
-  return authStore.canManageGames;
-}
+
 
 function canStartGameForId(gameId: string): boolean {
   return authStore.canManageGames || (authStore.canManageGameEvents && authStore.hasGameAccess(gameId));
 }
 
-function canViewLiveGame(): boolean {
-  return authStore.canManageGames;
-}
+
 
 function canViewLiveGameForId(gameId: string): boolean {
   return authStore.canManageGames || (authStore.canManageGameEvents && authStore.hasGameAccess(gameId));
@@ -302,25 +296,11 @@ async function startCalls(gameId: string) {
       await refresh();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao iniciar chamadas";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao iniciar chamadas");
   }
 }
 
-async function confirmCalls(gameId: string) {
-  try {
-    const response = await gameService.confirmGameCalls(gameId);
-    if (response.status === 200) {
-      toast.add({ severity: "success", summary: "Sucesso", detail: "Chamadas confirmadas", life: 3000 });
-      await refresh();
-    }
-  } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao confirmar chamadas";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
-  }
-}
+
 
 async function startGame(gameId: string) {
   try {
@@ -330,9 +310,7 @@ async function startGame(gameId: string) {
       await refresh();
     }
   } catch (e: unknown) {
-    const err = e as { response?: { data?: { detail?: { error?: string } } } };
-    const msg = err.response?.data?.detail?.error || "Erro ao iniciar jogo";
-    toast.add({ severity: "error", summary: "Erro", detail: msg, life: 3000 });
+    handleApiError(e, "Erro ao iniciar jogo");
   }
 }
 

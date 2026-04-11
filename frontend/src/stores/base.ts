@@ -17,19 +17,31 @@ export interface CRUDService<T extends Entity, C extends CreateEntity, E = unkno
   create(data: C): Promise<AxiosResponse<T | E>>;
 }
 
+/**
+ * Creates a generic Pinia-compatible CRUD store scaffolding, providing standard actions
+ * for local state management corresponding to a REST backend service.
+ *
+ * @param storeName - Visual name identifier for the generic store, useful for context/errors.
+ * @param items - A Vue `Ref` holding the array of entities specific to this store instance.
+ * @param service - An implementation of the CRUDService responsible for backend calls.
+ * @returns Generic CRUD functions tailored for manipulating the provided `items` state.
+ */
 export function createGenericStore<T extends Entity, C extends CreateEntity, E = unknown>(
   storeName: string,
   items: Ref<T[]>,
   service: CRUDService<T, C, E>
 ) {
+  /** Replaces the local state array with parsed API data. */
   function init(data: T[]) {
     items.value = data;
   }
 
+  /** Inserts a new entity strictly into local state tracking. */
   function add(item: T) {
     items.value.push(item);
   }
 
+  /** Modifies an existing entity strictly within local tracking matching its ID. */
   function update(item: T) {
     const index = items.value.findIndex((i) => i.id === item.id);
     if (index !== -1) {
@@ -37,6 +49,7 @@ export function createGenericStore<T extends Entity, C extends CreateEntity, E =
     }
   }
 
+  /** Deletes an existing entity strictly from local arrays by its ID. */
   function remove(id: string) {
     const index = items.value.findIndex((i) => i.id === id);
     if (index === -1) {
@@ -46,6 +59,10 @@ export function createGenericStore<T extends Entity, C extends CreateEntity, E =
     items.value.splice(index, 1);
   }
 
+  /** 
+   * Reloads the entire entity collection querying the associated backend CRUD service.
+   * @returns Success payload including possible HTTP error flags.
+   */
   async function getAll(): Promise<APIResponse<string | null>> {
     try {
       const { status, data } = await service.getAll();
@@ -61,6 +78,13 @@ export function createGenericStore<T extends Entity, C extends CreateEntity, E =
     }
   }
 
+  /**
+   * Pushes a new element entity creation request into the integrated backend API.
+   * If successful, appends the newly returned entity entry into the array.
+   * 
+   * @param data - The Creation object implementing `CreateEntity`.
+   * @returns Resolves the action APIStatus block representing the process outcome.
+   */
   async function create(data: C): Promise<APIResponse<string | null>> {
     try {
       const response = await service.create(data);
