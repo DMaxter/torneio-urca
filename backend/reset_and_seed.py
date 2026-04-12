@@ -33,6 +33,9 @@ COLLECTIONS = [
     "goals",
     "cards",
     "game_days",
+    "fouls",
+    "fs.files",
+    "fs.chunks",
 ]
 
 ADMIN_USERNAME = "admin"
@@ -1443,7 +1446,15 @@ def clean_database() -> None:
                     "$set": {
                         "password": bcrypt.hashpw(
                             ADMIN_PASSWORD.encode(), bcrypt.gensalt()
-                        ).decode()
+                        ).decode(),
+                        "roles": [
+                            "manage_players",
+                            "manage_games",
+                            "manage_game_events",
+                            "fill_game_calls",
+                        ],
+                        "assigned_games": [],
+                        "assigned_games_for_calls": [],
                     }
                 },
             )
