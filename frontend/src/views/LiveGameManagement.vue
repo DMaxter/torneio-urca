@@ -97,7 +97,19 @@
         <div class="bg-white border-4 border-blue-500 rounded-xl p-4 shadow-lg" :class="{'border-blue-600': selectedTeam === game.home_call?.team}">
           <div class="text-center mb-3">
             <div class="text-lg font-bold text-blue-800">{{ getTeamName(game.home_call?.team) }}</div>
-            <div class="text-5xl font-bold text-stone-900 mt-2">{{ homeScore }}</div>
+            <div class="flex items-center justify-center gap-6 mt-2">
+              <div class="text-6xl font-black text-stone-900">{{ homeScore }}</div>
+              <div v-if="game.current_period > 0" class="flex flex-col items-center">
+                <div class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Faltas</div>
+                <div 
+                  class="text-3xl font-black px-4 py-1 rounded-xl border-2 transition-all duration-500"
+                  :class="homeFoulLimitReached ? 'bg-red-600 text-white border-red-700 shadow-lg shadow-red-200 animate-pulse' : 'bg-stone-50 text-stone-400 border-stone-100'"
+                >
+                  {{ homeFouls }}
+                </div>
+                <div v-if="homeFoulLimitReached" class="text-[9px] font-bold text-red-600 uppercase mt-1">Livre Direto s/ Barreira</div>
+              </div>
+            </div>
           </div>
           <div class="grid grid-cols-3 gap-2">
             <P-Button
@@ -125,7 +137,19 @@
         <div class="bg-white border-4 border-red-500 rounded-xl p-4 shadow-lg" :class="{'border-red-600': selectedTeam === game.away_call?.team}">
           <div class="text-center mb-3">
             <div class="text-lg font-bold text-red-800">{{ getTeamName(game.away_call?.team) }}</div>
-            <div class="text-5xl font-bold text-stone-900 mt-2">{{ awayScore }}</div>
+            <div class="flex items-center justify-center gap-6 mt-2">
+              <div class="text-6xl font-black text-stone-900">{{ awayScore }}</div>
+              <div v-if="game.current_period > 0" class="flex flex-col items-center">
+                <div class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Faltas</div>
+                <div 
+                  class="text-3xl font-black px-4 py-1 rounded-xl border-2 transition-all duration-500"
+                  :class="awayFoulLimitReached ? 'bg-red-600 text-white border-red-700 shadow-lg shadow-red-200 animate-pulse' : 'bg-stone-50 text-stone-400 border-stone-100'"
+                >
+                  {{ awayFouls }}
+                </div>
+                <div v-if="awayFoulLimitReached" class="text-[9px] font-bold text-red-600 uppercase mt-1">Livre Direto s/ Barreira</div>
+              </div>
+            </div>
           </div>
           <div class="grid grid-cols-3 gap-2">
             <P-Button
@@ -296,13 +320,18 @@
               </div>
             </div>
           </div>
+          <div class="flex items-center gap-3 p-3 bg-red-50 rounded-lg border border-red-100">
+            <P-Checkbox v-model="isDirectFreeKick" :binary="true" inputId="isCardDFK" />
+            <label for="isCardDFK" class="text-sm font-bold text-red-800 cursor-pointer select-none">
+              Livre Direto? <span class="font-normal opacity-70">(Conta para o limite de 5 faltas)</span>
+            </label>
+          </div>
         </div>
 
         <!-- Foul Dialog -->
         <div v-if="eventType === 'foul'">
           <div class="mb-4">
-            <label class="block text-sm font-medium text-stone-700 mb-2">Jogador que Cometeu a Falta</label>
-            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
               <P-Button 
                 v-for="num in availableShirtNumbers" 
                 :key="num"
@@ -311,6 +340,12 @@
                 class="text-lg py-3"
                 @click="playerNumber = num"
               />
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-orange-50 rounded-lg border border-orange-100">
+              <P-Checkbox v-model="isDirectFreeKick" :binary="true" inputId="isDFK" />
+              <label for="isDFK" class="text-sm font-bold text-orange-800 cursor-pointer select-none">
+                Livre Direto? <span class="font-normal opacity-70">(Conta para o limite de 5 faltas)</span>
+              </label>
             </div>
           </div>
         </div>
@@ -372,6 +407,7 @@ const cardType = ref<CardType>('Yellow');
 const cardTarget = ref<'player' | 'staff'>('player');
 const staffId = ref<string | null>(null);
 const selectedGoalType = ref<'regular' | 'own_goal'>('regular');
+const isDirectFreeKick = ref(false);
 
 const eventDialogTitle = computed(() => {
   if (!eventType.value || !eventTeam.value) return '';
@@ -411,6 +447,36 @@ const awayScore = computed(() => {
     return false;
   }).length;
 });
+
+function countFouls(teamId: string, currentPeriod: number) {
+  if (!game.value) return 0;
+  const teamName = getTeamName(teamId);
+  return events.value.filter(e => {
+    if ('Foul' in e) {
+      const foul = (e as { Foul: FoulEvent }).Foul;
+      if (foul.team_name !== teamName) return false;
+      
+      // Every foul that leads to a direct free kick counts. 
+      // For cards it is always a free kick foul.
+      if (!foul.is_direct_free_kick && !foul.card) return false;
+      
+      const p = foul.period;
+      if (currentPeriod <= 1) {
+        return p <= 1;
+      } else {
+        // Reset when moving from 1st to 2nd, but not to following (extra time)
+        return p >= 2;
+      }
+    }
+    return false;
+  }).length;
+}
+
+const homeFouls = computed(() => countFouls(homeTeamId.value, game.value?.current_period || 0));
+const awayFouls = computed(() => countFouls(awayTeamId.value, game.value?.current_period || 0));
+
+const homeFoulLimitReached = computed(() => homeFouls.value >= 5);
+const awayFoulLimitReached = computed(() => awayFouls.value >= 5);
 
 const availableShirtNumbers = computed(() => {
   if (!game.value || !eventTeam.value) return [];
@@ -656,11 +722,12 @@ function getEventDescription(event: GameEvent): string {
     return `Golo de ${name}`;
   }
   if ('Foul' in event) {
-    const foul = (event as { Foul: { card: string | null; player_name: string; staff_name?: string } }).Foul;
+    const foul = (event as { Foul: FoulEvent }).Foul;
     const displayName = foul.staff_name || foul.player_name || 'Desconhecido';
     
     if (foul.card === null || foul.card === undefined) {
-      return `${displayName} - Falta`;
+      const suffix = foul.is_direct_free_kick ? ' (Livre Direto)' : '';
+      return `${displayName} - Falta${suffix}`;
     }
     const cardText = foul.card === 'Yellow' ? 'Amarelo' : 'Vermelho';
     return `${displayName} - Cartão ${cardText}`;
@@ -854,6 +921,8 @@ function openEventDialog(teamId: string | undefined, type: 'goal' | 'card' | 'fo
   cardTarget.value = 'player';
   playerNumber.value = null;
   staffId.value = null;
+  // Default to true for cards, false for fouls
+  isDirectFreeKick.value = type === 'card';
   eventDialogVisible.value = true;
 }
 
@@ -867,12 +936,16 @@ async function submitEvent() {
   saving.value = true;
   
   try {
-    const currentMinute = Math.floor(currentElapsedSeconds.value / 60);
+    const totalSeconds = Math.floor(currentElapsedSeconds.value);
+    const currentMinute = Math.floor(totalSeconds / 60);
+    const currentSecond = totalSeconds % 60;
+    
     const baseDto = {
       tournament: game.value.tournament,
       game: game.value.id,
       team: eventTeam.value!,
       minute: currentMinute,
+      second: currentSecond,
     };
 
     if (eventType.value === 'goal') {
@@ -890,6 +963,7 @@ async function submitEvent() {
         player_number: cardTarget.value === 'player' ? playerNumber.value : null,
         staff_id: cardTarget.value === 'staff' ? staffId.value : null,
         card: cardTypeValue,
+        is_direct_free_kick: isDirectFreeKick.value,
       };
       await gameService.assignCard(dto);
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Cartão registado', life: 3000 });
@@ -897,6 +971,7 @@ async function submitEvent() {
       const dto: AssignFoulDto = {
         ...baseDto,
         player_number: playerNumber.value,
+        is_direct_free_kick: isDirectFreeKick.value,
       };
       await gameService.assignFoul(dto);
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Falta registada', life: 3000 });

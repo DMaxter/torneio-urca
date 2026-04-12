@@ -242,6 +242,7 @@ class AssignGoalDto(BaseModel):
     player_number: Optional[int] = None  # Shirt number from game call
     own_goal: bool = False  # If true, player is from opposing team
     minute: int
+    second: Optional[int] = None
 
 
 class AssignCardDto(BaseModel):
@@ -252,6 +253,8 @@ class AssignCardDto(BaseModel):
     staff_id: Optional[str] = None  # For staff (optional)
     card: CardType
     minute: int
+    second: Optional[int] = None
+    is_direct_free_kick: bool = False
 
 
 class AssignFoulDto(BaseModel):
@@ -261,6 +264,8 @@ class AssignFoulDto(BaseModel):
     player_number: Optional[int] = None  # Shirt number from game call
     staff_id: Optional[str] = None  # For staff (optional)
     minute: int
+    second: Optional[int] = None
+    is_direct_free_kick: bool = False
 
 
 class CreateAdminPlayerDto(BaseModel):

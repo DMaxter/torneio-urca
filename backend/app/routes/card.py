@@ -87,6 +87,15 @@ async def assign_card(card: AssignCardDto, current_user=Depends(get_current_user
             staff_type = staff.get("staff_type")
 
     get_logger().info(f"Recording {card.card.value} card at minute {card.minute}")
+    # Calculate live elapsed seconds if timer is active
+    current_elapsed = game.get("period_elapsed_seconds", 0)
+    if game.get("timer_active") and game.get("timer_started_at"):
+        now_utc = datetime.utcnow()
+        active_elapsed = int((now_utc - game["timer_started_at"]).total_seconds())
+        current_elapsed += active_elapsed
+
+    event_second = card.second if card.second is not None else (current_elapsed % 60)
+
     card_dict = {
         "tournament": ObjectId(card.tournament),
         "team_id": ObjectId(card.team),
@@ -101,7 +110,7 @@ async def assign_card(card: AssignCardDto, current_user=Depends(get_current_user
         "staff_type": staff_type,
         "period": game.get("current_period", 0),
         "minute": card.minute,
-        "second": game.get("period_elapsed_seconds", 0) % 60,
+        "second": event_second,
         "timestamp": datetime.utcnow(),
     }
 
@@ -125,8 +134,9 @@ async def assign_card(card: AssignCardDto, current_user=Depends(get_current_user
             "team_name": team["name"],
             "period": game.get("current_period", 0),
             "minute": card.minute,
-            "second": game.get("period_elapsed_seconds", 0) % 60,
+            "second": event_second,
             "card": card.card.value,
+            "is_direct_free_kick": card.is_direct_free_kick,
             "timestamp": card_dict["timestamp"].isoformat(),
         }
     }

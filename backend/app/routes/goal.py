@@ -137,6 +137,16 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
         credited_team_id = goal.team
         credited_team_name = team["name"]
 
+    # Calculate live elapsed seconds if timer is active
+    current_elapsed = game.get("period_elapsed_seconds", 0)
+    if game.get("timer_active") and game.get("timer_started_at"):
+        now_utc = datetime.utcnow()
+        # Ensure timer_started_at is compared correctly
+        active_elapsed = int((now_utc - game["timer_started_at"]).total_seconds())
+        current_elapsed += active_elapsed
+
+    event_second = goal.second if goal.second is not None else (current_elapsed % 60)
+
     goal_dict = {
         "tournament": ObjectId(goal.tournament),
         "team_id": ObjectId(credited_team_id),
@@ -148,7 +158,7 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
         "game_id": ObjectId(goal.game),
         "period": game.get("current_period", 0),
         "minute": goal.minute,
-        "second": game.get("period_elapsed_seconds", 0) % 60,
+        "second": event_second,
         "timestamp": datetime.utcnow(),
     }
 
@@ -171,7 +181,7 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
             "own_goal_committed_by": committing_team_name if goal.own_goal else None,
             "period": game.get("current_period", 0),
             "minute": goal.minute,
-            "second": game.get("period_elapsed_seconds", 0) % 60,
+            "second": event_second,
             "timestamp": goal_dict["timestamp"].isoformat(),
         }
     }

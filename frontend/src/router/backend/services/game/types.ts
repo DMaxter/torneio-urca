@@ -12,6 +12,7 @@ export type AssignGoalDto = {
   player_number?: number | null;
   own_goal: boolean;
   minute: number;
+  second?: number;
 };
 
 export type AssignCardDto = {
@@ -22,6 +23,8 @@ export type AssignCardDto = {
   staff_id?: string | null;
   card: CardType;
   minute: number;
+  second?: number;
+  is_direct_free_kick: boolean;
 };
 
 export type AssignFoulDto = {
@@ -30,6 +33,8 @@ export type AssignFoulDto = {
   team: string;
   player_number?: number | null;
   minute: number;
+  second?: number;
+  is_direct_free_kick: boolean;
 };
 
 export type UpdatePeriodDto = {
@@ -88,6 +93,7 @@ export type FoulEvent = {
   staff_id?: string | null,
   staff_name?: string,
   staff_type?: string,
+  is_direct_free_kick?: boolean,
   timestamp: string,
 }
 

@@ -87,6 +87,15 @@ async def assign_foul(foul: AssignFoulDto, current_user=Depends(get_current_user
             staff_type = staff.get("staff_type")
 
     get_logger().info(f"Recording foul at minute {foul.minute}")
+    # Calculate live elapsed seconds if timer is active
+    current_elapsed = game.get("period_elapsed_seconds", 0)
+    if game.get("timer_active") and game.get("timer_started_at"):
+        now_utc = datetime.utcnow()
+        active_elapsed = int((now_utc - game["timer_started_at"]).total_seconds())
+        current_elapsed += active_elapsed
+
+    event_second = foul.second if foul.second is not None else (current_elapsed % 60)
+
     foul_dict = {
         "tournament": ObjectId(foul.tournament),
         "team_id": ObjectId(foul.team),
@@ -100,7 +109,8 @@ async def assign_foul(foul: AssignFoulDto, current_user=Depends(get_current_user
         "staff_type": staff_type,
         "period": game.get("current_period", 0),
         "minute": foul.minute,
-        "second": game.get("period_elapsed_seconds", 0) % 60,
+        "second": event_second,
+        "is_direct_free_kick": foul.is_direct_free_kick,
         "timestamp": datetime.utcnow(),
     }
 
@@ -124,8 +134,9 @@ async def assign_foul(foul: AssignFoulDto, current_user=Depends(get_current_user
             "team_name": team["name"],
             "period": game.get("current_period", 0),
             "minute": foul.minute,
-            "second": game.get("period_elapsed_seconds", 0) % 60,
+            "second": event_second,
             "card": None,
+            "is_direct_free_kick": foul.is_direct_free_kick,
             "timestamp": foul_dict["timestamp"].isoformat(),
         }
     }

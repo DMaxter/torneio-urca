@@ -13,7 +13,7 @@
             optionLabel="name" optionValue="id" :disabled="viewMode" fluid />
           <label for="tournament">Torneio</label>
         </P-FloatLabel>
-        
+
         <h3 class="font-semibold text-stone-700 mt-4">Responsável</h3>
         <P-FloatLabel class="mt-[10px]" variant="on">
           <P-InputText id="responsibleName" v-model="teamForm.responsible_name" :disabled="viewMode" fluid />
@@ -73,7 +73,7 @@
             </P-Button>
           </div>
           <div class="max-h-48 overflow-y-auto space-y-1">
-            <div v-for="player in teamPlayers" :key="player.id" 
+            <div v-for="player in teamPlayers" :key="player.id"
                  class="flex items-center justify-between p-2 rounded bg-stone-50">
               <div class="flex items-center gap-2 flex-1">
                 <span class="text-sm">{{ player.name }}</span>
@@ -164,8 +164,8 @@ const staffRoles = [
   { field: 'main_coach', label: 'Treinador Principal' },
   { field: 'assistant_coach', label: 'Treinador Adjunto' },
   { field: 'physiotherapist', label: 'Fisioterapeuta' },
-  { field: 'first_deputy', label: '1º Substituto' },
-  { field: 'second_deputy', label: '2º Substituto' },
+  { field: 'first_deputy', label: '1º Delegado' },
+  { field: 'second_deputy', label: '2º Delegado' },
 ];
 
 const playerCount = computed(() => teamPlayers.value.length);
