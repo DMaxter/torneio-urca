@@ -142,7 +142,7 @@ import { useTournamentStore } from "@stores/tournaments";
 import { usePlayerStore } from "@stores/players";
 import { useStaffStore } from "@stores/staff";
 import { http } from "@router/backend/api";
-import { calculateAge } from "@/utils";
+import { calculateAge, getStaffTypeLabel } from "@/utils";
 import { useApiErrorToast } from "@/composables/useApiErrorToast";
 
 const toast = useToast();
@@ -167,16 +167,6 @@ const staffRoles = [
   { field: 'first_deputy', label: '1º Substituto' },
   { field: 'second_deputy', label: '2º Substituto' },
 ];
-
-function getStaffTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    'Coach': 'Treinador Principal',
-    'AssistantCoach': 'Treinador Adjunto',
-    'Physiotherapist': 'Fisioterapeuta',
-    'GameDeputy': 'Delegado',
-  };
-  return labels[type] || type;
-}
 
 const playerCount = computed(() => teamPlayers.value.length);
 

@@ -96,7 +96,7 @@
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button @click="gameStore.getGames()">
+      <P-Button @click="gameStore.forceGetGames()">
         <span class="material-symbols-outlined">sync</span>
         Atualizar
       </P-Button>
@@ -182,7 +182,7 @@ async function startCalls(gameId: string) {
     const response = await gameService.updateGameStatus(gameId, GameStatus.CallsPending);
     if (response.status === 200) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Chamadas iniciadas", life: 3000 });
-      await gameStore.getGames();
+      await gameStore.forceGetGames();
     }
   } catch (e: unknown) {
     handleApiError(e, "Erro ao iniciar chamadas");
@@ -194,7 +194,7 @@ async function confirmCalls(gameId: string) {
     const response = await gameService.confirmGameCalls(gameId);
     if (response.status === 200) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Chamadas confirmadas", life: 3000 });
-      await gameStore.getGames();
+      await gameStore.forceGetGames();
     }
   } catch (e: unknown) {
     handleApiError(e, "Erro ao confirmar chamadas");
@@ -206,7 +206,7 @@ async function startGame(gameId: string) {
     const response = await gameService.updateGameStatus(gameId, GameStatus.InProgress);
     if (response.status === 200) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo iniciado", life: 3000 });
-      await gameStore.getGames();
+      await gameStore.forceGetGames();
     }
   } catch (e: unknown) {
     handleApiError(e, "Erro ao iniciar jogo");
@@ -218,7 +218,7 @@ async function cancelGame(gameId: string) {
     const response = await gameService.updateGameStatus(gameId, GameStatus.Canceled);
     if (response.status === 200) {
       toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo cancelado", life: 3000 });
-      await gameStore.getGames();
+      await gameStore.forceGetGames();
     }
   } catch (e: unknown) {
     handleApiError(e, "Erro ao cancelar jogo");

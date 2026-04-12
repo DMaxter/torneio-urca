@@ -57,6 +57,7 @@ export const useGroupStore = defineStore("groupsStore", () => {
   return {
     groups,
     getGroups: base.getAll,
+    forceGetGroups: base.forceGetAll,
     createGroup,
     deleteGroup,
     updateGroup,

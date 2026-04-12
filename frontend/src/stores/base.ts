@@ -60,10 +60,10 @@ export function createGenericStore<T extends Entity, C extends CreateEntity, E =
   }
 
   /** 
-   * Reloads the entire entity collection querying the associated backend CRUD service.
-   * @returns Success payload including possible HTTP error flags.
+   * Fetches the entity collection from the backend API unconditionally,
+   * bypassing any local cache. Use this for explicit refresh actions.
    */
-  async function getAll(): Promise<APIResponse<string | null>> {
+  async function forceGetAll(): Promise<APIResponse<string | null>> {
     try {
       const { status, data } = await service.getAll();
       if (status === 200) {
@@ -76,6 +76,18 @@ export function createGenericStore<T extends Entity, C extends CreateEntity, E =
       const _error = error as AxiosError<string>;
       return { success: false, status: _error.response?.status, content: null };
     }
+  }
+
+  /** 
+   * Reloads the entity collection only if the local store is empty.
+   * If data already exists, returns immediately without an API call.
+   * Use `forceGetAll` for explicit refresh actions.
+   */
+  async function getAll(): Promise<APIResponse<string | null>> {
+    if (items.value.length > 0) {
+      return { success: true, content: null };
+    }
+    return forceGetAll();
   }
 
   /**
@@ -101,5 +113,5 @@ export function createGenericStore<T extends Entity, C extends CreateEntity, E =
     }
   }
 
-  return { init, add, update, remove, getAll, create };
+  return { init, add, update, remove, getAll, forceGetAll, create };
 }

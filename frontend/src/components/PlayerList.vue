@@ -55,7 +55,7 @@
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button @click="playerStore.getPlayers()">
+      <P-Button @click="playerStore.forceGetPlayers()">
         <span class="material-symbols-outlined">sync</span>
         Atualizar
       </P-Button>

@@ -138,7 +138,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useGameStore } from "@stores/games";
 import { useGameDayStore } from "@stores/game_days";
@@ -611,19 +611,7 @@ function close() {
   calendarDays.value = [];
 }
 
-watch(enabled, async (val) => {
-  if (val) {
-    loadCalendar();
-    await Promise.all([
-      gameStore.getGames(),
-      gameDayStore.getGameDays(),
-      groupStore.getGroups(),
-      teamStore.getTeams(),
-      tournamentStore.getTournaments(),
-    ]);
-    loadCalendar();
-  }
-});
+
 
 onMounted(async () => {
   await Promise.all([

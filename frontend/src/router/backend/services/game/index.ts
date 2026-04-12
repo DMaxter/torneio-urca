@@ -2,7 +2,7 @@ import type { AxiosResponse } from "axios";
 
 import { http } from "@router/backend/api";
 import type { Error } from "@router/backend/types";
-import type { CreateGame, Game, GameStatus, AssignGoalDto, AssignCardDto, UpdatePeriodDto } from "@router/backend/services/game/types";
+import type { CreateGame, Game, GameStatus, AssignGoalDto, AssignCardDto, AssignFoulDto, UpdatePeriodDto } from "@router/backend/services/game/types";
 
 function toLocalISOString(date: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
@@ -36,8 +36,8 @@ export async function deleteGame(gameId: string): Promise<AxiosResponse<void | E
   return await http.delete(`/games/${gameId}`);
 }
 
-export async function updateGameCall(callId: string, players: { player: string; number: number | null }[]): Promise<AxiosResponse<unknown | Error>> {
-  return await http.patch(`/games/calls/${callId}`, { players });
+export async function updateGameCall(callId: string, players: { player: string; number: number | null }[], staff?: string[]): Promise<AxiosResponse<unknown | Error>> {
+  return await http.patch(`/games/calls/${callId}`, { players, staff });
 }
 
 export async function updateGameStatus(gameId: string, status: GameStatus): Promise<AxiosResponse<Game | Error>> {
@@ -64,7 +64,7 @@ export async function assignCard(card: AssignCardDto): Promise<AxiosResponse<unk
   return await http.post("/cards", card);
 }
 
-export async function assignFoul(foul: { tournament: string; game: string; team: string; player_number?: number | null; minute: number }): Promise<AxiosResponse<unknown | Error>> {
+export async function assignFoul(foul: AssignFoulDto): Promise<AxiosResponse<unknown | Error>> {
   return await http.post("/fouls", foul);
 }
 

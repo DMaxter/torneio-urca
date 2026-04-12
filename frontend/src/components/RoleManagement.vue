@@ -64,7 +64,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, watch, computed } from "vue";
+import { reactive, onMounted, computed } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useUserStore } from "@stores/users";
 import { useGameStore } from "@stores/games";
@@ -124,20 +124,18 @@ const gameOptions = computed(() => {
   });
 });
 
-watch(enabled, async (val) => {
-  if (val) {
-    await userStore.getUsers();
-    await gameStore.getGames();
-    await teamStore.getTeams();
+onMounted(async () => {
+  await userStore.getUsers();
+  await gameStore.getGames();
+  await teamStore.getTeams();
 
-    for (const user of userStore.users) {
-      selectedRoles[user.id] = user.roles ? [...user.roles] : [];
-      selectedGames[user.id] = user.assigned_games ? [...user.assigned_games] : [];
-      selectedGamesForCalls[user.id] = user.assigned_games_for_calls ? [...user.assigned_games_for_calls] : [];
-      originalRoles[user.id] = user.roles ? [...user.roles] : [];
-      originalGames[user.id] = user.assigned_games ? [...user.assigned_games] : [];
-      originalGamesForCalls[user.id] = user.assigned_games_for_calls ? [...user.assigned_games_for_calls] : [];
-    }
+  for (const user of userStore.users) {
+    selectedRoles[user.id] = user.roles ? [...user.roles] : [];
+    selectedGames[user.id] = user.assigned_games ? [...user.assigned_games] : [];
+    selectedGamesForCalls[user.id] = user.assigned_games_for_calls ? [...user.assigned_games_for_calls] : [];
+    originalRoles[user.id] = user.roles ? [...user.roles] : [];
+    originalGames[user.id] = user.assigned_games ? [...user.assigned_games] : [];
+    originalGamesForCalls[user.id] = user.assigned_games_for_calls ? [...user.assigned_games_for_calls] : [];
   }
 });
 

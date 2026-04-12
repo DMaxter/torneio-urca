@@ -90,6 +90,21 @@
                     </P-Button>
                   </div>
                 </div>
+
+                <div class="pt-4 border-t border-stone-100 mt-4 space-y-3">
+                  <span class="text-sm font-semibold text-stone-700">Equipa Técnica</span>
+                  <div class="flex flex-col gap-2">
+                    <div v-for="staffMember in getTeamStaff(selectedGame.home_call.team)" :key="staffMember.id" class="flex items-center gap-2">
+                      <P-Checkbox 
+                        :modelValue="selectedGame.home_call.staff?.includes(staffMember.id) || false"
+                        @update:modelValue="(val: boolean) => toggleStaff('home', staffMember.id, val)"
+                        :binary="true"
+                        :inputId="'staff-home-' + staffMember.id"
+                      />
+                      <label :for="'staff-home-' + staffMember.id" class="text-sm cursor-pointer whitespace-nowrap">{{ staffMember.name }} <span class="text-xs text-stone-400">({{ staffMember.type }})</span></label>
+                    </div>
+                  </div>
+                </div>
               </div>
               <p v-else class="text-sm text-stone-400">Sem chamada definida</p>
             </div>
@@ -169,6 +184,21 @@
                     </P-Button>
                   </div>
                 </div>
+
+                <div class="pt-4 border-t border-stone-100 mt-4 space-y-3">
+                  <span class="text-sm font-semibold text-stone-700">Equipa Técnica</span>
+                  <div class="flex flex-col gap-2">
+                    <div v-for="staffMember in getTeamStaff(selectedGame.away_call.team)" :key="staffMember.id" class="flex items-center gap-2">
+                      <P-Checkbox 
+                        :modelValue="selectedGame.away_call.staff?.includes(staffMember.id) || false"
+                        @update:modelValue="(val: boolean) => toggleStaff('away', staffMember.id, val)"
+                        :binary="true"
+                        :inputId="'staff-away-' + staffMember.id"
+                      />
+                      <label :for="'staff-away-' + staffMember.id" class="text-sm cursor-pointer whitespace-nowrap">{{ staffMember.name }} <span class="text-xs text-stone-400">({{ staffMember.type }})</span></label>
+                    </div>
+                  </div>
+                </div>
               </div>
               <p v-else class="text-sm text-stone-400">Sem chamada definida</p>
             </div>
@@ -238,11 +268,13 @@ import { useGameStore } from "@stores/games";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 import { usePlayerStore } from "@stores/players";
+import { useStaffStore } from "@stores/staff";
 import * as gameService from "@router/backend/services/game";
 import type { Game } from "@router/backend/services/game/types";
 import { GameStatus } from "@router/backend/services/game/types";
 import { http } from "@router/backend/api";
 import { useApiErrorToast } from "@/composables/useApiErrorToast";
+import { getStaffTypeLabel } from "@/utils";
 
 const router = useRouter();
 const route = useRoute();
@@ -251,6 +283,7 @@ const gameStore = useGameStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
 const playerStore = usePlayerStore();
+const staffStore = useStaffStore();
 const { handleApiError } = useApiErrorToast();
 
 const selectedTournamentId = ref<string>("");
@@ -301,6 +334,40 @@ function addAllRemainingPlayers(side: "home" | "away") {
   available.forEach(p => {
     call.players.push({ player: p.id, number: null });
   });
+}
+
+function getTeamStaff(teamId: string | undefined) {
+  if (!teamId) return [];
+  const team = teamStore.teams.find(t => t.id === teamId);
+  if (!team) return [];
+
+  const staffIds = [
+    team.main_coach,
+    team.assistant_coach,
+    team.physiotherapist,
+    team.first_deputy,
+    team.second_deputy
+  ].filter(id => id != null && id.trim() !== '') as string[];
+
+  return staffIds.map(id => {
+    const staff = staffStore.staff.find(s => s.id === id);
+    return {
+      id,
+      name: staff?.name || 'Desconhecido',
+      type: getStaffTypeLabel(staff?.staff_type)
+    };
+  });
+}
+
+function toggleStaff(side: "home" | "away", staffId: string, value: boolean) {
+  const call = side === "home" ? selectedGame.value?.home_call : selectedGame.value?.away_call;
+  if (!call) return;
+  if (!call.staff) call.staff = [];
+  if (value) {
+    if (!call.staff.includes(staffId)) call.staff.push(staffId);
+  } else {
+    call.staff = call.staff.filter(id => id !== staffId);
+  }
 }
 
 function confirmReset(side: "home" | "away") {
@@ -364,8 +431,8 @@ async function submitCall() {
   saving.value = true;
 
   try {
-    await gameService.updateGameCall(game.home_call.id, game.home_call.players);
-    await gameService.updateGameCall(game.away_call.id, game.away_call.players);
+    await gameService.updateGameCall(game.home_call.id, game.home_call.players, game.home_call.staff);
+    await gameService.updateGameCall(game.away_call.id, game.away_call.players, game.away_call.staff);
 
     gameStore.games = gameStore.games.map(g =>
       g.id === game.id ? game : g
@@ -391,8 +458,8 @@ async function closeAndConfirmCall() {
   saving.value = true;
 
   try {
-    await gameService.updateGameCall(game.home_call.id, game.home_call.players);
-    await gameService.updateGameCall(game.away_call.id, game.away_call.players);
+    await gameService.updateGameCall(game.home_call.id, game.home_call.players, game.home_call.staff);
+    await gameService.updateGameCall(game.away_call.id, game.away_call.players, game.away_call.staff);
 
     await gameService.confirmGameCalls(game.id);
 
@@ -436,8 +503,10 @@ async function populateCall(side: "home" | "away") {
       const updatedCall = response.data;
       if (side === "home" && selectedGame.value?.home_call) {
         selectedGame.value.home_call.players = updatedCall.players;
+        selectedGame.value.home_call.staff = updatedCall.staff || [];
       } else if (selectedGame.value?.away_call) {
         selectedGame.value.away_call.players = updatedCall.players;
+        selectedGame.value.away_call.staff = updatedCall.staff || [];
       }
     }
   } catch {
@@ -459,6 +528,7 @@ onMounted(async () => {
   await teamStore.getTeams();
   await tournamentStore.getTournaments();
   await playerStore.getPlayers();
+  await staffStore.getStaff();
 
   selectedTournamentId.value = queryTournament;
   selectedGameId.value = queryGame;

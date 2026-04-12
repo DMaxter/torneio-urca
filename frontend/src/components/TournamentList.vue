@@ -46,7 +46,7 @@
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button @click="tournamentStore.getTournaments()">
+      <P-Button @click="tournamentStore.forceGetTournaments()">
         <span class="material-symbols-outlined">sync</span>
         Atualizar
       </P-Button>

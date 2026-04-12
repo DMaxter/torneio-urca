@@ -19,7 +19,16 @@ export type AssignCardDto = {
   game: string;
   team: string;
   player_number?: number | null;
+  staff_id?: string | null;
   card: CardType;
+  minute: number;
+};
+
+export type AssignFoulDto = {
+  tournament: string;
+  game: string;
+  team: string;
+  player_number?: number | null;
   minute: number;
 };
 
@@ -43,6 +52,7 @@ export type GameCall = {
   game: string,
   team: string,
   players: { player: string; number: number | null }[],
+  staff: string[],
   deputy: string | null,
 }
 

@@ -42,6 +42,7 @@ export const useTeamStore = defineStore("teamsStore", () => {
   return {
     teams,
     getTeams: base.getAll,
+    forceGetTeams: base.forceGetAll,
     createTeam: base.create,
     deleteTeam,
     updateTeam,

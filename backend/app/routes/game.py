@@ -89,6 +89,7 @@ def game_call_to_dto(call: dict) -> GameCallDto:
         game=str(call.get("game", "")),
         team=str(call["team"]),
         players=players_dto,
+        staff=[str(s) for s in call.get("staff", [])],
         deputy=str(call["deputy"]) if call.get("deputy") else None,
     )
 
@@ -180,11 +181,13 @@ async def add_game(game: CreateGameDto, current_user=Depends(require_manage_game
         home_call_dict = {
             "team": ObjectId(game.home_call.team),
             "players": home_players,
+            "staff": [],
             "deputy": None,
         }
         away_call_dict = {
             "team": ObjectId(game.away_call.team),
             "players": away_players,
+            "staff": [],
             "deputy": None,
         }
 
@@ -708,12 +711,18 @@ async def update_game_call(
         player_entry = {"player": ObjectId(p["player"]), "number": p.get("number")}
         players_to_store.append(player_entry)
 
+    update_fields = {"players": players_to_store}
+    if body.staff is not None:
+        update_fields["staff"] = [ObjectId(s) for s in body.staff]
+
     await db.db[GAME_CALLS_COLLECTION].update_one(
-        {"_id": call["_id"]}, {"$set": {"players": players_to_store}}
+        {"_id": call["_id"]}, {"$set": update_fields}
     )
 
     get_logger().info(f"[{current_user['username']}] Updated game call '{call_id}'")
     call["players"] = players_to_store
+    if body.staff is not None:
+        call["staff"] = update_fields["staff"]
     return game_call_to_dto(call)
 
 
@@ -734,15 +743,21 @@ async def populate_game_call(call_id: str, current_user=Depends(get_current_user
         raise Error.not_found("Team")
 
     players = [{"player": pid, "number": None} for pid in team.get("players", [])]
+    
+    staff_ids = []
+    for role in ["main_coach", "assistant_coach", "physiotherapist", "first_deputy", "second_deputy"]:
+        if team.get(role):
+            staff_ids.append(team[role])
 
     await db.db[GAME_CALLS_COLLECTION].update_one(
-        {"_id": call["_id"]}, {"$set": {"players": players}}
+        {"_id": call["_id"]}, {"$set": {"players": players, "staff": staff_ids}}
     )
 
     get_logger().info(
-        f"[{current_user['username']}] Populated game call '{call_id}' with team players"
+        f"[{current_user['username']}] Populated game call '{call_id}' with team players and staff"
     )
     call["players"] = players
+    call["staff"] = staff_ids
     return game_call_to_dto(call)
 
 

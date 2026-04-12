@@ -61,6 +61,7 @@ export const useUserStore = defineStore("usersStore", () => {
   return {
     users,
     getUsers: base.getAll,
+    forceGetUsers: base.forceGetAll,
     createUser: base.create,
     changePassword,
     deleteUser,

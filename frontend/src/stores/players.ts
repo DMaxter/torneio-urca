@@ -67,6 +67,7 @@ export const usePlayerStore = defineStore("playersStore", () => {
   return {
     players,
     getPlayers: base.getAll,
+    forceGetPlayers: base.forceGetAll,
     createPlayer: base.create,
     createAdminPlayer,
     confirmPlayer,

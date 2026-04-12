@@ -30,7 +30,7 @@
     </div>
 
     <template #footer>
-      <P-Button severity="secondary" @click="groupStore.getGroups()">
+      <P-Button severity="secondary" @click="groupStore.forceGetGroups()">
         <span class="material-symbols-outlined">sync</span>
         Atualizar
       </P-Button>

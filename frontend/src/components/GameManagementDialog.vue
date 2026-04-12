@@ -332,7 +332,7 @@ function viewGameLog(_gameId: string) {
 
 async function refresh() {
   loading.value = true;
-  await gameStore.getGames();
+  await gameStore.forceGetGames();
   loading.value = false;
 }
 

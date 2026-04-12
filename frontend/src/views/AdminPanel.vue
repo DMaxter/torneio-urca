@@ -39,27 +39,27 @@
       </div>
     </div>
 
-    <GameDaysDialog v-model="gameDays" />
-    <GenerateGamesDialog v-model="generateGames" />
-    <GameCalendarDialog v-model="gameCalendar" @register-game="onRegisterGame" />
-    <ViewGamesDialog v-model="viewGames" />
-    <GameList v-model="listGames" />
-    <GameManagement v-model="manageGame" />
-    <GameManagementDialog v-model="manageGames" />
-    <GroupList v-model="listGroups" />
-    <GroupManagement v-model="manageGroup" />
-    <GenerateGroupsDialog v-model="generateGroups" />
-    <GroupView v-model="viewGroups" />
-    <TeamList v-model="listTeams" />
-    <TeamManagement v-model="manageTeam" />
-    <PlayerList v-model="listPlayers" />
-    <PlayerManagement v-model="createPlayer" />
-    <TournamentList v-model="listTournaments" />
-    <TournamentManagement v-model="manageTournament" />
-    <UserList v-model="listUsers" />
-    <UserManagement v-model="manageUser" />
-    <RoleManagement v-model="manageRoles" />
-    <ChangePasswordDialog v-model="changePassword" />
+    <GameDaysDialog v-if="gameDays" v-model="gameDays" />
+    <GenerateGamesDialog v-if="generateGames" v-model="generateGames" />
+    <GameCalendarDialog v-if="gameCalendar" v-model="gameCalendar" @register-game="onRegisterGame" />
+    <ViewGamesDialog v-if="viewGames" v-model="viewGames" />
+    <GameList v-if="listGames" v-model="listGames" />
+    <GameManagement v-if="manageGame" v-model="manageGame" />
+    <GameManagementDialog v-if="manageGames" v-model="manageGames" />
+    <GroupList v-if="listGroups" v-model="listGroups" />
+    <GroupManagement v-if="manageGroup" v-model="manageGroup" />
+    <GenerateGroupsDialog v-if="generateGroups" v-model="generateGroups" />
+    <GroupView v-if="viewGroups" v-model="viewGroups" />
+    <TeamList v-if="listTeams" v-model="listTeams" />
+    <TeamManagement v-if="manageTeam" v-model="manageTeam" />
+    <PlayerList v-if="listPlayers" v-model="listPlayers" />
+    <PlayerManagement v-if="createPlayer" v-model="createPlayer" />
+    <TournamentList v-if="listTournaments" v-model="listTournaments" />
+    <TournamentManagement v-if="manageTournament" v-model="manageTournament" />
+    <UserList v-if="listUsers" v-model="listUsers" />
+    <UserManagement v-if="manageUser" v-model="manageUser" />
+    <RoleManagement v-if="manageRoles" v-model="manageRoles" />
+    <ChangePasswordDialog v-if="changePassword" v-model="changePassword" />
   </div>
 </template>
 

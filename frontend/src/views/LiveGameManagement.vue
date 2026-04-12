@@ -280,14 +280,20 @@
 
             <div v-else-if="hasStaffForTeam">
               <label class="block text-sm font-medium text-stone-700 mb-2">Membro do Staff</label>
-              <P-Select 
-                v-model="staffId"
-                :options="staffOptions"
-                optionLabel="label"
-                optionValue="id"
-                placeholder="Selecione o staff"
-                class="w-full"
-              />
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <P-Button 
+                  v-for="staff in staffOptions" 
+                  :key="staff.id"
+                  :severity="staffId === staff.id ? 'success' : 'secondary'"
+                  class="py-3 px-2 h-auto"
+                  @click="staffId = staff.id"
+                >
+                  <div class="flex flex-col items-center w-full">
+                    <span class="text-sm font-bold truncate w-full text-center">{{ staff.shortName }}</span>
+                    <span class="text-[10px] opacity-70 uppercase tracking-wider">{{ staff.type }}</span>
+                  </div>
+                </P-Button>
+              </div>
             </div>
           </div>
         </div>
@@ -334,11 +340,13 @@ import { useToast } from "primevue/usetoast";
 import { useGameStore } from "@stores/games";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
+import { useStaffStore } from "@stores/staff";
 import * as gameService from "@router/backend/services/game";
 import type { Game, GameEvent } from "@router/backend/services/game/types";
 import { GameStatus } from "@router/backend/services/game/types";
 import type { CardType } from "@router/backend/services/game/types";
 import { useApiErrorToast } from "@/composables/useApiErrorToast";
+import { getStaffTypeLabel } from "@/utils";
 
 const router = useRouter();
 const route = useRoute();
@@ -346,6 +354,7 @@ const toast = useToast();
 const gameStore = useGameStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
+const staffStore = useStaffStore();
 const { handleApiError } = useApiErrorToast();
 
 const gameId = route.params.gameId as string;
@@ -416,12 +425,26 @@ const availableShirtNumbers = computed(() => {
 });
 
 const staffOptions = computed(() => {
-  return [];
+  if (!game.value || !eventTeam.value) return [];
+  const call = eventTeam.value === homeTeamId.value ? game.value.home_call : game.value.away_call;
+  if (!call || !call.staff) return [];
+
+  return call.staff.map(id => {
+    const s = staffStore.staff.find(staff => staff.id === id);
+    const name = s?.name || 'Desconhecido';
+    const firstNames = name.split(' ');
+    const shortName = firstNames.length > 1 ? `${firstNames[0]} ${firstNames[firstNames.length - 1]}` : name;
+    
+    return {
+      id,
+      label: `${name} (${getStaffTypeLabel(s?.staff_type)})`,
+      shortName,
+      type: getStaffTypeLabel(s?.staff_type)
+    };
+  });
 });
 
 const hasStaffForTeam = computed(() => {
-  // For now, always return false since we don't have staff data loaded per team
-  // If staff options is empty, there's no staff to assign cards to
   return staffOptions.value.length > 0;
 });
 
@@ -633,12 +656,14 @@ function getEventDescription(event: GameEvent): string {
     return `Golo de ${name}`;
   }
   if ('Foul' in event) {
-    const foul = (event as { Foul: { card: string | null; player_name: string } }).Foul;
+    const foul = (event as { Foul: { card: string | null; player_name: string; staff_name?: string } }).Foul;
+    const displayName = foul.staff_name || foul.player_name || 'Desconhecido';
+    
     if (foul.card === null || foul.card === undefined) {
-      return `${foul.player_name} - Falta`;
+      return `${displayName} - Falta`;
     }
     const cardText = foul.card === 'Yellow' ? 'Amarelo' : 'Vermelho';
-    return `${foul.player_name} - Cartão ${cardText}`;
+    return `${displayName} - Cartão ${cardText}`;
   }
   if ('PeriodStart' in event) {
     const ps = (event as { PeriodStart: { period: number } }).PeriodStart;
@@ -860,17 +885,18 @@ async function submitEvent() {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Golo registado', life: 3000 });
     } else if (eventType.value === 'card') {
       const cardTypeValue: CardType = cardType.value;
-      const dto = {
+      const dto: AssignCardDto = {
         ...baseDto,
         player_number: cardTarget.value === 'player' ? playerNumber.value : null,
+        staff_id: cardTarget.value === 'staff' ? staffId.value : null,
         card: cardTypeValue,
       };
       await gameService.assignCard(dto);
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Cartão registado', life: 3000 });
     } else if (eventType.value === 'foul') {
-      const dto = {
+      const dto: AssignFoulDto = {
         ...baseDto,
-        player_number: cardTarget.value === 'player' ? playerNumber.value : null,
+        player_number: playerNumber.value,
       };
       await gameService.assignFoul(dto);
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Falta registada', life: 3000 });
@@ -1022,6 +1048,7 @@ onMounted(async () => {
   await Promise.all([
     teamStore.getTeams(),
     tournamentStore.getTournaments(),
+    staffStore.getStaff(),
   ]);
   await loadGame();
   

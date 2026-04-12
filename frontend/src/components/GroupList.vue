@@ -26,7 +26,7 @@
           <span class="material-symbols-outlined text-red-600">delete_sweep</span>
           Eliminar tudo
         </P-Button>
-        <P-Button @click="groupStore.getGroups()">
+        <P-Button @click="groupStore.forceGetGroups()">
           <span class="material-symbols-outlined">sync</span>
           Atualizar
         </P-Button>

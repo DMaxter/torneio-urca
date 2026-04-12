@@ -52,7 +52,7 @@
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button @click="teamStore.getTeams()">
+      <P-Button @click="teamStore.forceGetTeams()">
         <span class="material-symbols-outlined">sync</span>
         Atualizar
       </P-Button>

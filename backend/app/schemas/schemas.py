@@ -144,6 +144,7 @@ class CreateGameCallDto(BaseModel):
 
 class UpdateGameCallDto(BaseModel):
     players: List[dict]  # [{"player": str, "number": int | None}]
+    staff: Optional[List[str]] = None
 
 
 class ConfirmGameCallDto(BaseModel):
@@ -165,6 +166,7 @@ class GameCallDto(BaseModel):
     game: str
     team: str
     players: List[dict]  # [{"player": str, "number": int | None}]
+    staff: List[str] = []
     deputy: Optional[str] = None
 
 

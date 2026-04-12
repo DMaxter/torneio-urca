@@ -24,7 +24,7 @@
       </P-Column>
     </P-DataTable>
     <template #footer>
-      <P-Button @click="userStore.getUsers()">
+      <P-Button @click="userStore.forceGetUsers()">
         <span class="material-symbols-outlined">sync</span>
         Atualizar
       </P-Button>

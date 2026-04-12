@@ -33,28 +33,26 @@ async def assign_foul(foul: AssignFoulDto, current_user=Depends(get_current_user
     staff_name = ""
     staff_type = None
 
+    get_logger().info("Looking up team call in game calls")
+    game_calls = (
+        await db.db["game_calls"]
+        .find({"_id": {"$in": [game.get("home_call"), game.get("away_call")]}})
+        .to_list(2)
+    )
+
+    if len(game_calls) != 2:
+        raise Error.game_calls_not_delivered()
+
+    team_call = None
+    for call in game_calls:
+        if str(call.get("team")) == str(foul.team):
+            team_call = call
+            break
+
+    if not team_call:
+        raise Error.bad_request("Chamada de jogo não encontrada para esta equipa")
+
     if foul.player_number is not None:
-        get_logger().info(
-            f"Looking up player by shirt number {foul.player_number} in game calls"
-        )
-        game_calls = (
-            await db.db["game_calls"]
-            .find({"_id": {"$in": [game.get("home_call"), game.get("away_call")]}})
-            .to_list(2)
-        )
-
-        if len(game_calls) != 2:
-            raise Error.game_calls_not_delivered()
-
-        team_call = None
-        for call in game_calls:
-            if str(call.get("team")) == str(foul.team):
-                team_call = call
-                break
-
-        if not team_call:
-            raise Error.bad_request("Chamada de jogo não encontrada para esta equipa")
-
         player_found = False
         for p in team_call.get("players", []):
             if p.get("number") == foul.player_number:
@@ -74,6 +72,15 @@ async def assign_foul(foul: AssignFoulDto, current_user=Depends(get_current_user
         else:
             player_id = str(player_id)
     elif foul.staff_id:
+        staff_found = False
+        for s_id in team_call.get("staff", []):
+            if str(s_id) == str(foul.staff_id):
+                staff_found = True
+                break
+
+        if not staff_found:
+            raise Error.bad_request("Membro do staff não encontrado na chamada deste jogo")
+
         staff = await db.db["staff"].find_one({"_id": ObjectId(foul.staff_id)})
         if staff:
             staff_name = staff["name"]

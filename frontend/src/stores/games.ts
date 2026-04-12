@@ -44,6 +44,7 @@ export const useGameStore = defineStore("gamesStore", () => {
   return {
     games,
     getGames: base.getAll,
+    forceGetGames: base.forceGetAll,
     createGame: base.create,
     updateGame,
     deleteGame,

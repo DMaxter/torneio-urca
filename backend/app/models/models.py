@@ -126,6 +126,7 @@ class GameCall(BaseModel):
     players: List[
         dict
     ] = []  # [{"player": str, "number": int}] or [{"player": str, "number": None}] for removed
+    staff: List[str] = []
     deputy: Optional[str] = None
 
 

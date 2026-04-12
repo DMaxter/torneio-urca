@@ -22,3 +22,13 @@ export function calculateAge(birthDate: Date | null): number {
 export function isUnderAge(birthDate: Date | null, minAge: number): boolean {
   return calculateAge(birthDate) < minAge;
 }
+
+export function getStaffTypeLabel(type: string | undefined): string {
+  const labels: Record<string, string> = {
+    'Coach': 'Treinador Principal',
+    'AssistantCoach': 'Treinador Adjunto',
+    'Physiotherapist': 'Fisioterapeuta',
+    'GameDeputy': 'Delegado',
+  };
+  return type ? (labels[type] || type) : '';
+}

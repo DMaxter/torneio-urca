@@ -97,6 +97,7 @@ import { http } from "@router/backend/api";
 import type { Staff } from "@router/backend/services/staff/types";
 import { useDateFormatter } from "@/composables/useDateFormatter";
 import { useApiErrorToast } from "@/composables/useApiErrorToast";
+import { getStaffTypeLabel } from "@/utils";
 
 const toast = useToast();
 const staffStore = useStaffStore();
@@ -130,10 +131,6 @@ const teamOptions = computed(() => [
   ...teamStore.teams.map(t => ({ label: t.name, value: t.id }))
 ]);
 
-function getStaffTypeLabel(type: string): string {
-  const opt = staffTypeOptions.find(o => o.value === type);
-  return opt ? opt.label : type;
-}
 
 function getTeamName(staff: Staff): string {
   return staff.team_name || "-";
@@ -142,7 +139,7 @@ function getTeamName(staff: Staff): string {
 
 
 async function refreshStaff() {
-  await staffStore.getStaff();
+  await staffStore.forceGetStaff();
 }
 
 function openCreateDialog() {

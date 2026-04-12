@@ -7,13 +7,18 @@ import * as gameDayService from "@router/backend/services/game_day";
 export const useGameDayStore = defineStore("gameDaysStore", () => {
   const gameDays = ref<GameDay[]>([]);
 
-  async function getGameDays() {
+  async function forceGetGameDays() {
     try {
       const { status, data } = await gameDayService.getGameDays();
       if (status === 200) {
         gameDays.value = data as GameDay[];
       }
     } catch {}
+  }
+
+  async function getGameDays() {
+    if (gameDays.value.length > 0) return;
+    await forceGetGameDays();
   }
 
   async function createGameDay(day: import("@router/backend/services/game_day/types").CreateGameDay) {
@@ -42,5 +47,5 @@ export const useGameDayStore = defineStore("gameDaysStore", () => {
     }
   }
 
-  return { gameDays, getGameDays, createGameDay, deleteGameDay };
+  return { gameDays, getGameDays, forceGetGameDays, createGameDay, deleteGameDay };
 });

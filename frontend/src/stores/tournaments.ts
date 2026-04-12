@@ -29,6 +29,7 @@ export const useTournamentStore = defineStore("tournamentsStore", () => {
   return {
     tournaments,
     getTournaments: base.getAll,
+    forceGetTournaments: base.forceGetAll,
     createTournament: base.create,
     deleteTournament,
     init: base.init,
