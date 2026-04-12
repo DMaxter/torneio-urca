@@ -272,6 +272,16 @@ class ManualEventDto(BaseModel):
     description: str
 
 
+class AssignPenaltyDto(BaseModel):
+    tournament: str
+    game: str
+    team: str
+    player_number: int
+    scored: bool
+    minute: int
+    second: Optional[int] = None
+
+
 
 class CreateAdminPlayerDto(BaseModel):
     name: str

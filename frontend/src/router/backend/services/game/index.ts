@@ -2,7 +2,7 @@ import type { AxiosResponse } from "axios";
 
 import { http } from "@router/backend/api";
 import type { Error } from "@router/backend/types";
-import type { CreateGame, Game, GameStatus, AssignGoalDto, AssignCardDto, AssignFoulDto, UpdatePeriodDto } from "@router/backend/services/game/types";
+import type { CreateGame, Game, GameStatus, AssignGoalDto, AssignCardDto, AssignFoulDto, AssignPenaltyDto, UpdatePeriodDto } from "@router/backend/services/game/types";
 
 function toLocalISOString(date: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
@@ -66,6 +66,10 @@ export async function assignCard(card: AssignCardDto): Promise<AxiosResponse<unk
 
 export async function assignFoul(foul: AssignFoulDto): Promise<AxiosResponse<unknown | Error>> {
   return await http.post("/fouls", foul);
+}
+
+export async function assignPenalty(penalty: AssignPenaltyDto): Promise<AxiosResponse<unknown | Error>> {
+  return await http.post(`/games/${penalty.game}/penalties`, penalty);
 }
 
 export async function deleteGameEvent(gameId: string, eventIndex: number): Promise<AxiosResponse<void | Error>> {

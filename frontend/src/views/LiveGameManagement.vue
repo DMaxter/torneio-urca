@@ -111,8 +111,13 @@
           <div class="text-center mb-3">
             <div class="text-lg font-bold text-blue-800">{{ getTeamName(game.home_call?.team) }}</div>
             <div class="flex items-center justify-center gap-6 mt-2">
-              <div class="text-6xl font-black text-stone-900">{{ homeScore }}</div>
-              <div v-if="game.current_period > 0" class="flex flex-col items-center">
+              <div class="flex flex-col items-center">
+                <div class="text-6xl font-black text-stone-900">{{ homeScore }}</div>
+                <div v-if="isShootout" class="text-xl font-bold text-stone-400 mt-1">
+                  Pen: {{ homePenaltyScore }}
+                </div>
+              </div>
+              <div v-if="game.current_period > 0 && !isShootout" class="flex flex-col items-center">
                 <div class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Faltas</div>
                 <div 
                   class="text-3xl font-black px-4 py-1 rounded-xl border-2 transition-all duration-500"
@@ -124,12 +129,12 @@
               </div>
             </div>
           </div>
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid gap-2" :class="isShootout ? 'grid-cols-2' : 'grid-cols-3'">
             <P-Button
-              label="⚽ Golo"
+              :label="isShootout ? '⚽ Penalti' : '⚽ Golo'"
               size="large"
               class="bg-green-600 hover:bg-green-700 text-white border-none"
-              @click="openEventDialog(game.home_call?.team, 'goal')"
+              @click="openEventDialog(game.home_call?.team, isShootout ? 'penalty' : 'goal')"
             />
             <P-Button
               label="🟨 Cartão"
@@ -138,6 +143,7 @@
               @click="openEventDialog(game.home_call?.team, 'card')"
             />
             <P-Button
+              v-if="!isShootout"
               label="⚠️ Falta"
               size="large"
               class="bg-orange-500 hover:bg-orange-600 text-white border-none"
@@ -151,8 +157,13 @@
           <div class="text-center mb-3">
             <div class="text-lg font-bold text-red-800">{{ getTeamName(game.away_call?.team) }}</div>
             <div class="flex items-center justify-center gap-6 mt-2">
-              <div class="text-6xl font-black text-stone-900">{{ awayScore }}</div>
-              <div v-if="game.current_period > 0" class="flex flex-col items-center">
+              <div class="flex flex-col items-center">
+                <div class="text-6xl font-black text-stone-900">{{ awayScore }}</div>
+                <div v-if="isShootout" class="text-xl font-bold text-stone-400 mt-1">
+                  Pen: {{ awayPenaltyScore }}
+                </div>
+              </div>
+              <div v-if="game.current_period > 0 && !isShootout" class="flex flex-col items-center">
                 <div class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Faltas</div>
                 <div 
                   class="text-3xl font-black px-4 py-1 rounded-xl border-2 transition-all duration-500"
@@ -164,12 +175,12 @@
               </div>
             </div>
           </div>
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid gap-2" :class="isShootout ? 'grid-cols-2' : 'grid-cols-3'">
             <P-Button
-              label="⚽ Golo"
+              :label="isShootout ? '⚽ Penalti' : '⚽ Golo'"
               size="large"
               class="bg-green-600 hover:bg-green-700 text-white border-none"
-              @click="openEventDialog(game.away_call?.team, 'goal')"
+              @click="openEventDialog(game.away_call?.team, isShootout ? 'penalty' : 'goal')"
             />
             <P-Button
               label="🟨 Cartão"
@@ -178,6 +189,7 @@
               @click="openEventDialog(game.away_call?.team, 'card')"
             />
             <P-Button
+              v-if="!isShootout"
               label="⚠️ Falta"
               size="large"
               class="bg-orange-500 hover:bg-orange-600 text-white border-none"
@@ -266,6 +278,41 @@
                   @click="playerNumber = num"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Penalty Dialog -->
+        <div v-if="eventType === 'penalty'">
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-stone-700 mb-2">Resultado do Penalti</label>
+            <div class="flex gap-2">
+              <P-Button
+                label="✅ Marcou"
+                :severity="penaltyScored ? 'success' : 'secondary'"
+                class="flex-1"
+                @click="penaltyScored = true"
+              />
+              <P-Button
+                label="❌ Falhou"
+                :severity="!penaltyScored ? 'danger' : 'secondary'"
+                class="flex-1"
+                @click="penaltyScored = false"
+              />
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-stone-700 mb-2">Jogador</label>
+            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              <P-Button
+                v-for="num in availableShirtNumbers"
+                :key="num"
+                :label="`#${num}`"
+                :severity="playerNumber === num ? (penaltyScored ? 'success' : 'danger') : 'secondary'"
+                class="text-lg py-3"
+                @click="playerNumber = num"
+              />
             </div>
           </div>
         </div>
@@ -375,12 +422,17 @@
         <div class="flex gap-2 w-full justify-between">
           <P-Button severity="secondary" @click="closeEventDialog">Cancelar</P-Button>
           <P-Button 
-            :severity="eventType === 'goal' ? 'success' : eventType === 'foul' ? 'warning' : 'warning'" 
+            :severity="eventType === 'goal' || eventType === 'penalty' ? 'success' : 'warning'" 
             :loading="saving"
             :disabled="!canSubmitEvent"
             @click="submitEvent"
           >
-            {{ eventType === 'goal' ? 'Marcar Golo' : eventType === 'foul' ? 'Registar Falta' : 'Atribuir Cartão' }}
+            {{ 
+              eventType === 'goal' ? 'Marcar Golo' : 
+              eventType === 'foul' ? 'Registar Falta' : 
+              eventType === 'penalty' ? (penaltyScored ? 'Registar Penalti Marcado' : 'Registar Penalti Falhado') :
+              'Atribuir Cartão' 
+            }}
           </P-Button>
         </div>
       </template>
@@ -507,6 +559,7 @@ const cardTarget = ref<'player' | 'staff'>('player');
 const staffId = ref<string | null>(null);
 const selectedGoalType = ref<'regular' | 'own_goal'>('regular');
 const isDirectFreeKick = ref(false);
+const penaltyScored = ref(true);
 
 // Manual event state
 const manualEventDialogVisible = ref(false);
@@ -526,6 +579,9 @@ const eventDialogTitle = computed(() => {
   }
   if (eventType.value === 'card') {
     return `Atribuir Cartão - ${teamName}`;
+  }
+  if (eventType.value === 'penalty') {
+    return `Registar Penalti - ${teamName}`;
   }
   return `Registar Falta - ${teamName}`;
 });
@@ -587,6 +643,32 @@ const awayFouls = computed(() => countFouls(awayTeamId.value, game.value?.curren
 const homeFoulLimitReached = computed(() => homeFouls.value >= 5);
 const awayFoulLimitReached = computed(() => awayFouls.value >= 5);
 
+const isShootout = computed(() => game.value?.current_period === 5);
+
+const homePenaltyScore = computed(() => {
+  if (!game.value) return 0;
+  const homeName = getTeamName(homeTeamId.value);
+  return events.value.filter(e => {
+    if ('Penalty' in e) {
+      const p = (e as { Penalty: { team_name: string; scored: boolean } }).Penalty;
+      return p.team_name === homeName && p.scored;
+    }
+    return false;
+  }).length;
+});
+
+const awayPenaltyScore = computed(() => {
+  if (!game.value) return 0;
+  const awayName = getTeamName(awayTeamId.value);
+  return events.value.filter(e => {
+    if ('Penalty' in e) {
+      const p = (e as { Penalty: { team_name: string; scored: boolean } }).Penalty;
+      return p.team_name === awayName && p.scored;
+    }
+    return false;
+  }).length;
+});
+
 const availableShirtNumbers = computed(() => {
   if (!game.value || !eventTeam.value) return [];
   const call = eventTeam.value === homeTeamId.value ? game.value.home_call : game.value.away_call;
@@ -640,6 +722,10 @@ const canSubmitEvent = computed(() => {
   }
 
   if (eventType.value === 'foul') {
+    return playerNumber.value !== null;
+  }
+
+  if (eventType.value === 'penalty') {
     return playerNumber.value !== null;
   }
 
@@ -777,6 +863,10 @@ function getEventBorderClass(event: GameEvent): string {
     const goal = (event as { Goal: { own_goal: boolean } }).Goal;
     return goal.own_goal ? 'border-orange-200 bg-orange-50' : 'border-green-200 bg-green-50';
   }
+  if ('Penalty' in event) {
+    const p = (event as { Penalty: { scored: boolean } }).Penalty;
+    return p.scored ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50';
+  }
   if ('Foul' in event) {
     const foul = (event as { Foul: { card: string | null } }).Foul;
     if (foul.card === null || foul.card === undefined) {
@@ -801,6 +891,10 @@ function getEventIcon(event: GameEvent): string {
   if ('Goal' in event) {
     const goal = (event as { Goal: { own_goal: boolean } }).Goal;
     return goal.own_goal ? '🥅' : '⚽';
+  }
+  if ('Penalty' in event) {
+    const p = (event as { Penalty: { scored: boolean } }).Penalty;
+    return p.scored ? '✅' : '❌';
   }
   if ('Foul' in event) {
     const foul = (event as { Foul: { card: string | null } }).Foul;
@@ -837,6 +931,11 @@ function getEventDescription(event: GameEvent): string {
     }
     const name = goal.player_name || 'Jogador desconhecido';
     return `Golo de ${name}`;
+  }
+  if ('Penalty' in event) {
+    const p = (event as { Penalty: { scored: boolean; player_name: string } }).Penalty;
+    const action = p.scored ? 'marcou' : 'falhou';
+    return `${p.player_name} ${action} penalti`;
   }
   if ('Foul' in event) {
     const foul = (event as { Foul: FoulEvent }).Foul;
@@ -880,6 +979,10 @@ function getEventPeriod(event: GameEvent): number {
   if ('Goal' in event) {
     const goal = (event as { Goal: { period?: number } }).Goal;
     return goal.period || 0;
+  }
+  if ('Penalty' in event) {
+    const p = (event as { Penalty: { period?: number } }).Penalty;
+    return p.period || 0;
   }
   if ('Foul' in event) {
     const foul = (event as { Foul: { period?: number } }).Foul;
@@ -978,6 +1081,10 @@ function getEventTimestamp(event: GameEvent): number {
     const goal = (event as { Goal: { timestamp: string } }).Goal;
     return getTs(goal.timestamp);
   }
+  if ('Penalty' in event) {
+    const p = (event as { Penalty: { timestamp: string } }).Penalty;
+    return getTs(p.timestamp);
+  }
   if ('Foul' in event) {
     const foul = (event as { Foul: { timestamp: string } }).Foul;
     return getTs(foul.timestamp);
@@ -1037,6 +1144,10 @@ function getEventTeamName(event: GameEvent): string {
     const goal = (event as { Goal: { team_name: string } }).Goal;
     return goal.team_name;
   }
+  if ('Penalty' in event) {
+    const p = (event as { Penalty: { team_name: string } }).Penalty;
+    return p.team_name;
+  }
   if ('Foul' in event) {
     const foul = (event as { Foul: { team_name: string } }).Foul;
     return foul.team_name;
@@ -1044,7 +1155,7 @@ function getEventTeamName(event: GameEvent): string {
   return '';
 }
 
-function openEventDialog(teamId: string | undefined, type: 'goal' | 'card' | 'foul') {
+function openEventDialog(teamId: string | undefined, type: 'goal' | 'card' | 'foul' | 'penalty') {
   if (!teamId) return;
   
   selectedTeam.value = teamId;
@@ -1057,6 +1168,7 @@ function openEventDialog(teamId: string | undefined, type: 'goal' | 'card' | 'fo
   staffId.value = null;
   // Default to true for cards, false for fouls
   isDirectFreeKick.value = type === 'card';
+  penaltyScored.value = true;
   eventDialogVisible.value = true;
 }
 
@@ -1109,6 +1221,15 @@ async function submitEvent() {
       };
       await gameService.assignFoul(dto);
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Falta registada', life: 3000 });
+    } else if (eventType.value === 'penalty') {
+      const dto: AssignPenaltyDto = {
+        ...baseDto,
+        player_number: playerNumber.value!,
+        scored: penaltyScored.value,
+      };
+      await gameService.assignPenalty(dto);
+      const msg = penaltyScored.value ? 'Penalti marcado' : 'Penalti falhado';
+      toast.add({ severity: 'success', summary: 'Sucesso', detail: msg, life: 3000 });
     }
 
     await loadGame();

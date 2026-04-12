@@ -18,6 +18,7 @@ from app.schemas.schemas import (
     ConfirmGameCallDto,
     UpdatePeriodDto,
     ManualEventDto,
+    AssignPenaltyDto,
 )
 from app.models.models import GameStatus, GamePhase
 from app.error import Error
@@ -816,6 +817,81 @@ def check_game_running(tournament_id: ObjectId, game: dict) -> None:
         raise Error.game_not_in_tournament()
     if game.get("status") != GameStatus.InProgress:
         raise Error.game_not_in_progress()
+
+
+@router.post("/{game_id}/penalties", status_code=201)
+async def assign_penalty(
+    game_id: str, body: AssignPenaltyDto, current_user=Depends(require_manage_game_events)
+):
+    """Add a penalty event (scored or failed) to the game."""
+    get_logger().info(
+        f"[{current_user['username']}] Adding penalty event to game '{game_id}': "
+        f"team={body.team}, player_number={body.player_number}, scored={body.scored}"
+    )
+    game = await get_game(game_id)
+
+    if game.get("status") != GameStatus.InProgress:
+        raise Error.bad_request("O jogo não está em progresso")
+
+    # Find player in the game call
+    game_calls = (
+        await db.db["game_calls"]
+        .find({"_id": {"$in": [game.get("home_call"), game.get("away_call")]}})
+        .to_list(2)
+    )
+
+    if len(game_calls) != 2:
+        raise Error.game_calls_not_delivered()
+
+    # Find the specific team's call
+    team_call = None
+    for call in game_calls:
+        if str(call.get("team")) == body.team:
+            team_call = call
+            break
+
+    if not team_call:
+        raise Error.bad_request("Chamada de jogo não encontrada para a equipa")
+
+    # Find player by number
+    player_id = None
+    for p in team_call.get("players", []):
+        if p.get("number") == body.player_number:
+            player_id = p.get("player")
+            break
+
+    if not player_id:
+        raise Error.bad_request(
+            f"Jogador com número {body.player_number} não encontrado na chamada"
+        )
+
+    player = await db.db["players"].find_one({"_id": player_id})
+    player_name = player["name"] if player else "Desconhecido"
+
+    # Find team name
+    team = await db.db["teams"].find_one({"_id": ObjectId(body.team)})
+    team_name = team["name"] if team else "Equipa desconhecida"
+
+    now = datetime.utcnow()
+    penalty_event = {
+        "Penalty": {
+            "player_id": str(player_id),
+            "player_name": player_name,
+            "player_number": body.player_number,
+            "team_id": body.team,
+            "team_name": team_name,
+            "scored": body.scored,
+            "period": game.get("current_period", 0),
+            "minute": body.minute,
+            "second": body.second if body.second is not None else 0,
+            "timestamp": now.isoformat(),
+        }
+    }
+
+    await add_game_event(game["_id"], penalty_event)
+    get_logger().info(f"Penalty event added to game '{game_id}'")
+
+    return {"message": "Penalidade registada"}
 
 
 async def add_game_event(game_id: ObjectId, event: dict) -> None:

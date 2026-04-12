@@ -37,6 +37,16 @@ export type AssignFoulDto = {
   is_direct_free_kick: boolean;
 };
 
+export type AssignPenaltyDto = {
+  tournament: string;
+  game: string;
+  team: string;
+  player_number: number;
+  scored: boolean;
+  minute: number;
+  second?: number;
+};
+
 export type UpdatePeriodDto = {
   action: string;
   period?: number;
@@ -67,7 +77,8 @@ export type GameEvent =
   { PeriodStart: PeriodEvent } |
   { PeriodEnd: PeriodEvent } |
   { PeriodPause: PeriodEvent } |
-  { PeriodResume: PeriodEvent }
+  { PeriodResume: PeriodEvent } |
+  { Penalty: PenaltyEvent }
 
 export type GoalEvent = {
   player_id: string,
@@ -99,6 +110,19 @@ export type FoulEvent = {
 
 export type PeriodEvent = {
   period: number,
+  timestamp: string,
+}
+
+export type PenaltyEvent = {
+  player_id: string,
+  player_name: string,
+  player_number: number,
+  team_id: string,
+  team_name: string,
+  scored: boolean,
+  period: number,
+  minute: number,
+  second: number,
   timestamp: string,
 }
 
