@@ -49,6 +49,7 @@ interface PlayerFormData {
   is_federated: boolean;
   federation_team: string;
   federation_exams_up_to_date: boolean;
+  is_goalkeeper: boolean;
 }
 
 interface PlayerFiles {
@@ -67,7 +68,8 @@ function createEmptyPlayerData(): PlayerFormData {
     fiscal_number: "",
     is_federated: false,
     federation_team: "",
-    federation_exams_up_to_date: false
+    federation_exams_up_to_date: false,
+    is_goalkeeper: false
   };
 }
 
@@ -136,7 +138,8 @@ function openDialog() {
       fiscal_number: props.player.fiscal_number,
       is_federated: props.player.is_federated,
       federation_team: props.player.federation_team ?? "",
-      federation_exams_up_to_date: props.player.federation_exams_up_to_date
+      federation_exams_up_to_date: props.player.federation_exams_up_to_date,
+      is_goalkeeper: props.player.is_goalkeeper
     };
   } else {
     playerTournament.value = "";
@@ -179,15 +182,21 @@ async function savePlayer() {
     is_federated: playerFormData.value.is_federated,
     federation_team: playerFormData.value.federation_team,
     federation_exams_up_to_date: playerFormData.value.federation_exams_up_to_date,
+    is_goalkeeper: playerFormData.value.is_goalkeeper,
   };
 
-  const result = await playerStore.createAdminPlayer(
-    playerData,
-    playerFiles.value.citizenCard ?? undefined,
-    playerFiles.value.proofOfResidency ?? undefined,
-    playerFiles.value.authorization ?? undefined
-  );
-  
+let result;
+  if (props.player) {
+    result = await playerStore.updatePlayer(props.player.id, playerData);
+  } else {
+    result = await playerStore.createAdminPlayer(
+      playerData,
+      playerFiles.value.citizenCard ?? undefined,
+      playerFiles.value.proofOfResidency ?? undefined,
+      playerFiles.value.authorization ?? undefined
+    );
+  }
+   
   loading.value = false;
 
   if (result.success) {

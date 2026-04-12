@@ -30,6 +30,7 @@ export async function createAdminPlayer(player: CreateAdminPlayer, citizenCard?:
     formData.append("federation_team", player.federation_team);
   }
   formData.append("federation_exams_up_to_date", String(player.federation_exams_up_to_date || false));
+  formData.append("is_goalkeeper", String(player.is_goalkeeper || false));
   if (citizenCard) {
     formData.append("citizen_card", citizenCard);
   }

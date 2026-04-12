@@ -53,6 +53,7 @@ class CreatePlayerDto(BaseModel):
     is_federated: bool = False
     federation_team: Optional[str] = None
     federation_exams_up_to_date: bool = False
+    is_goalkeeper: bool = False
 
 
 class PlayerDto(BaseModel):
@@ -70,6 +71,7 @@ class PlayerDto(BaseModel):
     federation_exams_up_to_date: bool
     is_confirmed: bool
     team: Optional[str] = None
+    is_goalkeeper: bool = False
 
 
 class CreateStaffDto(BaseModel):
@@ -280,7 +282,6 @@ class AssignPenaltyDto(BaseModel):
     scored: bool
     minute: int
     second: Optional[int] = None
-
 
 
 class CreateAdminPlayerDto(BaseModel):

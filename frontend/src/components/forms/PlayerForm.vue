@@ -51,6 +51,10 @@
     />
 
     <div class="field">
+      <P-Checkbox v-model="formData.is_goalkeeper" :binary="true" :inputId="`goalkeeper${playerId}`" />
+      <label :for="`goalkeeper${playerId}`"> É guarda-redes?</label>
+    </div>
+    <div class="field">
       <P-Checkbox v-model="formData.is_federated" :binary="true" :inputId="`federated${playerId}`" />
       <label :for="`federated${playerId}`"> É federado?</label>
     </div>
@@ -95,6 +99,7 @@ interface PlayerFormData {
   is_federated: boolean;
   federation_team: string;
   federation_exams_up_to_date: boolean;
+  is_goalkeeper: boolean;
 }
 
 interface PlayerFiles {
@@ -135,7 +140,8 @@ const formData = reactive<PlayerFormData>({
   fiscal_number: "",
   is_federated: false,
   federation_team: "",
-  federation_exams_up_to_date: false
+  federation_exams_up_to_date: false,
+  is_goalkeeper: false
 });
 
 const localFiles = reactive<PlayerFiles>({

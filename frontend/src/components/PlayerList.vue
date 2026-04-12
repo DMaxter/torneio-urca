@@ -20,6 +20,11 @@
           {{ new Date(data.birth_date).toLocaleDateString('pt-PT') }}
         </template>
       </P-Column>
+      <P-Column header="GR" class="w-4rem">
+        <template #body="{ data }">
+          <P-Tag :severity="data.is_goalkeeper ? 'success' : 'secondary'" :value="data.is_goalkeeper ? 'Sim' : 'Não'" />
+        </template>
+      </P-Column>
       <P-Column header="Federado" class="w-4rem md:w-auto">
         <template #body="{ data }">
           <span class="material-symbols-outlined" :class="data.is_federated ? 'status-success' : 'status-muted'">
@@ -35,6 +40,13 @@
       <P-Column header="Ações" class="w-8rem md:w-auto">
         <template #body="{ data }">
           <div class="flex gap-2 items-center">
+            <span
+              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-orange-500 hover:bg-orange-50"
+              @click.stop="promptEditPlayer(data)"
+              v-tooltip.top="'Editar jogador'"
+            >
+              edit
+            </span>
             <span
               v-if="!data.is_confirmed"
               class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-orange-500 hover:bg-orange-50"
@@ -79,14 +91,18 @@
       <P-Button severity="danger" @click="confirmRemovePlayerAction">Remover</P-Button>
     </template>
   </P-Dialog>
+
+  <PlayerManagement v-model="showEditPlayer" :player="editingPlayer" />
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useToast } from "primevue/usetoast";
 import { usePlayerStore } from "@stores/players";
 import { useTeamStore } from "@stores/teams";
 import { useGroupStore } from "@stores/groups";
+import type { Player } from "@router/backend/services/player/types";
+import PlayerManagement from "@components/PlayerManagement.vue";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
@@ -96,15 +112,22 @@ const groupStore = useGroupStore();
 
 const showConfirmPlayer = ref(false);
 const showRemovePlayer = ref(false);
+const showEditPlayer = ref(false);
 const playerToAction = ref<{ id: string; name: string } | null>(null);
+const editingPlayer = ref<Player | undefined>(undefined);
 
 function getTeamName(playerId: string): string {
   return teamStore.teams.find(t => t.players.includes(playerId))?.name ?? "—";
 }
 
 onMounted(async () => {
-  await Promise.all([playerStore.getPlayers(), teamStore.getTeams(), groupStore.getGroups()]);
+  await Promise.all([playerStore.forceGetPlayers(), teamStore.forceGetTeams(), groupStore.getGroups()]);
 });
+
+function promptEditPlayer(player: Player) {
+  editingPlayer.value = player;
+  showEditPlayer.value = true;
+}
 
 function promptConfirmPlayer(playerId: string, playerName: string) {
   playerToAction.value = { id: playerId, name: playerName };
@@ -141,4 +164,12 @@ async function confirmRemovePlayerAction() {
   showRemovePlayer.value = false;
   playerToAction.value = null;
 }
+
+watch(showEditPlayer, (val) => {
+  if (!val) {
+    editingPlayer.value = undefined;
+    playerStore.forceGetPlayers();
+    teamStore.forceGetTeams();
+  }
+});
 </script>

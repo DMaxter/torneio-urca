@@ -34,6 +34,7 @@ def player_to_dto(player: dict) -> PlayerDto:
         federation_exams_up_to_date=clean.get("federation_exams_up_to_date", False),
         is_confirmed=clean.get("is_confirmed", False),
         team=clean.get("team"),
+        is_goalkeeper=clean.get("is_goalkeeper", False),
     )
 
 
@@ -63,6 +64,7 @@ async def add_player_admin(
     is_federated: bool = Form(False),
     federation_team: str | None = Form(None),
     federation_exams_up_to_date: bool = Form(False),
+    is_goalkeeper: bool = Form(False),
     citizen_card: UploadFile | None = File(None),
     proof_of_residency: UploadFile | None = File(None),
     authorization: UploadFile | None = File(None),
@@ -114,6 +116,7 @@ async def add_player_admin(
         "federation_team": federation_team,
         "federation_exams_up_to_date": federation_exams_up_to_date,
         "is_confirmed": False,
+        "is_goalkeeper": is_goalkeeper,
         **file_dict,
     }
     result = await db.db[PLAYERS_COLLECTION].insert_one(player_dict)

@@ -7,6 +7,7 @@ export class CreatePlayer {
   is_federated: boolean = false;
   federation_team: string = "";
   federation_exams_up_to_date: boolean = false;
+  is_goalkeeper: boolean = false;
 };
 
 export class CreateAdminPlayer {
@@ -20,6 +21,7 @@ export class CreateAdminPlayer {
   is_federated: boolean = false;
   federation_team: string = "";
   federation_exams_up_to_date: boolean = false;
+  is_goalkeeper: boolean = false;
 };
 
 export class Player {
@@ -37,4 +39,5 @@ export class Player {
   federation_team: string | null = null;
   federation_exams_up_to_date: boolean = false;
   is_confirmed: boolean = false;
+  is_goalkeeper: boolean = false;
 };

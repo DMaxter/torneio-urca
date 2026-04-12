@@ -19,6 +19,16 @@
           <span class="text-muted">{{ data.responsible_name }}</span>
         </template>
       </P-Column>
+      <P-Column header="Guarda-Redes" class="w-5rem">
+        <template #body="{ data }">
+          <P-Tag :severity="hasGoalkeeper(data) ? 'success' : 'danger'" :value="hasGoalkeeper(data) ? 'Sim' : 'Não'" />
+        </template>
+      </P-Column>
+      <P-Column header="Treinador" class="w-5rem">
+        <template #body="{ data }">
+          <P-Tag :severity="hasCoach(data) ? 'success' : 'danger'" :value="hasCoach(data) ? 'Sim' : 'Não'" />
+        </template>
+      </P-Column>
       <P-Column header="Jogadores" class="w-5rem md:w-auto">
         <template #body="{ data }">
           <P-Tag :value="`${data.players?.length || 0}`" :severity="(data.players?.length || 0) >= 5 ? 'success' : 'danger'" />
@@ -176,9 +186,21 @@
           <P-Tag :severity="data.is_confirmed ? 'success' : 'warning'" :value="data.is_confirmed ? 'Confirmado' : 'Pendente'" />
         </template>
       </P-Column>
+      <P-Column header="GR" class="w-4rem">
+        <template #body="{ data }">
+          <P-Tag :severity="data.is_goalkeeper ? 'success' : 'secondary'" :value="data.is_goalkeeper ? 'Sim' : 'Não'" />
+        </template>
+      </P-Column>
       <P-Column header="Ações" class="w-6rem md:w-auto">
         <template #body="{ data }">
           <div class="flex gap-1">
+            <span
+              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-orange-500 hover:bg-orange-50"
+              @click="promptEditPlayer(data)"
+              v-tooltip.top="'Editar jogador'"
+            >
+              edit
+            </span>
             <span
               v-if="!data.is_confirmed"
               class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-orange-500 hover:bg-orange-50"
@@ -209,6 +231,8 @@
   <P-Dialog v-model:visible="showFileViewer" modal header="Documento" class="w-[80vw] h-[90vh]">
     <iframe v-if="fileUrl" :src="fileUrl" class="w-full h-[80vh] border-none"></iframe>
   </P-Dialog>
+
+  <PlayerManagement v-model="showEditPlayer" :player="editingPlayer" />
 </template>
 
 <script setup lang="ts">
@@ -221,6 +245,8 @@ import { useTournamentStore } from "@stores/tournaments";
 import { getFileUrl } from "@router/backend/services/file";
 import * as teamService from "@router/backend/services/team";
 import type { Team } from "@router/backend/services/team/types";
+import type { Player } from "@router/backend/services/player/types";
+import PlayerManagement from "@components/PlayerManagement.vue";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
@@ -235,6 +261,7 @@ const showDeleteConfirm = ref(false);
 const showConfirmPlayer = ref(false);
 const showRemovePlayer = ref(false);
 const showEditTeam = ref(false);
+const showEditPlayer = ref(false);
 const viewOnlyMode = ref(false);
 const selectedTeamId = ref("");
 const selectedTeamName = ref("");
@@ -243,6 +270,7 @@ const fileUrl = ref("");
 const teamToDelete = ref<{ id: string; name: string } | null>(null);
 const playerToAction = ref<{ id: string; name: string } | null>(null);
 const editingTeam = ref<Team | undefined>(undefined);
+const editingPlayer = ref<Player | undefined>(undefined);
 
 watch(showEditTeam, (val) => {
   if (!val) {
@@ -253,6 +281,15 @@ watch(showEditTeam, (val) => {
 function getTournamentName(tournamentId: string): string {
   const tournament = tournamentStore.tournaments.find(t => t.id === tournamentId);
   return tournament?.name || "-";
+}
+
+function hasGoalkeeper(team: Team): boolean {
+  if (!team.players || team.players.length === 0) return false;
+  return playerStore.players.some(p => team.players.includes(p.id) && p.is_goalkeeper);
+}
+
+function hasCoach(team: Team): boolean {
+  return !!(team.main_coach || team.assistant_coach);
 }
 
 function deleteTeam(teamId: string, teamName: string) {
@@ -314,6 +351,23 @@ function viewFile(fileId: string) {
   showFileViewer.value = true;
 }
 
+function promptEditPlayer(player: Player) {
+  editingPlayer.value = player;
+  showEditPlayer.value = true;
+}
+
+async function handlePlayerSaved() {
+  await loadTeamPlayers();
+  await playerStore.forceGetPlayers();
+}
+
+watch(showEditPlayer, (val) => {
+  if (!val) {
+    editingPlayer.value = undefined;
+    handlePlayerSaved();
+  }
+});
+
 function promptConfirmPlayer(playerId: string, playerName: string) {
   playerToAction.value = { id: playerId, name: playerName };
   showConfirmPlayer.value = true;
@@ -359,6 +413,7 @@ onMounted(async () => {
     teamStore.getTeams(),
     groupStore.getGroups(),
     tournamentStore.getTournaments(),
+    playerStore.forceGetPlayers(),
   ]);
 });
 </script>
