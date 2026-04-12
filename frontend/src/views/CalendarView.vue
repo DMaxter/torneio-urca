@@ -28,7 +28,8 @@
             v-for="slot in day.slots"
             :key="slot.time"
             class="px-1.5 py-0.5"
-            :class="getSlotClass(slot)"
+            :class="[getSlotClass(slot), { 'cursor-pointer hover:brightness-95 transition-all': slot.game }]"
+            @click="slot.game && openGameResult(slot.game)"
           >
             <div class="flex items-center gap-1">
               <p class="text-xs font-semibold text-stone-400 shrink-0 w-8">{{ slot.time }}</p>
@@ -55,6 +56,8 @@
       </div>
     </div>
 
+    <!-- Game Result Dialog -->
+    <GameResultDialog v-model:visible="gameResultVisible" :game="selectedGame" />
     <!-- Legend -->
     <div v-if="activeTournaments.length > 1" class="mt-6 flex flex-wrap gap-4">
       <div v-for="t in activeTournaments" :key="t.id" class="flex items-center gap-1.5 text-xs text-stone-500">
@@ -88,6 +91,14 @@ const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
 
 const loading = ref(true);
+
+const gameResultVisible = ref(false);
+const selectedGame = ref<Game | null>(null);
+
+function openGameResult(game: Game) {
+  selectedGame.value = game;
+  gameResultVisible.value = true;
+}
 
 interface Slot {
   time: string;
@@ -284,15 +295,8 @@ function getGameInfo(game: Game): string {
 
 let pollInterval: ReturnType<typeof setInterval>;
 
-async function pollLiveGames() {
-  const liveGames = gameStore.games.filter(g => g.status === GameStatus.InProgress);
-  for (const g of liveGames) {
-    const { status, data } = await gameService.getGame(g.id);
-    if (status === 200 && data && "id" in data) {
-      const idx = gameStore.games.findIndex(x => x.id === g.id);
-      if (idx !== -1) gameStore.games[idx] = data as Game;
-    }
-  }
+async function pollGames() {
+  await gameStore.forceGetGames();
 }
 
 onMounted(async () => {
@@ -304,7 +308,7 @@ onMounted(async () => {
     tournamentStore.getTournaments(),
   ]);
   loading.value = false;
-  pollInterval = setInterval(pollLiveGames, 60000);
+  pollInterval = setInterval(pollGames, 120000);
 });
 
 onUnmounted(() => clearInterval(pollInterval));

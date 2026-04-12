@@ -33,51 +33,64 @@
         </template>
       </P-Column>
       <P-Column header="Ação" class="w-[150px]">
-        <template #body="{ data }">
-           <div class="flex gap-1" v-if="data.status !== GameStatus.Finished">
-             <P-Button
-               v-if="data.status === GameStatus.Scheduled"
-               label="Iniciar Chamadas"
-               size="small"
-               severity="info"
-               @click="startCalls(data.id)"
-               v-tooltip.top="'Iniciar chamadas de jogadores'"
-             />
-             <P-Button
-               v-else-if="data.status === GameStatus.CallsPending"
-               label="Confirmar"
-               size="small"
-               severity="success"
-               @click="confirmCalls(data.id)"
-               v-tooltip.top="'Confirmar chamadas (mín. 5 jogadores)'"
-             />
-             <P-Button
-               v-else-if="data.status === GameStatus.ReadyToStart"
-               label="Iniciar Jogo"
-               size="small"
-               severity="success"
-               @click="startGame(data.id)"
-               v-tooltip.top="'Iniciar o jogo'"
-             />
-             <P-Button
-               v-else-if="data.status === GameStatus.InProgress"
-               label="Live"
-               size="small"
-               severity="warn"
-               @click="goToLiveGame(data.id)"
-               v-tooltip.top="'Abrir vista de jogo ao vivo'"
-             />
-              <P-Button
-                v-if="data.status !== GameStatus.InProgress && data.status !== GameStatus.Finished"
-                size="small"
-                severity="danger"
-                @click="cancelGame(data.id)"
-                v-tooltip.top="'Cancelar jogo'"
-              >
-                <span class="material-symbols-outlined text-base text-red-600">close</span>
-              </P-Button>
-           </div>
-        </template>
+         <template #body="{ data }">
+            <div class="flex gap-1">
+              <template v-if="data.status !== GameStatus.Finished">
+                <P-Button
+                  v-if="data.status === GameStatus.Scheduled"
+                  label="Iniciar Chamadas"
+                  size="small"
+                  severity="info"
+                  @click="startCalls(data.id)"
+                  v-tooltip.top="'Iniciar chamadas de jogadores'"
+                />
+                <P-Button
+                  v-else-if="data.status === GameStatus.CallsPending"
+                  label="Confirmar"
+                  size="small"
+                  severity="success"
+                  @click="confirmCalls(data.id)"
+                  v-tooltip.top="'Confirmar chamadas (mín. 5 jogadores)'"
+                />
+                <P-Button
+                  v-else-if="data.status === GameStatus.ReadyToStart"
+                  label="Iniciar Jogo"
+                  size="small"
+                  severity="success"
+                  @click="startGame(data.id)"
+                  v-tooltip.top="'Iniciar o jogo'"
+                />
+                <P-Button
+                  v-else-if="data.status === GameStatus.InProgress"
+                  label="Live"
+                  size="small"
+                  severity="warn"
+                  @click="goToLiveGame(data.id)"
+                  v-tooltip.top="'Abrir vista de jogo ao vivo'"
+                />
+                <P-Button
+                  v-if="data.status !== GameStatus.InProgress"
+                  size="small"
+                  severity="danger"
+                  @click="cancelGame(data.id)"
+                  v-tooltip.top="'Cancelar jogo'"
+                >
+                  <span class="material-symbols-outlined text-base">close</span>
+                </P-Button>
+              </template>
+              <template v-else>
+                <P-Button
+                  label="Ver Resultado"
+                  size="small"
+                  severity="secondary"
+                  @click="openGameResult(data)"
+                  v-tooltip.top="'Ver detalhes do resultado'"
+                >
+                  <span class="material-symbols-outlined text-base mr-1">analytics</span>
+                </P-Button>
+              </template>
+            </div>
+         </template>
       </P-Column>
       <P-Column header="Eliminar todos" class="w-[110px]">
         <template #body="{ data }">
@@ -111,6 +124,8 @@
       <P-Button severity="danger" :loading="deleting" @click="confirmDeleteAll">Eliminar todos</P-Button>
     </template>
   </P-Dialog>
+
+  <GameResultDialog v-model:visible="gameResultVisible" :game="selectedGame" />
 </template>
 
 <script setup lang="ts">
@@ -120,7 +135,7 @@ import { useToast } from "primevue/usetoast";
 import { useGameStore } from "@stores/games";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
-import { GameStatus } from "@router/backend/services/game/types";
+import { GameStatus, type Game } from "@router/backend/services/game/types";
 import * as gameService from "@router/backend/services/game";
 import { useApiErrorToast } from "@/composables/useApiErrorToast";
 
@@ -131,6 +146,14 @@ const gameStore = useGameStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
 const { handleApiError } = useApiErrorToast();
+
+const gameResultVisible = ref(false);
+const selectedGame = ref<Game | null>(null);
+
+function openGameResult(game: Game) {
+  selectedGame.value = game;
+  gameResultVisible.value = true;
+}
 
 const showDeleteConfirm = ref(false);
 const tournamentToDelete = ref("");

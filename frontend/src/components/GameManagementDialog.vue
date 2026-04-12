@@ -138,6 +138,8 @@
       </div>
     </template>
   </P-Dialog>
+
+  <GameResultDialog v-model:visible="gameResultVisible" :game="selectedDetailedGame" />
 </template>
 
 <script setup lang="ts">
@@ -169,6 +171,9 @@ const playerStore = usePlayerStore();
 const loading = ref(false);
 const selectedTournamentId = ref<string>("");
 const selectedStatusFilter = ref<string>("");
+
+const gameResultVisible = ref(false);
+const selectedDetailedGame = ref<Game | null>(null);
 
 const statusFilterOptions = computed(() => [
   { label: "Agendado", value: "Scheduled" },
@@ -325,9 +330,21 @@ function viewLiveGame(gameId: string) {
   router.push(`/admin/live-game/${gameId}`);
 }
 
-function viewGameLog(_gameId: string) {
-  console.info("View game log:", _gameId);
-  toast.add({ severity: "info", summary: "Em desenvolvimento", detail: "Funcionalidade coming soon", life: 3000 });
+async function viewGameLog(gameId: string) {
+  const g = gameStore.games.find(x => x.id === gameId);
+  if (g) {
+    selectedDetailedGame.value = g;
+    gameResultVisible.value = true;
+    
+    // Refresh data in background to ensure latest events
+    const { status, data } = await gameService.getGame(gameId);
+    if (status === 200 && data) {
+      selectedDetailedGame.value = data as Game;
+      // Update global store too
+      const idx = gameStore.games.findIndex(x => x.id === gameId);
+      if (idx !== -1) gameStore.games[idx] = data as Game;
+    }
+  }
 }
 
 async function refresh() {

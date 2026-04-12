@@ -28,7 +28,12 @@
             <div v-for="(round, ri) in group.rounds" :key="ri" class="mb-2">
               <p class="text-xs font-semibold text-stone-400 mb-1">Jornada {{ ri + 1 }}</p>
               <ul class="space-y-1">
-                <li v-for="(match, i) in round" :key="i" class="text-xs text-stone-600 flex items-center gap-1">
+                <li 
+                  v-for="(match, i) in round" 
+                  :key="i" 
+                  class="text-xs text-stone-600 flex items-center gap-1 p-1 rounded hover:bg-stone-50 cursor-pointer transition-colors"
+                  @click="openGameResult(match.id)"
+                >
                   <P-Tag :severity="getStatusSeverity(match.status)" :value="getStatusLabel(match.status)" class="shrink-0 text-[10px]" v-tooltip.top="getStatusTooltip(match.status)" />
                   <span class="truncate">{{ match.home }}</span>
                   <span class="text-stone-400 shrink-0">vs</span>
@@ -45,7 +50,12 @@
             Fase a Eliminar
           </div>
           <div class="divide-y divide-stone-100">
-            <div v-for="game in tournament.knockout" :key="game.id" class="px-3 py-2 flex items-center gap-3">
+            <div 
+              v-for="game in tournament.knockout" 
+              :key="game.id" 
+              class="px-3 py-2 flex items-center gap-3 hover:bg-stone-50 cursor-pointer transition-colors"
+              @click="openGameResult(game.id)"
+            >
               <P-Tag :severity="getStatusSeverity(game.status)" :value="getStatusLabel(game.status)" class="shrink-0 text-[10px]" v-tooltip.top="getStatusTooltip(game.status)" />
               <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
               <span class="text-xs text-stone-600 truncate">
@@ -75,6 +85,8 @@
     </template>
   </P-Dialog>
 
+  <GameResultDialog v-model:visible="gameResultVisible" :game="selectedDetailedGame" />
+
   <P-Dialog v-model:visible="showDeleteConfirm" modal header="Confirmar Eliminação" class="w-11/12 md:w-6/12">
     <p>Tem a certeza que deseja eliminar <strong>todos os jogos</strong> do torneio <strong>{{ tournamentToDelete?.name }}</strong>?</p>
     <p class="text-red-600 mt-2 text-sm">Esta ação não pode ser desfeita.</p>
@@ -92,7 +104,7 @@ import { useGameStore } from "@stores/games";
 import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
-import type { GameStatus } from "@router/backend/services/game/types";
+import type { GameStatus, Game } from "@router/backend/services/game/types";
 
 const enabled = defineModel<boolean>();
 const toast = useToast();
@@ -101,6 +113,16 @@ const gameStore = useGameStore();
 const groupStore = useGroupStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
+const gameResultVisible = ref(false);
+const selectedDetailedGame = ref<Game | null>(null);
+
+function openGameResult(gameId: string) {
+  const g = gameStore.games.find(x => x.id === gameId);
+  if (g) {
+    selectedDetailedGame.value = g;
+    gameResultVisible.value = true;
+  }
+}
 
 const showDeleteConfirm = ref(false);
 const deleting = ref(false);
@@ -170,6 +192,7 @@ const KNOCKOUT_PHASE_LABEL: Record<string, string> = {
 };
 
 interface MatchEntry {
+  id: string;
   home: string;
   away: string;
   homeId: string;
@@ -205,7 +228,7 @@ const byTournament = computed(() => {
         const homeId = game.home_call?.team ?? "";
         const awayId = game.away_call?.team ?? "";
         const group = findGroup(tournament.id, homeId, awayId);
-        const entry: MatchEntry = { homeId, awayId, home: getTeamName(homeId), away: getTeamName(awayId), status: game.status };
+        const entry: MatchEntry = { id: game.id, homeId, awayId, home: getTeamName(homeId), away: getTeamName(awayId), status: game.status };
         if (group) {
           groupMap[group.id].matches.push(entry);
         } else {
