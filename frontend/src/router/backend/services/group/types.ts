@@ -22,6 +22,7 @@ export type TeamStanding = {
   goals_scored: number,
   goals_suffered: number,
   goal_difference: number,
+  position: number,
 }
 
 export type Classification = {

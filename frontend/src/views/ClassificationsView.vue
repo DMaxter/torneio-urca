@@ -34,9 +34,9 @@
         
         <div class="overflow-x-auto">
           <P-DataTable :value="classification.standings" stripedRows class="text-sm">
-            <P-Column header="#" class="w-[3rem]">
-              <template #body="slotProps">
-                <span class="font-bold">{{ (slotProps.rowIndex ?? 0) + 1 }}</span>
+            <P-Column field="position" header="#" class="w-[3rem]">
+              <template #body="{ data }">
+                <span class="font-bold">{{ data.position }}</span>
               </template>
             </P-Column>
             <P-Column field="team_name" header="Equipa">

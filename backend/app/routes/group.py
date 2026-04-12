@@ -168,6 +168,7 @@ class TeamStanding(BaseModel):
     goals_scored: int
     goals_suffered: int
     goal_difference: int
+    position: int = 1
 
 
 class ClassificationDto(BaseModel):
@@ -345,6 +346,18 @@ async def get_classification(group_id: str):
     from functools import cmp_to_key
 
     result.sort(key=cmp_to_key(compare_teams))
+
+    # Calculate positions handling ties
+    for i, standing in enumerate(result):
+        if i > 0:
+            prev = result[i-1]
+            # If they are tied according to all criteria, they share the same position
+            if compare_teams(standing, prev) == 0:
+                standing.position = prev.position
+            else:
+                standing.position = i + 1
+        else:
+            standing.position = 1
 
     get_logger().info(f"Retrieved classification for group '{group_id}'")
     return ClassificationDto(
