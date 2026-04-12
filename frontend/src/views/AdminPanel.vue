@@ -46,8 +46,8 @@
     <GameList v-if="listGames" v-model="listGames" />
     <GameManagement v-if="manageGame" v-model="manageGame" />
     <GameManagementDialog v-if="manageGames" v-model="manageGames" />
-    <GroupList v-if="listGroups" v-model="listGroups" />
-    <GroupManagement v-if="manageGroup" v-model="manageGroup" />
+    <GroupList v-if="listGroups" v-model="listGroups" @edit-group="(group) => { selectedGroup = group; manageGroup = true; }" />
+    <GroupManagement v-if="manageGroup" v-model="manageGroup" :group="selectedGroup" />
     <GenerateGroupsDialog v-if="generateGroups" v-model="generateGroups" />
     <GroupView v-if="viewGroups" v-model="viewGroups" />
     <TeamList v-if="listTeams" v-model="listTeams" />
@@ -69,6 +69,7 @@ import { useRouter } from "vue-router";
 
 import { useAuthStore } from "@stores/auth";
 import type { Game } from "@router/backend/services/game/types";
+import type { Group } from "@router/backend/services/group/types";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -93,6 +94,7 @@ const listPlayers = ref(false);
 const createPlayer = ref(false);
 const listGroups = ref(false);
 const manageGroup = ref(false);
+const selectedGroup = ref<Group | undefined>(undefined);
 const generateGroups = ref(false);
 const viewGroups = ref(false);
 const listGames = ref(false);
@@ -161,6 +163,7 @@ const sections: Section[] = [
     title: "Grupos",
     icon: "📋",
     actions: [
+      { label: "Criar", icon: "add", severity: "success", handler: () => { selectedGroup.value = undefined; manageGroup.value = true; } },
       { label: "Gerar", icon: "auto_awesome", severity: "success", handler: () => generateGroups.value = true },
       { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGroups.value = true },
       { label: "Listar", icon: "list", handler: () => listGroups.value = true }

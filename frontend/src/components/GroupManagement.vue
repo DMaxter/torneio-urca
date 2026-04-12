@@ -47,7 +47,7 @@ const groupForm = ref<Group | CreateGroup>(new CreateGroup());
 
 watch(() => props.group, (newGroup) => {
   if (newGroup) {
-    groupForm.value = newGroup;
+    groupForm.value = JSON.parse(JSON.stringify(newGroup));
   } else {
     groupForm.value = new CreateGroup();
   }
@@ -55,7 +55,7 @@ watch(() => props.group, (newGroup) => {
 
 onMounted(() => {
   if (!creating.value) {
-    groupForm.value = props.group!
+    groupForm.value = JSON.parse(JSON.stringify(props.group!));
   }
 });
 

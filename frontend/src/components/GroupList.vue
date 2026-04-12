@@ -19,11 +19,23 @@
           <P-Tag :value="`${data.teams?.length || 0}`" severity="info" />
         </template>
       </P-Column>
+      <P-Column header="Ações" class="w-8rem text-center">
+        <template #body="{ data }">
+          <div class="flex justify-center gap-1">
+            <P-Button severity="secondary" text rounded @click.stop="emit('edit-group', data)" title="Editar Grupo">
+               <span class="material-symbols-outlined text-orange-500">edit</span>
+            </P-Button>
+            <P-Button severity="secondary" text rounded @click.stop="confirmDeleteGroup(data)" title="Eliminar Grupo">
+               <span class="material-symbols-outlined text-red-500">delete</span>
+            </P-Button>
+          </div>
+        </template>
+      </P-Column>
     </P-DataTable>
     <template #footer>
       <div class="flex gap-2">
         <P-Button severity="danger" @click="promptDeleteAll" :disabled="groupStore.groups.length === 0 || deleting">
-          <span class="material-symbols-outlined text-red-600">delete_sweep</span>
+          <span class="material-symbols-outlined text-white">delete_sweep</span>
           Eliminar tudo
         </P-Button>
         <P-Button @click="groupStore.forceGetGroups()">
@@ -68,6 +80,15 @@
       <P-Button severity="danger" :loading="deleting" @click="confirmDeleteAllGroups">Eliminar todos</P-Button>
     </template>
   </P-Dialog>
+
+  <P-Dialog v-model:visible="showDeleteConfirm" modal header="Confirmar Eliminação" class="w-11/12 md:w-8/12">
+    <p>Tem a certeza que deseja eliminar o grupo <strong>{{ groupToDelete?.name }}</strong>?</p>
+    <p class="text-red-600 mt-2 text-sm">Esta ação não pode ser desfeita.</p>
+    <template #footer>
+      <P-Button severity="secondary" @click="showDeleteConfirm = false">Cancelar</P-Button>
+      <P-Button severity="danger" :loading="deleting" @click="deleteGroup">Eliminar</P-Button>
+    </template>
+  </P-Dialog>
 </template>
 
 <script setup lang="ts">
@@ -82,6 +103,7 @@ import type { Team } from "@router/backend/services/team/types";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
+const emit = defineEmits(['edit-group']);
 const groupStore = useGroupStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
@@ -94,6 +116,8 @@ const showViewTeams = ref(false);
 const deleting = ref(false);
 const selectedGroupName = ref("");
 const groupTeams = ref<Team[]>([]);
+const groupToDelete = ref<Group | null>(null);
+const showDeleteConfirm = ref(false);
 
 onMounted(async () => {
   await Promise.all([
@@ -144,6 +168,27 @@ async function confirmDeleteAllGroups() {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Todos os grupos eliminados", life: 3000 });
   } else {
     toast.add({ severity: "error", summary: "Erro", detail: "Alguns grupos não foram eliminados", life: 3000 });
+  }
+}
+
+function confirmDeleteGroup(group: Group) {
+  groupToDelete.value = group;
+  showDeleteConfirm.value = true;
+}
+
+async function deleteGroup() {
+  if (!groupToDelete.value) return;
+  
+  deleting.value = true;
+  const result = await groupStore.deleteGroup(groupToDelete.value.id);
+  deleting.value = false;
+  showDeleteConfirm.value = false;
+  
+  if (result.success) {
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Grupo eliminado com sucesso", life: 3000 });
+    await groupStore.getGroups();
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível eliminar o grupo", life: 3000 });
   }
 }
 </script>

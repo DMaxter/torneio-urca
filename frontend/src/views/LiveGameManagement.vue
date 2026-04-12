@@ -1233,6 +1233,7 @@ async function submitEvent() {
     }
 
     await loadGame();
+    await gameStore.forceGetGames();
     
   } catch (e: unknown) {
     handleApiError(e, 'Erro ao registar evento');
@@ -1250,6 +1251,7 @@ async function startPeriod() {
     if (response.status === 200) {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Período iniciado', life: 3000 });
       await loadGame();
+      await gameStore.forceGetGames();
     }
   } catch (e: unknown) {
     handleApiError(e, 'Erro ao iniciar período');
@@ -1266,6 +1268,7 @@ async function resumePeriod() {
       const msg = action === 'start_new' ? 'Período iniciado' : 'Cronómetro retomado';
       toast.add({ severity: 'success', summary: 'Sucesso', detail: msg, life: 3000 });
       await loadGame();
+      await gameStore.forceGetGames();
     }
   } catch (e: unknown) {
     handleApiError(e, 'Erro ao retomar cronómetro');
@@ -1280,6 +1283,7 @@ async function stopTimer() {
     if (response.status === 200) {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Cronómetro parado', life: 3000 });
       await loadGame();
+      await gameStore.forceGetGames();
     }
   } catch (e: unknown) {
     handleApiError(e, 'Erro ao parar cronómetro');
@@ -1297,6 +1301,7 @@ async function endPeriod() {
     if (response.status === 200) {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Período terminado', life: 3000 });
       await loadGame();
+      await gameStore.forceGetGames();
     }
   } catch (e: unknown) {
     handleApiError(e, 'Erro ao terminar período');
@@ -1311,6 +1316,7 @@ async function startPenalties() {
     if (response.status === 200) {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Iniciando penalidades', life: 3000 });
       await loadGame();
+      await gameStore.forceGetGames();
     }
   } catch (e: unknown) {
     handleApiError(e, 'Erro ao iniciar penalidades');
@@ -1347,6 +1353,7 @@ async function finishGame() {
     const response = await gameService.updateGameStatus(game.value.id, GameStatus.Finished);
     if (response.status === 200) {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Jogo terminado', life: 3000 });
+      await gameStore.forceGetGames();
       router.push('/admin');
     }
   } catch (e: unknown) {
@@ -1365,6 +1372,7 @@ async function deleteEvent(eventIndex: number) {
     if (response.status === 204) {
       toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Evento eliminado', life: 3000 });
       await loadGame();
+      await gameStore.forceGetGames();
     }
   } catch (e: unknown) {
     handleApiError(e, 'Erro ao eliminar evento');
@@ -1397,6 +1405,7 @@ async function saveClockAdjustment() {
     
     toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Cronómetro ajustado', life: 3000 });
     await loadGame();
+    await gameStore.forceGetGames();
     adjustClockDialogVisible.value = false;
   } catch (e: unknown) {
     handleApiError(e, 'Erro ao ajustar cronómetro');
@@ -1413,6 +1422,7 @@ async function submitManualEvent() {
     await gameService.addManualEvent(game.value.id, manualEventDescription.value.trim());
     toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Evento registado', life: 3000 });
     await loadGame();
+    await gameStore.forceGetGames();
     manualEventDescription.value = '';
     manualEventDialogVisible.value = false;
   } catch (e: unknown) {

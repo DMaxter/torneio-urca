@@ -89,7 +89,7 @@ async def get_groups():
 
 @router.put("/{group_id}", response_model=GroupDto)
 async def update_group(
-    group_id: str, group: CreateGroupDto, current_user=Depends(get_current_user)
+    group_id: str, group: CreateGroupDto, current_user=Depends(require_manage_games)
 ):
     from app.routes.tournament import get_tournament
 

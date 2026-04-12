@@ -434,9 +434,7 @@ async function submitCall() {
     await gameService.updateGameCall(game.home_call.id, game.home_call.players, game.home_call.staff);
     await gameService.updateGameCall(game.away_call.id, game.away_call.players, game.away_call.staff);
 
-    gameStore.games = gameStore.games.map(g =>
-      g.id === game.id ? game : g
-    );
+    await gameStore.forceGetGames();
 
     toast.add({ severity: "success", summary: "Sucesso", detail: "Chamada guardada com sucesso", life: 3000 });
   } catch {
@@ -464,6 +462,7 @@ async function closeAndConfirmCall() {
     await gameService.confirmGameCalls(game.id);
 
     toast.add({ severity: "success", summary: "Sucesso", detail: "Chamada confirmada com sucesso", life: 3000 });
+    await gameStore.forceGetGames();
     router.push("/admin");
   } catch (e: unknown) {
     handleApiError(e, "Erro ao confirmar chamadas");
@@ -482,6 +481,7 @@ async function cancelGame() {
     await gameService.updateGameStatus(game.id, GameStatus.Canceled);
 
     toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo cancelado", life: 3000 });
+    await gameStore.forceGetGames();
     router.push("/admin");
   } catch (e: unknown) {
     handleApiError(e, "Erro ao cancelar jogo");
