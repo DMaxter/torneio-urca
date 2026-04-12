@@ -17,6 +17,7 @@ from app.schemas.schemas import (
     UpdateGameStatusDto,
     ConfirmGameCallDto,
     UpdatePeriodDto,
+    ManualEventDto,
 )
 from app.models.models import GameStatus, GamePhase
 from app.error import Error
@@ -664,6 +665,45 @@ async def update_period(
         else None
     )
     return game_to_dto(game, home_call, away_call)
+
+
+@router.post("/{game_id}/events", status_code=201)
+async def add_manual_game_event(
+    game_id: str, body: ManualEventDto, current_user=Depends(require_manage_game_events)
+):
+    """Add a manual text event at the current game time."""
+    get_logger().info(
+        f"[{current_user['username']}] Adding manual event to game '{game_id}': {body.description}"
+    )
+    game = await get_game(game_id)
+
+    if game.get("status") != GameStatus.InProgress:
+        raise Error.bad_request("O jogo não está em progresso")
+
+    # Calculate current elapsed seconds
+    current_elapsed = game.get("period_elapsed_seconds", 0)
+    now = datetime.utcnow()
+    if game.get("timer_active") and game.get("timer_started_at"):
+        active_elapsed = int((now - game["timer_started_at"]).total_seconds())
+        current_elapsed += active_elapsed
+
+    current_minute = int(current_elapsed // 60)
+    current_second = int(current_elapsed % 60)
+
+    manual_event = {
+        "Manual": {
+            "description": body.description,
+            "period": game.get("current_period", 0),
+            "minute": current_minute,
+            "second": current_second,
+            "timestamp": now.isoformat(),
+        }
+    }
+
+    await add_game_event(game["_id"], manual_event)
+    get_logger().info(f"Manual event added to game '{game_id}'")
+
+    return {"message": "Evento manual adicionado"}
 
 
 @router.delete("/{game_id}/events/{event_index}", status_code=204)

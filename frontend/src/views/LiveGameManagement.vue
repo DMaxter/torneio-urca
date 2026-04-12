@@ -31,7 +31,20 @@
       </div>
       <div v-if="game.current_period < 5" class="bg-white border border-stone-300 rounded-xl p-4 text-center">
         <div class="text-sm text-stone-500">Cronómetro</div>
-        <div class="text-4xl font-bold text-stone-900 mt-1">{{ timerDisplay }}</div>
+        <div class="flex items-center justify-center gap-2 mt-1">
+          <div class="text-4xl font-bold text-stone-900 ml-6">{{ timerDisplay }}</div>
+          <P-Button 
+            v-if="!game.timer_active"
+            icon="material-symbols-outlined" 
+            text 
+            rounded 
+            class="text-stone-400 hover:text-stone-600"
+            @click="openAdjustClock"
+          >
+            <span class="material-symbols-outlined text-xl">edit</span>
+          </P-Button>
+        </div>
+
         <div class="text-xs text-stone-400">
           {{ getTimerLabel(game.current_period) }}
         </div>
@@ -176,7 +189,14 @@
 
       <!-- Events Log -->
       <div class="bg-white border border-stone-300 rounded-xl p-4 max-h-96 overflow-y-auto">
-        <h2 class="text-lg font-semibold text-stone-900 mb-4">Eventos do Jogo</h2>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-stone-900">Eventos do Jogo</h2>
+          <P-Button severity="secondary" size="small" @click="manualEventDialogVisible = true">
+            <span class="material-symbols-outlined mr-1">post_add</span>
+            Evento Manual
+          </P-Button>
+        </div>
+
 
         <div v-if="sortedEventsWithIndex.length === 0" class="text-stone-400 text-center py-8">
           Nenhum evento registado
@@ -228,7 +248,7 @@
                 label="Auto-Golo"
                 :severity="selectedGoalType === 'own_goal' ? 'warning' : 'secondary'"
                 class="flex-1"
-                @click="selectedGoalType = 'own_goal'"
+                @click="() => { selectedGoalType = 'own_goal'; playerNumber = null; }"
               />
             </div>
           </div>
@@ -365,8 +385,87 @@
         </div>
       </template>
     </P-Dialog>
+    
+    <!-- Manual Event Dialog -->
+    <P-Dialog v-model:visible="manualEventDialogVisible" modal header="Evento Manual" class="w-11/12 md:w-[450px]">
+      <div class="p-2 md:p-4">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-stone-700 mb-2">Descrição do Evento</label>
+          <P-Textarea 
+            v-model="manualEventDescription" 
+            rows="4" 
+            class="w-full text-base" 
+            placeholder="Ex: Substituição múltipla, Incidente, etc."
+            autoResize
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex gap-2 w-full justify-between">
+          <P-Button severity="secondary" @click="manualEventDialogVisible = false">Cancelar</P-Button>
+          <P-Button 
+            severity="primary" 
+            :loading="saving"
+            :disabled="!manualEventDescription.trim()"
+            @click="submitManualEvent"
+          >
+            Registar Evento
+          </P-Button>
+        </div>
+      </template>
+    </P-Dialog>
+
+    <!-- Adjust Clock Dialog -->
+    <P-Dialog v-model:visible="adjustClockDialogVisible" modal header="Ajustar Cronómetro" class="w-11/12 md:w-[400px]">
+      <div class="p-2 md:p-4">
+        <div class="mb-4 flex flex-col sm:flex-row gap-4">
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-stone-700 mb-2">Minutos</label>
+            <P-InputNumber 
+              v-model="adjMinute" 
+              :min="0" 
+              :max="30" 
+              showButtons 
+              buttonLayout="horizontal" 
+              class="w-full"
+              inputClass="w-full text-center font-bold text-xl"
+            />
+          </div>
+          <div class="flex-1">
+            <label class="block text-sm font-medium text-stone-700 mb-2">Segundos</label>
+            <P-InputNumber 
+              v-model="adjSecond" 
+              :min="0" 
+              :max="59" 
+              showButtons 
+              buttonLayout="horizontal" 
+              class="w-full"
+              inputClass="w-full text-center font-bold text-xl"
+            />
+          </div>
+        </div>
+
+        <p class="text-xs text-stone-500">
+          Nota: Isto irá ajustar o cronómetro para o tempo total decorrido indicado.
+        </p>
+      </div>
+      <template #footer>
+        <div class="flex gap-2 w-full justify-between">
+          <P-Button severity="secondary" @click="adjustClockDialogVisible = false">Cancelar</P-Button>
+          <P-Button 
+            severity="warning" 
+            :loading="saving"
+            @click="saveClockAdjustment"
+          >
+            Atualizar Tempo
+          </P-Button>
+        </div>
+      </template>
+    </P-Dialog>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from "vue";
@@ -408,6 +507,16 @@ const cardTarget = ref<'player' | 'staff'>('player');
 const staffId = ref<string | null>(null);
 const selectedGoalType = ref<'regular' | 'own_goal'>('regular');
 const isDirectFreeKick = ref(false);
+
+// Manual event state
+const manualEventDialogVisible = ref(false);
+const manualEventDescription = ref("");
+
+// Clock adjustment state
+const adjustClockDialogVisible = ref(false);
+const adjMinute = ref(0);
+const adjSecond = ref(0);
+
 
 const eventDialogTitle = computed(() => {
   if (!eventType.value || !eventTeam.value) return '';
@@ -681,7 +790,11 @@ function getEventBorderClass(event: GameEvent): string {
   if ('PeriodEnd' in event || 'PeriodPause' in event) {
     return 'border-gray-200 bg-gray-50';
   }
+  if ('Manual' in event) {
+    return 'border-stone-200 bg-stone-50';
+  }
   return '';
+
 }
 
 function getEventIcon(event: GameEvent): string {
@@ -708,7 +821,11 @@ function getEventIcon(event: GameEvent): string {
   if ('PeriodPause' in event) {
     return '⏸️';
   }
+  if ('Manual' in event) {
+    return '📝';
+  }
   return '';
+
 }
 
 function getEventDescription(event: GameEvent): string {
@@ -752,7 +869,11 @@ function getEventDescription(event: GameEvent): string {
     const isOvertime = pp.period >= 3 && pp.period <= 4;
     return isOvertime ? `Pausa no Prolongamento (${pp.period}º)` : `Pausa no ${pp.period}º Período`;
   }
+  if ('Manual' in event) {
+    return (event as { Manual: { description: string } }).Manual.description;
+  }
   return '';
+
 }
 
 function getEventPeriod(event: GameEvent): number {
@@ -776,7 +897,11 @@ function getEventPeriod(event: GameEvent): number {
   if ('PeriodPause' in event) {
     return (event as { PeriodPause: { period: number } }).PeriodPause.period || 0;
   }
+  if ('Manual' in event) {
+    return (event as { Manual: { period: number } }).Manual.period || 0;
+  }
   return 0;
+
 }
 
 function getEventPeriodLabel(event: GameEvent): string {
@@ -820,6 +945,10 @@ function getEventTimeDisplay(event: GameEvent): string {
     const foul = (event as { Foul: { minute: number; second?: number } }).Foul;
     minute = foul.minute || 0;
     second = foul.second !== undefined ? foul.second : 0;
+  } else if ('Manual' in event) {
+    const manual = (event as { Manual: { minute: number; second?: number } }).Manual;
+    minute = manual.minute || 0;
+    second = manual.second !== undefined ? manual.second : 0;
   }
 
   let maxMinute = 0;
@@ -869,7 +998,12 @@ function getEventTimestamp(event: GameEvent): number {
     const pp = (event as { PeriodPause: { timestamp: string } }).PeriodPause;
     return getTs(pp.timestamp);
   }
+  if ('Manual' in event) {
+    const manual = (event as { Manual: { timestamp: string } }).Manual;
+    return getTs(manual.timestamp);
+  }
   return 0;
+
 }
 
 function getEventTimestampFormatted(event: GameEvent): string {
@@ -1116,7 +1250,59 @@ async function deleteEvent(eventIndex: number) {
   }
 }
 
+function openAdjustClock() {
+  if (!game.value) return;
+  const duration = getDurationForPeriod(game.value.current_period);
+  const remaining = Math.max(0, duration - currentElapsedSeconds.value);
+  
+  adjMinute.value = Math.floor(remaining / 60);
+  adjSecond.value = Math.floor(remaining % 60);
+  adjustClockDialogVisible.value = true;
+}
+
+async function saveClockAdjustment() {
+  if (!game.value) return;
+  
+  saving.value = true;
+  try {
+    const duration = getDurationForPeriod(game.value.current_period);
+    const targetRemaining = adjMinute.value * 60 + adjSecond.value;
+    const targetElapsed = Math.max(0, duration - targetRemaining);
+    
+    await gameService.updatePeriod(game.value.id, { 
+      action: 'set_seconds', 
+      seconds: targetElapsed 
+    });
+    
+    toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Cronómetro ajustado', life: 3000 });
+    await loadGame();
+    adjustClockDialogVisible.value = false;
+  } catch (e: unknown) {
+    handleApiError(e, 'Erro ao ajustar cronómetro');
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function submitManualEvent() {
+  if (!game.value || !manualEventDescription.value.trim()) return;
+  
+  saving.value = true;
+  try {
+    await gameService.addManualEvent(game.value.id, manualEventDescription.value.trim());
+    toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Evento registado', life: 3000 });
+    await loadGame();
+    manualEventDescription.value = '';
+    manualEventDialogVisible.value = false;
+  } catch (e: unknown) {
+    handleApiError(e, 'Erro ao registar evento manual');
+  } finally {
+    saving.value = false;
+  }
+}
+
 let refreshInterval: number = 0;
+
 let timerTickInterval: number = 0;
 
 onMounted(async () => {

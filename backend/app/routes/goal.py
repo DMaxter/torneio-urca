@@ -31,7 +31,7 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
     player_name = ""
     player_id = None
 
-    if goal.player_number is not None:
+    if not goal.own_goal and goal.player_number is not None:
         get_logger().info(
             f"Looking up player by shirt number {goal.player_number} in game calls"
         )
@@ -56,20 +56,8 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
                 "Chamada de jogo não encontrada para a equipa que marcou"
             )
 
-        if goal.own_goal:
-            # For own goals, the player is from the opposing team
-            opponent_team_ids = [
-                tid for tid in team_calls.keys() if tid != scoring_team_id
-            ]
-            if not opponent_team_ids:
-                raise Error.bad_request(
-                    "Não foi possível encontrar a equipa adversária"
-                )
-            team_call = team_calls[opponent_team_ids[0]]
-            get_logger().info(f"Looking up player in opposing team's call for own goal")
-        else:
-            # Regular goal: player is from scoring team
-            team_call = team_calls[scoring_team_id]
+        # Regular goal: player is from scoring team
+        team_call = team_calls[scoring_team_id]
 
         player_found = False
         for p in team_call.get("players", []):
@@ -151,9 +139,9 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
         "tournament": ObjectId(goal.tournament),
         "team_id": ObjectId(credited_team_id),
         "team_name": credited_team_name,
-        "player_id": ObjectId(player_id) if player_id else None,
-        "player_name": player_name,
-        "player_number": goal.player_number,
+        "player_id": ObjectId(player_id) if (player_id and not goal.own_goal) else None,
+        "player_name": player_name if not goal.own_goal else None,
+        "player_number": goal.player_number if not goal.own_goal else None,
         "own_goal": goal.own_goal,
         "game_id": ObjectId(goal.game),
         "period": game.get("current_period", 0),
@@ -173,9 +161,9 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
     get_logger().info("Adding goal event to game")
     event = {
         "Goal": {
-            "player_id": player_id,
-            "player_name": player_name,
-            "player_number": goal.player_number,
+            "player_id": player_id if not goal.own_goal else None,
+            "player_name": player_name if not goal.own_goal else None,
+            "player_number": goal.player_number if not goal.own_goal else None,
             "team_name": credited_team_name,
             "own_goal": goal.own_goal,
             "own_goal_committed_by": committing_team_name if goal.own_goal else None,

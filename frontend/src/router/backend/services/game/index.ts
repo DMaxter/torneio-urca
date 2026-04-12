@@ -71,3 +71,8 @@ export async function assignFoul(foul: AssignFoulDto): Promise<AxiosResponse<unk
 export async function deleteGameEvent(gameId: string, eventIndex: number): Promise<AxiosResponse<void | Error>> {
   return await http.delete(`/games/${gameId}/events/${eventIndex}`);
 }
+
+export async function addManualEvent(gameId: string, description: string): Promise<AxiosResponse<unknown | Error>> {
+  return await http.post(`/games/${gameId}/events`, { description });
+}
+

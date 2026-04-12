@@ -268,6 +268,11 @@ class AssignFoulDto(BaseModel):
     is_direct_free_kick: bool = False
 
 
+class ManualEventDto(BaseModel):
+    description: str
+
+
+
 class CreateAdminPlayerDto(BaseModel):
     name: str
     birth_date: datetime
