@@ -11,3 +11,5 @@ export const FILE_PREFIXES = {
   staff: ["main_coach", "physiotherapist", "first_deputy", "second_deputy"],
   player: "player",
 } as const;
+
+export const URCA_EMAIL = "urca.1975@gmail.com";

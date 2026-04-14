@@ -9,7 +9,7 @@
         <p class="text-surface-700 leading-7">
           O responsável pelo tratamento dos dados pessoais é a URCA - União Recreativa dos Casais
           Garridos e Andainho, com sede em Casais Garridos, Juncal, Porto de Mós, Portugal. Para questões relacionadas com a proteção de dados, pode contactar-nos
-          através do email: <strong class="text-surface-900">{{ email }}</strong>
+          através do email: <strong class="text-surface-900">{{ URCA_EMAIL }}</strong>
         </p>
       </section>
 
@@ -62,7 +62,7 @@
           <li><strong class="text-surface-900">Direito de oposição:</strong> Opor-se ao tratamento dos dados</li>
           <li><strong class="text-surface-900">Direito a revogar consentimento:</strong> Retirar o consentimento a qualquer momento</li>
         </ul>
-        <p class="text-surface-700 leading-7 mt-4">Para exercer qualquer destes direitos, contacte-nos através do email: <strong class="text-surface-900">{{ email }}</strong></p>
+        <p class="text-surface-700 leading-7 mt-4">Para exercer qualquer destes direitos, contacte-nos através do email: <strong class="text-surface-900">{{ URCA_EMAIL }}</strong></p>
       </section>
 
       <section class="mb-8">
@@ -136,10 +136,9 @@
 
 <script setup lang="ts">
 import { useRouter } from "vue-router";
+import { URCA_EMAIL } from "@/constants";
 
 const router = useRouter();
-
-const email = "urca@urca.pt";
 
 function goBack() {
   router.back();
