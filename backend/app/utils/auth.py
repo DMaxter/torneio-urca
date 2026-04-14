@@ -113,6 +113,10 @@ async def require_manage_game_events(request: Request):
     return await require_role(UserRoles.MANAGE_GAME_EVENTS, request)
 
 
+async def require_open_calendar(request: Request):
+    return await require_role(UserRoles.OPEN_CALENDAR, request)
+
+
 async def require_game_access(game_id: str, request: Request):
     user = await get_current_user(request)
     if user["username"] == ADMIN_USERNAME:

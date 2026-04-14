@@ -17,6 +17,8 @@
             <label for="mge_{{ data.id }}" class="text-sm">Eventos</label>
             <P-Checkbox v-model="selectedRoles[data.id]" value="fill_game_calls" :binary="false" inputId="fgc_{{ data.id }}" />
             <label for="fgc_{{ data.id }}" class="text-sm">Chamadas</label>
+            <P-Checkbox v-model="selectedRoles[data.id]" value="open_calendar" :binary="false" inputId="oc_{{ data.id }}" />
+            <label for="oc_{{ data.id }}" class="text-sm">Abrir Calendário</label>
           </div>
         </template>
       </P-Column>

@@ -2,6 +2,12 @@
   <P-Dialog v-model:visible="enabled" modal header="Calendário de Jogos" class="w-11/12 md:w-10/12 lg:w-9/12">
     <div class="flex flex-col gap-4">
 
+      <!-- Calendar locked banner -->
+      <div v-if="calendarLocked" class="flex items-center gap-2 bg-amber-50 border border-amber-300 rounded-lg px-3 py-1.5 text-sm text-amber-700">
+        <span class="material-symbols-outlined text-base shrink-0">lock</span>
+        <span>Calendário bloqueado. Não é possível alterar datas ou mover jogos.</span>
+      </div>
+
       <!-- Last action feedback -->
       <div v-if="lastAction && !selectedGame" class="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5 text-sm text-green-700">
         <span class="material-symbols-outlined text-base shrink-0">check_circle</span>
@@ -55,7 +61,7 @@
               <div class="flex items-center justify-between">
                 <p class="text-xs font-semibold text-stone-400">{{ slot.time }}</p>
                 <span
-                  v-if="slot.game && !selectedGame"
+                  v-if="slot.game && !selectedGame && !calendarLocked"
                   class="material-symbols-outlined text-sm text-stone-300 hover:text-red-500 cursor-pointer"
                   v-tooltip.top="'Limpar agendamento'"
                   @click.stop="promptClearSchedule(slot.game)"
@@ -89,7 +95,7 @@
             <P-Button
               size="small"
               severity="warn"
-              :disabled="!canDistribute(group.tournamentId)"
+              :disabled="calendarLocked || !canDistribute(group.tournamentId)"
               :loading="distributingTournamentId === group.tournamentId"
               v-tooltip.left="!canDistribute(group.tournamentId) ? 'Só é possível distribuir quando todos os jogos do torneio estão sem data' : ''"
               @click="distribute(group.tournamentId)"
@@ -121,6 +127,15 @@
     </div>
 
     <template #footer>
+      <P-Button
+        v-if="canOpenCalendar"
+        :severity="calendarLocked ? 'warn' : 'secondary'"
+        :loading="lockLoading"
+        @click="handleToggleLock"
+      >
+        <span class="material-symbols-outlined">{{ calendarLocked ? 'lock_open' : 'lock' }}</span>
+        {{ calendarLocked ? 'Abrir Calendário' : 'Fechar Calendário' }}
+      </P-Button>
       <P-Button severity="secondary" @click="close">
         <span class="material-symbols-outlined">close</span>
         Fechar
@@ -138,13 +153,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
+import { storeToRefs } from "pinia";
 import { useToast } from "primevue/usetoast";
 import { useGameStore } from "@stores/games";
 import { useGameDayStore } from "@stores/game_days";
 import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
+import { useSettingsStore } from "@stores/settings";
+import { useAuthStore } from "@stores/auth";
 import { useTournamentColors } from "@/composables/useTournamentColors";
 import type { Game } from "@router/backend/services/game/types";
 
@@ -162,6 +180,13 @@ const gameDayStore = useGameDayStore();
 const groupStore = useGroupStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
+const settingsStore = useSettingsStore();
+const authStore = useAuthStore();
+const { calendarLocked } = storeToRefs(settingsStore);
+const { canOpenCalendar } = storeToRefs(authStore);
+const lockLoading = ref(false);
+
+watch(enabled, (open) => { if (open) settingsStore.fetchSettings(); });
 
 const selectedGame = ref<Game | null>(null);
 const lastAction = ref<ActionLog | null>(null);
@@ -310,6 +335,7 @@ function getGameLog(game: Game, datetime?: Date | null): { teams: string; date: 
 }
 
 function promptClearSchedule(game: Game) {
+  if (calendarLocked.value) return;
   gameToRemove.value = game;
   showClearConfirm.value = true;
 }
@@ -437,6 +463,7 @@ function getSlotClass(slot: Slot) {
 }
 
 async function onSlotClick(slot: Slot) {
+  if (calendarLocked.value) return;
   if (!selectedGame.value) {
     if (slot.game) selectedGame.value = slot.game;
     return;
@@ -493,7 +520,24 @@ async function onSlotClick(slot: Slot) {
 }
 
 function onUnscheduledClick(game: Game) {
+  if (calendarLocked.value) return;
   selectedGame.value = selectedGame.value?.id === game.id ? null : game;
+}
+
+async function handleToggleLock() {
+  lockLoading.value = true;
+  const success = await settingsStore.toggleCalendarLock();
+  lockLoading.value = false;
+  if (success) {
+    toast.add({
+      severity: calendarLocked.value ? "warn" : "success",
+      summary: calendarLocked.value ? "Calendário fechado" : "Calendário aberto",
+      detail: calendarLocked.value ? "Já não é possível alterar datas de jogos." : "As datas de jogos podem ser alteradas novamente.",
+      life: 3000,
+    });
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível alterar o estado do calendário", life: 3000 });
+  }
 }
 
 function buildOrderedGames(tournamentId: string): GameEntry[] {
@@ -673,6 +717,7 @@ onMounted(async () => {
     groupStore.getGroups(),
     teamStore.getTeams(),
     tournamentStore.getTournaments(),
+    settingsStore.fetchSettings(),
   ]);
   loadCalendar();
 });

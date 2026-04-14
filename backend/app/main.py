@@ -22,6 +22,7 @@ from app.routes.foul import router as foul_router
 from app.routes.staff import router as staff_router
 from app.routes.game_day import router as game_day_router
 from app.routes.file import router as file_router
+from app.routes.settings import router as settings_router
 from app.config import get_settings
 from app.utils import REQUEST_ID, get_logger
 
@@ -125,6 +126,7 @@ api_router.include_router(foul_router)
 api_router.include_router(staff_router)
 api_router.include_router(file_router)
 api_router.include_router(game_day_router)
+api_router.include_router(settings_router)
 
 app.mount("/api", api_router)
 

@@ -20,6 +20,7 @@ GROUPS_COLLECTION = "groups"
 GOALS_COLLECTION = "goals"
 CARDS_COLLECTION = "cards"
 GAME_DAYS_COLLECTION = "game_days"
+SETTINGS_COLLECTION = "settings"
 
 
 class Database:
@@ -71,6 +72,7 @@ class Database:
             GOALS_COLLECTION,
             CARDS_COLLECTION,
             GAME_DAYS_COLLECTION,
+            SETTINGS_COLLECTION,
         ]:
             if coll not in existing:
                 await self._db.create_collection(coll)  # type: ignore[union-attr]

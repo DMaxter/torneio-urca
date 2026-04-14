@@ -15,8 +15,9 @@ class UserRoles:
     MANAGE_GAMES = "manage_games"
     MANAGE_GAME_EVENTS = "manage_game_events"
     FILL_GAME_CALLS = "fill_game_calls"
+    OPEN_CALENDAR = "open_calendar"
 
-    ALL = [MANAGE_PLAYERS, MANAGE_GAMES, MANAGE_GAME_EVENTS, FILL_GAME_CALLS]
+    ALL = [MANAGE_PLAYERS, MANAGE_GAMES, MANAGE_GAME_EVENTS, FILL_GAME_CALLS, OPEN_CALENDAR]
 
 
 class AssignUserGamesForCallsDto(BaseModel):

@@ -13,6 +13,7 @@ export const USER_ROLES = {
   MANAGE_GAMES: "manage_games",
   MANAGE_GAME_EVENTS: "manage_game_events",
   FILL_GAME_CALLS: "fill_game_calls",
+  OPEN_CALENDAR: "open_calendar",
 } as const;
 
 export class User {
