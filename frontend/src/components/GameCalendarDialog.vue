@@ -546,21 +546,7 @@ function buildOrderedGames(tournamentId: string): GameEntry[] {
 async function distribute(tournamentId: string) {
   distributingTournamentId.value = tournamentId;
 
-  // Build slot list using only game days configured for this tournament, sorted by datetime
-  const slotSet = new Map<string, { date: string; time: string; datetime: Date }>();
-  for (const day of gameDayStore.gameDays.filter(d => d.tournament === tournamentId)) {
-    for (let i = 0; i < Number(day.num_games); i++) {
-      const time = slotTime(day.start_time, i);
-      const key = datetimeKey(day.date, time);
-      if (!slotSet.has(key)) {
-        slotSet.set(key, { date: day.date, time, datetime: slotDatetime(day.date, day.start_time, i) });
-      }
-    }
-  }
-
-  const allSlots = [...slotSet.values()].sort((a, b) => a.datetime.getTime() - b.datetime.getTime());
-
-  // Find occupied slots (any game, any tournament)
+  // Find occupied slots (any game, any tournament) using local time
   const occupiedKeys = new Set(
     gameStore.games
       .filter(g => g.scheduled_date)
@@ -575,24 +561,91 @@ async function distribute(tournamentId: string) {
       })
   );
 
-  const freeSlots = allSlots.filter(s => !occupiedKeys.has(datetimeKey(s.date, s.time)));
+  // Build map of all visible calendar slots per date (from ALL game days, any tournament)
+  const visibleSlotsPerDate = new Map<string, number[]>();
+  for (const day of gameDayStore.gameDays) {
+    if (!visibleSlotsPerDate.has(day.date)) visibleSlotsPerDate.set(day.date, []);
+    const [h, m] = day.start_time.split(":").map(Number);
+    for (let i = 0; i < Number(day.num_games); i++) {
+      const minute = h * 60 + m + i * 60;
+      if (!visibleSlotsPerDate.get(day.date)!.includes(minute)) {
+        visibleSlotsPerDate.get(day.date)!.push(minute);
+      }
+    }
+  }
+  for (const slots of visibleSlotsPerDate.values()) slots.sort((a, b) => a - b);
+
+  const orderedDays = gameDayStore.gameDays
+    .filter(d => d.tournament === tournamentId)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time));
+
+  // Pre-compute free slots per day, capped at num_games each
+  const freeSlotsPerDay: { date: string; time: string; datetime: Date }[][] = [];
+  const daysWithoutSlots: string[] = [];
+
+  for (const day of orderedDays) {
+    const [h, m] = day.start_time.split(":").map(Number);
+    const startMinute = h * 60 + m;
+    const numGames = Number(day.num_games);
+    const candidates = (visibleSlotsPerDate.get(day.date) ?? []).filter(min => min >= startMinute);
+
+    const daySlots: { date: string; time: string; datetime: Date }[] = [];
+    for (const minute of candidates) {
+      if (daySlots.length >= numGames) break;
+      const hh = String(Math.floor(minute / 60) % 24).padStart(2, "0");
+      const mm = String(minute % 60).padStart(2, "0");
+      const time = `${hh}:${mm}`;
+      if (!occupiedKeys.has(datetimeKey(day.date, time))) {
+        const base = new Date(`${day.date}T00:00:00`);
+        base.setMinutes(base.getMinutes() + minute);
+        daySlots.push({ date: day.date, time, datetime: base });
+      }
+    }
+
+    freeSlotsPerDay.push(daySlots);
+    if (daySlots.length < numGames) {
+      daysWithoutSlots.push(formatDateShort(day.date));
+    }
+  }
+
   const ordered = buildOrderedGames(tournamentId).filter(g => !g.scheduled_date);
 
+  // Distribute day by day: each day gets exactly num_games games from the ordered list.
+  // If a day has fewer free slots, those games stay unscheduled (don't spill to next day).
   let allOk = true;
-  for (let i = 0; i < Math.min(ordered.length, freeSlots.length); i++) {
-    const result = await gameStore.updateGame(ordered[i].id, freeSlots[i].datetime);
-    if (!result.success) allOk = false;
+  let gameIndex = 0;
+  for (let dayIdx = 0; dayIdx < orderedDays.length && gameIndex < ordered.length; dayIdx++) {
+    const numGames = Number(orderedDays[dayIdx].num_games);
+    const daySlots = freeSlotsPerDay[dayIdx];
+
+    for (let i = 0; i < daySlots.length && gameIndex < ordered.length; i++, gameIndex++) {
+      const result = await gameStore.updateGame(ordered[gameIndex].id, daySlots[i].datetime);
+      if (!result.success) allOk = false;
+    }
+
+    // Skip games "allocated" to this day that couldn't be placed
+    const skipped = numGames - daySlots.length;
+    gameIndex += Math.min(skipped, ordered.length - gameIndex);
   }
 
   distributingTournamentId.value = null;
 
-  if (allOk) {
-    const assigned = Math.min(ordered.length, freeSlots.length);
+  if (daysWithoutSlots.length > 0) {
+    toast.add({
+      severity: "warn",
+      summary: "Slots insuficientes",
+      detail: `Sem slots disponíveis em: ${daysWithoutSlots.join(", ")}. Os jogos em falta ficaram sem data.`,
+      life: 6000,
+    });
+  }
+
+  if (allOk && daysWithoutSlots.length === 0) {
+    const assigned = freeSlotsPerDay.reduce((s, d) => s + d.length, 0);
     lastAction.value = {
       prefix: `${getTournamentName(tournamentId)}: ${assigned} jogo${assigned !== 1 ? 's' : ''} distribuídos com sucesso`,
       games: []
     };
-  } else {
+  } else if (!allOk) {
     toast.add({ severity: "error", summary: "Erro", detail: "Alguns jogos não foram agendados", life: 4000 });
   }
 

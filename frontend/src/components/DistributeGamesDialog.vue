@@ -29,7 +29,7 @@
               </p>
               <ul class="space-y-1">
                 <li v-for="(g, i) in slot.games" :key="g.id" class="text-xs text-stone-600 flex items-center gap-1">
-                  <span class="text-stone-400 shrink-0">{{ formatGameTime(slot.startTime, i) }}</span>
+                  <span class="text-stone-400 shrink-0">{{ minutesToTime(slot.times[i]) }}</span>
                    <span class="truncate">{{ getTeamName(g.home_call?.team || '') }} vs {{ getTeamName(g.away_call?.team || '') }}</span>
                   <span class="ml-1 text-stone-400 shrink-0 whitespace-nowrap">({{ g.groupName }}, Jornada {{ g.round }})</span>
                 </li>
@@ -130,6 +130,7 @@ interface DaySlot {
   startTime: string;
   capacity: number;
   games: GameEntry[];
+  times: number[]; // minutes from midnight for each game
 }
 
 const slots = ref<DaySlot[]>([]);
@@ -151,11 +152,9 @@ function getTeamName(id: string) {
 
 
 
-function formatGameTime(startTime: string, index: number): string {
-  const [h, m] = startTime.split(":").map(Number);
-  const total = h * 60 + m + index * 60;
-  const hh = String(Math.floor(total / 60) % 24).padStart(2, "0");
-  const mm = String(total % 60).padStart(2, "0");
+function minutesToTime(minutes: number): string {
+  const hh = String(Math.floor(minutes / 60) % 24).padStart(2, "0");
+  const mm = String(minutes % 60).padStart(2, "0");
   return `${hh}:${mm}`;
 }
 
@@ -215,7 +214,33 @@ function computeDistribution() {
     startTime: d.start_time,
     capacity: Number(d.num_games),
     games: [],
+    times: [],
   }));
+
+  // Minutes from midnight (local time) already occupied by games from other tournaments
+  const occupiedPerDate = new Map<string, Set<number>>();
+  for (const slot of daySlots) {
+    const occupied = new Set<number>(
+      gameStore.games
+        .filter(g => g.tournament !== selectedTournament.value && g.scheduled_date)
+        .filter(g => {
+          const d = new Date(g.scheduled_date!);
+          const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          return localDate === slot.date;
+        })
+        .map(g => {
+          const d = new Date(g.scheduled_date!);
+          return d.getHours() * 60 + d.getMinutes();
+        })
+    );
+    occupiedPerDate.set(slot.date, occupied);
+  }
+
+  // Track next available minute per slot
+  const slotNextMinute: number[] = daySlots.map(s => {
+    const [h, m] = s.startTime.split(":").map(Number);
+    return h * 60 + m;
+  });
 
   let slotIdx = 0;
   const remaining: GameEntry[] = [];
@@ -226,7 +251,15 @@ function computeDistribution() {
       slotIdx++;
     }
     if (slotIdx < daySlots.length) {
-      daySlots[slotIdx].games.push(game);
+      const slot = daySlots[slotIdx];
+      const occupied = occupiedPerDate.get(slot.date)!;
+      // Skip minutes already taken by other tournaments
+      while (occupied.has(slotNextMinute[slotIdx])) {
+        slotNextMinute[slotIdx] += 60;
+      }
+      slot.times.push(slotNextMinute[slotIdx]);
+      slot.games.push(game);
+      slotNextMinute[slotIdx] += 60;
     } else {
       remaining.push(game);
     }
@@ -243,11 +276,10 @@ async function distribute() {
   for (const slot of slots.value) {
     for (let i = 0; i < slot.games.length; i++) {
       const game = slot.games[i];
-      const [h, m] = slot.startTime.split(":").map(Number);
-      const totalMinutes = h * 60 + m + i * 60;
-      const hh = Math.floor(totalMinutes / 60) % 24;
-      const mm = totalMinutes % 60;
-      const dt = new Date(`${slot.date}T${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:00`);
+      const totalMinutes = slot.times[i];
+      const hh = String(Math.floor(totalMinutes / 60) % 24).padStart(2, "0");
+      const mm = String(totalMinutes % 60).padStart(2, "0");
+      const dt = new Date(`${slot.date}T${hh}:${mm}:00`);
 
       const result = await gameStore.updateGame(game.id, dt);
       if (!result.success) allOk = false;
