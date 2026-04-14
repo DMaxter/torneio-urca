@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 from fastapi import UploadFile
 from database import db
 
-from app.constants import MIN_AGE, MAX_FILE_SIZE
+from app.constants import MAX_FILE_SIZE, TOURNAMENT_START_DATE, AGE_FOR_ENROLLMENT
 
 ALGORITHM = "HS256"
 REQUEST_ID: ContextVar[str] = ContextVar("request_id", default="no-request-id")
@@ -41,20 +41,24 @@ def get_logger() -> logging.Logger:
     return _base_logger
 
 
-def calculate_age(birth_date: datetime) -> int:
+def calculate_age(birth_date: datetime, reference_date: datetime | None = None) -> int:
     """Calculate age in years from birth date."""
-    today = datetime.now(timezone.utc)
+    ref_date = reference_date if reference_date else datetime.now(timezone.utc)
     if birth_date.tzinfo is None:
         birth_date = birth_date.replace(tzinfo=timezone.utc)
-    age = today.year - birth_date.year
-    if (today.month, today.day) < (birth_date.month, birth_date.day):
+    age = ref_date.year - birth_date.year
+    if (ref_date.month, ref_date.day) < (birth_date.month, birth_date.day):
         age -= 1
     return age
 
 
-def is_under_age(birth_date: datetime, min_age: int = MIN_AGE) -> bool:
+def is_under_age(
+    birth_date: datetime,
+    min_age: int = AGE_FOR_ENROLLMENT,
+    reference_date: datetime | None = None,
+) -> bool:
     """Check if a person is under the minimum age threshold."""
-    return calculate_age(birth_date) < min_age
+    return calculate_age(birth_date, reference_date) < min_age
 
 
 def decode_token(token: str, secret: str) -> dict:

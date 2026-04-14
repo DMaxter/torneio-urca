@@ -20,7 +20,13 @@ from app.schemas.schemas import (
     PlayerDto,
 )
 from app.error import Error
-from app.constants import MIN_PLAYERS, MIN_AGE, MAX_FILE_SIZE
+from app.constants import (
+    MIN_PLAYERS,
+    MAX_FILE_SIZE,
+    TOURNAMENT_START_DATE,
+    AGE_FOR_ENROLLMENT,
+    AGE_REQUIRES_AUTHORIZATION,
+)
 from app.utils import calculate_age, get_logger, sanitize_for_serialization
 from app.utils.auth import get_current_user, require_manage_players
 from datetime import datetime
@@ -158,12 +164,21 @@ async def create_players(players: list, file_dict: dict[str, str]) -> list[Objec
         player_birth_date = datetime.fromisoformat(
             player["birth_date"].replace("Z", "+00:00")
         )
-        age = calculate_age(player_birth_date)
+        age = calculate_age(player_birth_date, TOURNAMENT_START_DATE)
 
-        if age < MIN_AGE and f"player_{i}_authorization" not in file_dict:
+        if age < AGE_FOR_ENROLLMENT:
             raise HTTPException(
                 status_code=400,
-                detail=f"O jogador {player['name']} é menor de {MIN_AGE} anos e requer autorização",
+                detail=f"O jogador {player['name']} tem de ter pelo menos {AGE_FOR_ENROLLMENT} anos em {TOURNAMENT_START_DATE.strftime('%d/%m/%Y')}",
+            )
+
+        if (
+            age < AGE_REQUIRES_AUTHORIZATION
+            and f"player_{i}_authorization" not in file_dict
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail=f"O jogador {player['name']} é menor de {AGE_REQUIRES_AUTHORIZATION} anos e requer autorização",
             )
 
         player_data = {
@@ -190,7 +205,9 @@ async def create_players(players: list, file_dict: dict[str, str]) -> list[Objec
 
 
 @router.post("", response_model=TeamDto, status_code=201)
-async def add_team(team: CreateTeamDto, current_user: dict = Depends(require_manage_players)):
+async def add_team(
+    team: CreateTeamDto, current_user: dict = Depends(require_manage_players)
+):
     """Create a new team by providing full references to existing entities."""
     from app.routes.tournament import get_tournament
 
@@ -514,7 +531,7 @@ async def register_add_player(
     Add a player to a team during registration.
 
     This is part of the multi-step registration flow.
-    Validates age and requires authorization file for minors under MIN_AGE.
+    Validates age (must be 16+ on tournament start date) and requires authorization file for minors under 18.
     """
     try:
         team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
@@ -524,7 +541,13 @@ async def register_add_player(
         raise Error.not_found("Team")
 
     player_birth_date = datetime.fromisoformat(birth_date.replace("Z", "+00:00"))
-    age = calculate_age(player_birth_date)
+    age = calculate_age(player_birth_date, TOURNAMENT_START_DATE)
+
+    if age < AGE_FOR_ENROLLMENT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"O jogador {name} tem de ter pelo menos {AGE_FOR_ENROLLMENT} anos em {TOURNAMENT_START_DATE.strftime('%d/%m/%Y')}",
+        )
 
     file_dict = {}
 
@@ -549,10 +572,10 @@ async def register_add_player(
         )
         file_dict["authorization_file_id"] = file_id
 
-    if age < MIN_AGE and "authorization_file_id" not in file_dict:
+    if age < AGE_REQUIRES_AUTHORIZATION and "authorization_file_id" not in file_dict:
         raise HTTPException(
             status_code=400,
-            detail=f"O jogador {name} é menor de {MIN_AGE} anos e requer autorização",
+            detail=f"O jogador {name} é menor de {AGE_REQUIRES_AUTHORIZATION} anos e requer autorização",
         )
 
     if is_federated and not federation_team:
@@ -758,7 +781,9 @@ async def get_team_players(team_id: str):
 
 
 @router.delete("/{team_id}", status_code=204)
-async def delete_team(team_id: str, current_user: dict = Depends(require_manage_players)):
+async def delete_team(
+    team_id: str, current_user: dict = Depends(require_manage_players)
+):
     """Delete a team and all its players."""
     get_logger().info(f"[{current_user['username']}] Deleting team '{team_id}'")
     try:
@@ -791,7 +816,9 @@ async def delete_team(team_id: str, current_user: dict = Depends(require_manage_
 
 @router.put("/{team_id}", response_model=TeamDto)
 async def update_team(
-    team_id: str, team: CreateTeamDto, current_user: dict = Depends(require_manage_players)
+    team_id: str,
+    team: CreateTeamDto,
+    current_user: dict = Depends(require_manage_players),
 ):
     """Update a team."""
     get_logger().info(f"[{current_user['username']}] Updating team '{team_id}'")

@@ -69,8 +69,11 @@
       </div>
     </div>
 
-    <div v-if="checkUnderAge()" class="field authorization-required">
-      <P-Tag severity="warn" :value="`Menor de ${TOURNAMENT.MIN_AGE} anos - é necessário autorização`" />
+    <div v-if="checkCannotEnroll()" class="field authorization-required">
+      <P-Tag severity="danger" :value="`Ter pelo menos ${TOURNAMENT.AGE_FOR_ENROLLMENT} anos em ${TOURNAMENT.TOURNAMENT_START_DATE.toLocaleDateString('pt-PT')}`" />
+    </div>
+    <div v-else-if="checkUnderAge()" class="field authorization-required">
+      <P-Tag severity="warn" :value="`Menor de ${TOURNAMENT.AGE_REQUIRES_AUTHORIZATION} anos - é necessário autorização`" />
       <FileUpload
         :modelValue="localFiles.authorization"
         @update:modelValue="localFiles.authorization = $event"
@@ -172,8 +175,12 @@ watchEffect(() => {
   });
 });
 
+function checkCannotEnroll(): boolean {
+  return isUnderAge(formData.birth_date, TOURNAMENT.AGE_FOR_ENROLLMENT, TOURNAMENT.TOURNAMENT_START_DATE);
+}
+
 function checkUnderAge(): boolean {
-  return isUnderAge(formData.birth_date, TOURNAMENT.MIN_AGE);
+  return isUnderAge(formData.birth_date, TOURNAMENT.AGE_REQUIRES_AUTHORIZATION, TOURNAMENT.TOURNAMENT_START_DATE);
 }
 
 function handleFileError(message: string) {

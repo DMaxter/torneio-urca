@@ -12,7 +12,11 @@ from app.utils import (
     calculate_age,
     upload_single_file,
 )
-from app.constants import MIN_AGE
+from app.constants import (
+    AGE_FOR_ENROLLMENT,
+    AGE_REQUIRES_AUTHORIZATION,
+    TOURNAMENT_START_DATE,
+)
 
 router = APIRouter(prefix="/players", tags=["Players"])
 
@@ -75,12 +79,18 @@ async def add_player_admin(
     )
 
     player_birth_date = datetime.fromisoformat(birth_date.replace("Z", "+00:00"))
-    age = calculate_age(player_birth_date)
+    age = calculate_age(player_birth_date, TOURNAMENT_START_DATE)
 
-    if age < MIN_AGE and authorization is None:
+    if age < AGE_FOR_ENROLLMENT:
         raise HTTPException(
             status_code=400,
-            detail=f"O jogador {name} é menor de {MIN_AGE} anos e requer autorização parental",
+            detail=f"O jogador tem de ter pelo menos {AGE_FOR_ENROLLMENT} anos em {TOURNAMENT_START_DATE.strftime('%d/%m/%Y')}",
+        )
+
+    if age < AGE_REQUIRES_AUTHORIZATION and authorization is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"O jogador {name} é menor de {AGE_REQUIRES_AUTHORIZATION} anos e requer autorização parental",
         )
 
     file_dict = {}

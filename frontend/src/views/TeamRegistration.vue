@@ -393,8 +393,10 @@ function nextStep() {
       }
       if (!player.files.citizenCard) errors.push(`Jogador ${i + 1}: Cartão de Cidadão é obrigatório`);
       if (!player.files.proofOfResidency) errors.push(`Jogador ${i + 1}: Comprovativo de Residência é obrigatório`);
-      if (isUnderAge(player.data.birth_date, TOURNAMENT.MIN_AGE) && !player.files.authorization) {
-        errors.push(`Jogador ${i + 1}: Autorização é obrigatória (menor de ${TOURNAMENT.MIN_AGE} anos)`);
+      if (isUnderAge(player.data.birth_date, TOURNAMENT.AGE_FOR_ENROLLMENT, TOURNAMENT.TOURNAMENT_START_DATE)) {
+        errors.push(`Jogador ${i + 1}: Tem de ter pelo menos ${TOURNAMENT.AGE_FOR_ENROLLMENT} anos em ${TOURNAMENT.TOURNAMENT_START_DATE.toLocaleDateString('pt-PT')}`);
+      } else if (isUnderAge(player.data.birth_date, TOURNAMENT.AGE_REQUIRES_AUTHORIZATION, TOURNAMENT.TOURNAMENT_START_DATE) && !player.files.authorization) {
+        errors.push(`Jogador ${i + 1}: Autorização é obrigatória (menor de ${TOURNAMENT.AGE_REQUIRES_AUTHORIZATION} anos)`);
       }
       if (errors.length > 0) {
         toast.add({ severity: "error", summary: "Erro", detail: errors[0], life: 5000 });

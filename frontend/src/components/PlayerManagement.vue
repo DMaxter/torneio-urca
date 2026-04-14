@@ -104,7 +104,8 @@ const availableTeams = computed(() => {
   if (!playerTournament.value) return [];
   return teamStore.teams.filter(t => t.tournament === playerTournament.value);
 });
-const isMinor = computed(() => isUnderAge(playerFormData.value.birth_date, TOURNAMENT.MIN_AGE));
+const cannotEnroll = computed(() => isUnderAge(playerFormData.value.birth_date, TOURNAMENT.AGE_FOR_ENROLLMENT, TOURNAMENT.TOURNAMENT_START_DATE));
+  const isMinor = computed(() => isUnderAge(playerFormData.value.birth_date, TOURNAMENT.AGE_REQUIRES_AUTHORIZATION, TOURNAMENT.TOURNAMENT_START_DATE));
 
 onMounted(async () => {
   if (tournamentStore.tournaments.length === 0) {
@@ -163,8 +164,12 @@ async function savePlayer() {
       toast.add({ severity: "warn", summary: "Documento obrigatório", detail: "É necessário enviar o Comprovativo de Residência", life: 3000 });
       return;
     }
+    if (cannotEnroll.value) {
+      toast.add({ severity: "error", summary: "Idade mínima", detail: `Tem de ter pelo menos ${TOURNAMENT.AGE_FOR_ENROLLMENT} anos em ${TOURNAMENT.TOURNAMENT_START_DATE.toLocaleDateString('pt-PT')}`, life: 3000 });
+      return;
+    }
     if (isMinor.value && !playerFiles.value.authorization) {
-      toast.add({ severity: "warn", summary: "Autorização necessária", detail: `É necessário enviar a autorização para menores de ${TOURNAMENT.MIN_AGE} anos`, life: 3000 });
+      toast.add({ severity: "warn", summary: "Autorização necessária", detail: `É necessário enviar a autorização para menores de ${TOURNAMENT.AGE_REQUIRES_AUTHORIZATION} anos`, life: 3000 });
       return;
     }
   }
