@@ -29,9 +29,9 @@
     <div v-else-if="classifications.length > 0" class="space-y-6">
       <div v-for="classification in classifications" :key="classification.group_id" class="bg-white border border-stone-300 rounded-xl overflow-hidden">
         <div class="bg-stone-100 px-4 py-3 border-b border-stone-200">
-          <h2 class="text-lg font-semibold text-stone-900">Grupo {{ classification.group_name }}</h2>
+          <h2 class="text-lg font-semibold text-stone-900">{{ classification.group_name }}</h2>
         </div>
-        
+
         <div class="overflow-x-auto">
           <P-DataTable :value="classification.standings" stripedRows class="text-sm">
             <P-Column field="position" header="#" class="w-[3rem]">
