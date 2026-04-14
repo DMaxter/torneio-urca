@@ -18,6 +18,9 @@
         <router-link to="/" class="nav-link" @click="menuOpen = false">
           Início
         </router-link>
+        <router-link to="/dashboard" class="nav-link" @click="menuOpen = false">
+          Dashboard
+        </router-link>
         <router-link to="/classifications" class="nav-link" @click="menuOpen = false">
           Classificações
         </router-link>

@@ -30,6 +30,15 @@ const routes = [
     }
   },
   {
+    path: "/dashboard",
+    name: "dashboard",
+    component: () => import("@views/DashboardView.vue"),
+    meta: {
+      title: "Dashboard | " + import.meta.env.VUE_APP_NAME,
+      requiresAuth: false,
+    }
+  },
+  {
     path: "/classifications",
     name: "classifications",
     component: () => import("@views/ClassificationsView.vue"),
