@@ -417,8 +417,6 @@ function nextStep() {
         if (!staff.form.data.name) errors.push(`${staff.label}: Nome é obrigatório`);
         if (!staff.form.data.birth_date) errors.push(`${staff.label}: Data de Nascimento é obrigatória`);
         if (!staff.form.data.fiscal_number) errors.push(`${staff.label}: NIF é obrigatório`);
-        if (!staff.form.data.place_of_birth) errors.push(`${staff.label}: Local de Nascimento é obrigatório`);
-        if (!staff.form.data.address) errors.push(`${staff.label}: Morada é obrigatória`);
         if (!staff.form.files?.citizenCard) errors.push(`${staff.label}: Cartão de Cidadão é obrigatório`);
       }
     }
@@ -493,8 +491,6 @@ async function submit() {
         if (!staff.form.data.name ||
             !staff.form.data.birth_date ||
             !staff.form.data.fiscal_number ||
-            !staff.form.data.place_of_birth ||
-            !staff.form.data.address ||
             !citizenCard ||
             !(citizenCard instanceof File)) {
           showError(`Preencha todos os campos do ${staff.key === "main_coach" ? "treinador" : staff.key === "assistant_coach" ? "treinador adjunto" : staff.key === "physiotherapist" ? "fisioterapeuta" : "delegado"}`);

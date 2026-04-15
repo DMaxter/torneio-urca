@@ -5,7 +5,7 @@
       <P-ToggleSwitch v-model="enabled" />
     </legend>
     <div v-if="enabled">
-      <PersonFields v-model="modelValue" :id="id" />
+      <PersonFields v-model="modelValue" :id="id" :showExtraFields="false" />
       <FileUpload
         :modelValue="files.citizenCard"
         @update:modelValue="files.citizenCard = $event"

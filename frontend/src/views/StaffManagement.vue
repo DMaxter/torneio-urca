@@ -32,6 +32,14 @@
           </template>
         </P-Column>
         <P-Column header="Nº Fiscal" field="fiscal_number" />
+        <P-Column header="CC" class="w-[80px]">
+          <template #body="{ data }">
+            <P-Button v-if="data.citizen_card_file_id" size="small" severity="secondary" @click="viewFile(data.citizen_card_file_id)">
+              <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+            </P-Button>
+            <span v-else class="text-stone-400">-</span>
+          </template>
+        </P-Column>
         <P-Column header="Ações" class="w-[120px]">
           <template #body="{ data }">
             <div class="flex gap-1">
@@ -96,6 +104,7 @@ import { useTournamentStore } from "@stores/tournaments";
 import { http } from "@router/backend/api";
 import type { Staff } from "@router/backend/services/staff/types";
 import { createAdminStaff, updateAdminStaff, type CreateAdminStaff } from "@router/backend/services/staff";
+import { getFileUrl } from "@router/backend/services/file";
 import { useDateFormatter } from "@/composables/useDateFormatter";
 import { useApiErrorToast } from "@/composables/useApiErrorToast";
 import { getStaffTypeLabel } from "@/utils";
@@ -216,6 +225,10 @@ function findTeamWithStaff(staffId: string): string | null {
 function confirmDelete(staff: Staff) {
   deletingStaff.value = staff;
   showDeleteDialog.value = true;
+}
+
+function viewFile(fileId: string) {
+  window.open(getFileUrl(fileId), "_blank");
 }
 
 function getStaffFieldForType(staffType: string): string | null {

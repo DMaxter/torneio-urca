@@ -11,14 +11,16 @@
     <P-InputText :id="`${id}FiscalNumber`" v-model="data.fiscal_number" fluid />
     <label :for="`${id}FiscalNumber`">NIF</label>
   </P-FloatLabel>
-  <P-FloatLabel class="field" variant="on">
-    <P-InputText :id="`${id}Address`" v-model="data.address" fluid />
-    <label :for="`${id}Address`">Morada</label>
-  </P-FloatLabel>
-  <P-FloatLabel class="field" variant="on">
-    <P-InputText :id="`${id}PlaceOfBirth`" v-model="data.place_of_birth" fluid />
-    <label :for="`${id}PlaceOfBirth`">Local de Nascimento</label>
-  </P-FloatLabel>
+  <div v-if="showExtraFields !== false">
+    <P-FloatLabel class="field" variant="on">
+      <P-InputText :id="`${id}Address`" v-model="data.address" fluid />
+      <label :for="`${id}Address`">Morada</label>
+    </P-FloatLabel>
+    <P-FloatLabel class="field" variant="on">
+      <P-InputText :id="`${id}PlaceOfBirth`" v-model="data.place_of_birth" fluid />
+      <label :for="`${id}PlaceOfBirth`">Local de Nascimento</label>
+    </P-FloatLabel>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -35,6 +37,7 @@ interface PersonData {
 const props = defineProps<{
   modelValue?: PersonData;
   id: string;
+  showExtraFields?: boolean;
 }>();
 
 const emit = defineEmits<{
