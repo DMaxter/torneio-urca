@@ -440,8 +440,7 @@ async def register_add_staff(
     address: Optional[str] = Form(None),
     place_of_birth: Optional[str] = Form(None),
     fiscal_number: str = Form(...),
-    citizen_card: Optional[UploadFile] = File(None),
-    proof_of_residency: Optional[UploadFile] = File(None),
+    citizen_card: UploadFile = File(...),
 ):
     """
     Add a staff member to a team during registration.
@@ -456,19 +455,11 @@ async def register_add_staff(
         raise Error.not_found("Team")
 
     file_dict = {}
-    if citizen_card:
-        file_id = await upload_single_file(
-            citizen_card,
-            f"staff_{team_id}_{staff_type}_citizen_card",
-        )
-        file_dict["citizen_card_file_id"] = file_id
-
-    if proof_of_residency:
-        file_id = await upload_single_file(
-            proof_of_residency,
-            f"staff_{team_id}_{staff_type}_proof_of_residency",
-        )
-        file_dict["proof_of_residency_file_id"] = file_id
+    file_id = await upload_single_file(
+        citizen_card,
+        f"staff_{team_id}_{staff_type}_citizen_card",
+    )
+    file_dict["citizen_card_file_id"] = file_id
 
     staff_data = {
         "name": name,

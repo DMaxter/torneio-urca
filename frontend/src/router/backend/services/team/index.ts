@@ -46,9 +46,8 @@ export interface RegisterStaffData {
   address?: string;
   place_of_birth?: string;
   fiscal_number: string;
-  files?: {
+  files: {
     citizenCard?: File;
-    proofOfResidency?: File;
   };
 }
 
@@ -85,9 +84,6 @@ export async function registerAddStaff(data: RegisterStaffData): Promise<AxiosRe
   
   if (data.files?.citizenCard) {
     formData.append("citizen_card", data.files.citizenCard);
-  }
-  if (data.files?.proofOfResidency) {
-    formData.append("proof_of_residency", data.files.proofOfResidency);
   }
   
   return await http.post("/teams/register/staff", formData, {

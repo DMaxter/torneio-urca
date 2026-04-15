@@ -45,10 +45,6 @@
                   <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
                   CC
                 </P-Button>
-                <P-Button v-if="staff.proof_of_residency_file_id" size="small" severity="secondary" @click="viewFile(staff.proof_of_residency_file_id)">
-                  <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
-                  Morada
-                </P-Button>
               </div>
             </div>
             <div v-if="teamStaffDetails.length === 0" class="text-sm text-stone-400">

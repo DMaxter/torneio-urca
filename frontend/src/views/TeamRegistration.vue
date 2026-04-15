@@ -239,7 +239,6 @@ interface StaffMemberData {
 
 interface StaffFiles {
   citizenCard?: File | null;
-  proofOfResidency?: File | null;
 }
 
 interface PlayerFormEntry {
@@ -283,11 +282,11 @@ const staffForms = reactive<{
   first_deputy: StaffFormEntry;
   second_deputy: StaffFormEntry;
 }>({
-  main_coach: { enabled: false, data: createEmptyStaffMember(), files: {} },
-  assistant_coach: { enabled: false, data: createEmptyStaffMember(), files: {} },
-  physiotherapist: { enabled: false, data: createEmptyStaffMember(), files: {} },
-  first_deputy: { enabled: false, data: createEmptyStaffMember(), files: {} },
-  second_deputy: { enabled: false, data: createEmptyStaffMember(), files: {} }
+  main_coach: { enabled: false, data: createEmptyStaffMember(), files: { citizenCard: null } },
+  assistant_coach: { enabled: false, data: createEmptyStaffMember(), files: { citizenCard: null } },
+  physiotherapist: { enabled: false, data: createEmptyStaffMember(), files: { citizenCard: null } },
+  first_deputy: { enabled: false, data: createEmptyStaffMember(), files: { citizenCard: null } },
+  second_deputy: { enabled: false, data: createEmptyStaffMember(), files: { citizenCard: null } }
 });
 
 const toast = useToast();
@@ -420,12 +419,7 @@ function nextStep() {
         if (!staff.form.data.fiscal_number) errors.push(`${staff.label}: NIF é obrigatório`);
         if (!staff.form.data.place_of_birth) errors.push(`${staff.label}: Local de Nascimento é obrigatório`);
         if (!staff.form.data.address) errors.push(`${staff.label}: Morada é obrigatória`);
-        if (!staff.form.files.citizenCard) errors.push(`${staff.label}: Cartão de Cidadão é obrigatório`);
-        if (!staff.form.files.proofOfResidency) errors.push(`${staff.label}: Comprovativo de Residência é obrigatório`);
-        if (errors.length > 0) {
-          toast.add({ severity: "error", summary: "Erro", detail: errors[0], life: 5000 });
-          return;
-        }
+        if (!staff.form.files?.citizenCard) errors.push(`${staff.label}: Cartão de Cidadão é obrigatório`);
       }
     }
   }
@@ -495,13 +489,14 @@ async function submit() {
 
     for (const staff of staffTypes) {
       if (staff.form.enabled && staff.form.data.name && currentTeamId) {
+        const citizenCard = staff.form.files?.citizenCard;
         if (!staff.form.data.name ||
             !staff.form.data.birth_date ||
             !staff.form.data.fiscal_number ||
             !staff.form.data.place_of_birth ||
             !staff.form.data.address ||
-            !staff.form.files?.citizenCard ||
-            !staff.form.files?.proofOfResidency) {
+            !citizenCard ||
+            !(citizenCard instanceof File)) {
           showError(`Preencha todos os campos do ${staff.key === "main_coach" ? "treinador" : staff.key === "assistant_coach" ? "treinador adjunto" : staff.key === "physiotherapist" ? "fisioterapeuta" : "delegado"}`);
           return;
         }
@@ -517,8 +512,7 @@ async function submit() {
           place_of_birth: staff.form.data.place_of_birth,
           fiscal_number: staff.form.data.fiscal_number,
           files: {
-            citizenCard: staff.form.files.citizenCard || undefined,
-            proofOfResidency: staff.form.files.proofOfResidency || undefined,
+            citizenCard: staff.form.files?.citizenCard!,
           },
         };
 

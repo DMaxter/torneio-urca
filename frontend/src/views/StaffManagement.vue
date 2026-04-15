@@ -50,26 +50,25 @@
     <!-- Create/Edit Dialog -->
     <P-Dialog v-model:visible="showFormDialog" modal :header="editingStaff ? 'Editar Staff' : 'Criar Staff'" class="w-11/12 md:w-6/12">
       <div class="space-y-3">
-        <P-FloatLabel class="mt-3" variant="on">
-          <P-InputText id="staffName" v-model="staffForm.name" fluid />
-          <label for="staffName">Nome</label>
+        <P-FloatLabel variant="on">
+          <P-Select id="staffTournament" v-model="staffForm.tournament_id" :options="tournamentOptions" optionLabel="label" optionValue="value" fluid @change="onTournamentChange" />
+          <label for="staffTournament">Torneio *</label>
         </P-FloatLabel>
         <P-FloatLabel variant="on">
-          <P-DatePicker id="staffBirth" v-model="staffForm.birth_date" dateFormat="yy-mm-dd" fluid />
-          <label for="staffBirth">Data de Nascimento</label>
+          <P-Select id="staffTeam" v-model="staffForm.team_id" :options="teamOptions" optionLabel="label" optionValue="value" fluid :disabled="!staffForm.tournament_id" />
+          <label for="staffTeam">Equipa *</label>
         </P-FloatLabel>
         <P-FloatLabel variant="on">
           <P-Select id="staffType" v-model="staffForm.staff_type" :options="staffTypeOptions" optionLabel="label" optionValue="value" fluid />
           <label for="staffType">Tipo de Staff</label>
         </P-FloatLabel>
-        <P-FloatLabel variant="on">
-          <P-InputText id="staffFiscal" v-model="staffForm.fiscal_number" fluid />
-          <label for="staffFiscal">Nº Fiscal</label>
-        </P-FloatLabel>
-        <P-FloatLabel variant="on">
-          <P-Select id="staffTeam" v-model="staffForm.selected_team_id" :options="teamOptions" optionLabel="label" optionValue="value" fluid />
-          <label for="staffTeam">Equipa</label>
-        </P-FloatLabel>
+        <StaffMemberForm
+          id="staff"
+          legend="Dados Pessoais"
+          v-model="staffForm.data"
+          v-model:enabled="staffForm.enabled"
+          v-model:files="staffForm.files"
+        />
       </div>
       <template #footer>
         <P-Button severity="secondary" @click="showFormDialog = false">Cancelar</P-Button>
@@ -89,19 +88,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, reactive } from "vue";
 import { useToast } from "primevue/usetoast";
 import { useStaffStore } from "@stores/staff";
 import { useTeamStore } from "@stores/teams";
+import { useTournamentStore } from "@stores/tournaments";
 import { http } from "@router/backend/api";
 import type { Staff } from "@router/backend/services/staff/types";
+import { createAdminStaff, updateAdminStaff, type CreateAdminStaff } from "@router/backend/services/staff";
 import { useDateFormatter } from "@/composables/useDateFormatter";
 import { useApiErrorToast } from "@/composables/useApiErrorToast";
 import { getStaffTypeLabel } from "@/utils";
+import StaffMemberForm from "@components/forms/StaffMemberForm.vue";
 
 const toast = useToast();
 const staffStore = useStaffStore();
 const teamStore = useTeamStore();
+const tournamentStore = useTournamentStore();
 const { formatDate } = useDateFormatter();
 const { handleApiError } = useApiErrorToast();
 
@@ -111,12 +114,21 @@ const editingStaff = ref<Staff | null>(null);
 const deletingStaff = ref<Staff | null>(null);
 const saving = ref(false);
 
-const staffForm = ref({
-  name: "",
-  birth_date: null as Date | null,
-  staff_type: "",
-  fiscal_number: "",
-  selected_team_id: null as string | null,
+const staffForm = reactive({
+  team_id: null as string | null,
+  tournament_id: null as string | null,
+  staff_type: "Coach",
+  enabled: true,
+  data: {
+    name: "",
+    birth_date: null as Date | null,
+    address: "",
+    place_of_birth: "",
+    fiscal_number: "",
+  },
+  files: {
+    citizenCard: null as File | null,
+  },
 });
 
 const staffTypeOptions = [
@@ -126,11 +138,23 @@ const staffTypeOptions = [
   { label: "1º Delegado", value: "GameDeputy" },
 ];
 
-const teamOptions = computed(() => [
-  { label: "Sem Equipa", value: "" },
-  ...teamStore.teams.map(t => ({ label: t.name, value: t.id }))
+const teamOptions = computed(() => {
+  if (!staffForm.tournament_id) {
+    return [{ label: "Selecione um torneio primeiro...", value: "" }];
+  }
+  return teamStore.teams
+    .filter(t => t.tournament === staffForm.tournament_id)
+    .map(t => ({ label: t.name, value: t.id }));
+});
+
+const tournamentOptions = computed(() => [
+  { label: "Selecionar...", value: "" },
+  ...tournamentStore.tournaments.map(t => ({ label: t.name, value: t.id })),
 ]);
 
+function onTournamentChange() {
+  staffForm.team_id = null;
+}
 
 function getTeamName(staff: Staff): string {
   return staff.team_name || "-";
@@ -144,20 +168,37 @@ async function refreshStaff() {
 
 function openCreateDialog() {
   editingStaff.value = null;
-  staffForm.value = { name: "", birth_date: null, staff_type: "", fiscal_number: "", selected_team_id: null };
+  staffForm.team_id = null;
+  staffForm.tournament_id = null;
+  staffForm.staff_type = "Coach";
+  staffForm.enabled = true;
+  staffForm.data = {
+    name: "",
+    birth_date: null,
+    address: "",
+    place_of_birth: "",
+    fiscal_number: "",
+  };
+  staffForm.files = { citizenCard: null };
   showFormDialog.value = true;
 }
 
 function openEditDialog(staff: Staff) {
   editingStaff.value = staff;
   const teamId = findTeamWithStaff(staff.id);
-  staffForm.value = {
+  const team = teamId ? teamStore.teams.find(t => t.id === teamId) : null;
+  staffForm.team_id = teamId;
+  staffForm.tournament_id = team?.tournament || "";
+  staffForm.staff_type = staff.staff_type;
+  staffForm.enabled = true;
+  staffForm.data = {
     name: staff.name,
     birth_date: staff.birth_date ? new Date(staff.birth_date) : null,
-    staff_type: staff.staff_type,
+    address: staff.address || "",
+    place_of_birth: staff.place_of_birth || "",
     fiscal_number: staff.fiscal_number,
-    selected_team_id: teamId,
   };
+  staffForm.files = { citizenCard: null };
   showFormDialog.value = true;
 }
 
@@ -188,50 +229,55 @@ function getStaffFieldForType(staffType: string): string | null {
 }
 
 async function saveStaff() {
-  if (!staffForm.value.name || !staffForm.value.staff_type) {
+  if (!staffForm.team_id || !staffForm.tournament_id || !staffForm.data.name || !staffForm.data.birth_date) {
     toast.add({ severity: "warn", summary: "Aviso", detail: "Preencha os campos obrigatórios", life: 3000 });
     return;
   }
 
+  if (!editingStaff.value && !staffForm.files.citizenCard) {
+    toast.add({ severity: "warn", summary: "Aviso", detail: "Cartão de Cidadão é obrigatório", life: 3000 });
+    return;
+  }
+
+  const staffField = getStaffFieldForType(staffForm.staff_type);
+  if (staffField) {
+    const team = teamStore.teams.find(t => t.id === staffForm.team_id);
+    if (team) {
+      const existingStaffId = team[staffField as keyof typeof team];
+      if (existingStaffId && existingStaffId !== editingStaff.value?.id) {
+        toast.add({ severity: "error", summary: "Erro", detail: `Esta função (${getStaffTypeLabel(staffForm.staff_type)}) já está atribuída na equipa`, life: 3000 });
+        return;
+      }
+    }
+  }
+
   saving.value = true;
   try {
-    const payload = {
-      name: staffForm.value.name,
-      birth_date: staffForm.value.birth_date?.toISOString() || new Date().toISOString(),
-      staff_type: staffForm.value.staff_type,
-      fiscal_number: staffForm.value.fiscal_number || "",
+    const staffData: CreateAdminStaff = {
+      name: staffForm.data.name,
+      birth_date: staffForm.data.birth_date?.toISOString() || "",
+      staff_type: staffForm.staff_type,
+      fiscal_number: staffForm.data.fiscal_number || "",
+      team_id: staffForm.team_id,
+      tournament_id: staffForm.tournament_id,
+      address: staffForm.data.address,
+      place_of_birth: staffForm.data.place_of_birth,
     };
 
     if (editingStaff.value) {
-      await http.put(`/staff/${editingStaff.value.id}`, payload);
-
-      const staffField = getStaffFieldForType(editingStaff.value.staff_type);
-      if (staffField) {
-        const oldTeam = teamStore.teams.find(t => t[staffField as keyof typeof t] === editingStaff.value!.id);
-        if (oldTeam && oldTeam.id !== staffForm.value.selected_team_id) {
-          await http.patch(`/teams/${oldTeam.id}/staff/${staffField}?staff_id=`);
-        }
-      }
-
-      if (staffForm.value.selected_team_id) {
-        const staffField = getStaffFieldForType(staffForm.value.staff_type);
-        if (staffField) {
-          await http.patch(`/teams/${staffForm.value.selected_team_id}/staff/${staffField}?staff_id=${editingStaff.value.id}`);
-        }
-      }
-
+      const updateData = {
+        name: staffData.name,
+        birth_date: staffData.birth_date,
+        staff_type: staffData.staff_type,
+        fiscal_number: staffData.fiscal_number,
+        team_id: staffForm.team_id || undefined,
+        address: staffForm.data.address,
+        place_of_birth: staffForm.data.place_of_birth,
+      };
+      await updateAdminStaff(editingStaff.value.id, updateData, staffForm.files.citizenCard || undefined);
       toast.add({ severity: "success", summary: "Sucesso", detail: "Staff atualizado", life: 3000 });
     } else {
-      const { data } = await http.post("/staff", payload);
-      const newStaffId = (data as { id: string }).id;
-
-      if (staffForm.value.selected_team_id) {
-        const staffField = getStaffFieldForType(staffForm.value.staff_type);
-        if (staffField) {
-          await http.patch(`/teams/${staffForm.value.selected_team_id}/staff/${staffField}?staff_id=${newStaffId}`);
-        }
-      }
-
+      await createAdminStaff(staffData, staffForm.files.citizenCard || undefined);
       toast.add({ severity: "success", summary: "Sucesso", detail: "Staff criado", life: 3000 });
     }
 
@@ -261,7 +307,7 @@ async function deleteStaff() {
 }
 
 onMounted(async () => {
-  await Promise.all([staffStore.getStaff(), teamStore.getTeams()]);
+  await Promise.all([staffStore.getStaff(), teamStore.getTeams(), tournamentStore.getTournaments()]);
 });
 </script>
 

@@ -17,7 +17,13 @@ class UserRoles:
     FILL_GAME_CALLS = "fill_game_calls"
     OPEN_CALENDAR = "open_calendar"
 
-    ALL = [MANAGE_PLAYERS, MANAGE_GAMES, MANAGE_GAME_EVENTS, FILL_GAME_CALLS, OPEN_CALENDAR]
+    ALL = [
+        MANAGE_PLAYERS,
+        MANAGE_GAMES,
+        MANAGE_GAME_EVENTS,
+        FILL_GAME_CALLS,
+        OPEN_CALENDAR,
+    ]
 
 
 class AssignUserGamesForCallsDto(BaseModel):
@@ -93,7 +99,6 @@ class StaffDto(BaseModel):
     fiscal_number: str
     staff_type: StaffType
     citizen_card_file_id: Optional[str] = None
-    proof_of_residency_file_id: Optional[str] = None
     authorization_file_id: Optional[str] = None
     team_name: Optional[str] = None
 

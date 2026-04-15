@@ -7,18 +7,11 @@
     <div v-if="enabled">
       <PersonFields v-model="modelValue" :id="id" />
       <FileUpload
-        :modelValue="files?.citizenCard"
+        :modelValue="files.citizenCard"
         @update:modelValue="files.citizenCard = $event"
         @fileError="handleFileError"
         :id="`${id}CitizenCard`"
         label="Cartão de Cidadão (PDF)"
-      />
-      <FileUpload
-        :modelValue="files?.proofOfResidency"
-        @update:modelValue="files.proofOfResidency = $event"
-        @fileError="handleFileError"
-        :id="`${id}ProofResidency`"
-        label="Comprovativo de Residência (PDF)"
       />
     </div>
   </fieldset>
