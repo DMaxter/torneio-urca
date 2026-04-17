@@ -58,7 +58,7 @@
     <!-- Create/Edit Dialog -->
     <P-Dialog v-model:visible="showFormDialog" modal :header="editingStaff ? 'Editar Staff' : 'Criar Staff'" class="w-11/12 md:w-6/12">
       <div class="space-y-3">
-        <P-FloatLabel variant="on">
+        <P-FloatLabel class="mt-3" variant="on">
           <P-Select id="staffTournament" v-model="staffForm.tournament_id" :options="tournamentOptions" optionLabel="label" optionValue="value" fluid @change="onTournamentChange" />
           <label for="staffTournament">Torneio *</label>
         </P-FloatLabel>

@@ -23,7 +23,7 @@
           <li><strong class="text-surface-900">Documentação comprovativa:</strong> Cartão de cidadão, comprovativo de residência</li>
           <li><strong class="text-surface-900">Dados desportivos:</strong> Equipa federada (se aplicável), exames médicos</li>
         </ul>
-        <p class="text-surface-700 leading-7 mt-4">Estes dados são recolhidos exclusivamente para fins de inscrição e participação no torneo.</p>
+        <p class="text-surface-700 leading-7 mt-4">Estes dados são recolhidos exclusivamente para fins de inscrição e participação no torneio.</p>
       </section>
 
       <section class="mb-8">

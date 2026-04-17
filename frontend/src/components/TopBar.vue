@@ -24,6 +24,9 @@
         <router-link to="/classifications" class="nav-link" @click="menuOpen = false">
           Classificações
         </router-link>
+        <router-link to="/prizes" class="nav-link" @click="menuOpen = false">
+          Prémios
+        </router-link>
         <router-link to="/calendar" class="nav-link" @click="menuOpen = false">
           Calendário
         </router-link>

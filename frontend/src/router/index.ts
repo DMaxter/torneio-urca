@@ -48,6 +48,15 @@ const routes = [
     }
   },
   {
+    path: "/prizes",
+    name: "prizes",
+    component: () => import("@views/PrizesView.vue"),
+    meta: {
+      title: "Prémios | " + import.meta.env.VUE_APP_NAME,
+      requiresAuth: false,
+    }
+  },
+  {
     path: "/calendar",
     name: "calendar",
     component: () => import("@views/CalendarView.vue"),
