@@ -46,6 +46,7 @@ import ProgressSpinner from "primevue/progressspinner";
 import Select from "primevue/select";
 import Steps from "primevue/steps";
 import Tag from "primevue/tag";
+import Textarea from "primevue/textarea";
 import Toast from "primevue/toast";
 import ToastService from "primevue/toastservice";
 import ToggleSwitch from "primevue/toggleswitch";
@@ -71,6 +72,7 @@ app.component("P-ProgressSpinner", ProgressSpinner);
 app.component("P-Select", Select);
 app.component("P-Steps", Steps);
 app.component("P-Tag", Tag);
+app.component("P-Textarea", Textarea);
 app.component("P-Toast", Toast);
 app.component("P-ToggleSwitch", ToggleSwitch);
 
