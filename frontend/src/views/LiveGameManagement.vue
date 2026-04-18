@@ -115,6 +115,12 @@
                 <div class="text-6xl font-black text-stone-900">{{ homeScore }}</div>
                 <div v-if="isShootout" class="text-xl font-bold text-stone-400 mt-1">
                   Pen: {{ homePenaltyScore }}
+                  <span class="ml-1">
+                    <template v-for="(scored, idx) in homePenalties.slice(-5)" :key="idx">
+                      <span v-if="scored">⚽</span>
+                      <span v-else>❌</span>
+                    </template>
+                  </span>
                 </div>
               </div>
               <div v-if="game.current_period > 0 && !isShootout" class="flex flex-col items-center">
@@ -161,6 +167,12 @@
                 <div class="text-6xl font-black text-stone-900">{{ awayScore }}</div>
                 <div v-if="isShootout" class="text-xl font-bold text-stone-400 mt-1">
                   Pen: {{ awayPenaltyScore }}
+                  <span class="ml-1">
+                    <template v-for="(scored, idx) in awayPenalties.slice(-5)" :key="idx">
+                      <span v-if="scored">⚽</span>
+                      <span v-else>❌</span>
+                    </template>
+                  </span>
                 </div>
               </div>
               <div v-if="game.current_period > 0 && !isShootout" class="flex flex-col items-center">
@@ -667,6 +679,34 @@ const awayPenaltyScore = computed(() => {
     }
     return false;
   }).length;
+});
+
+const homePenalties = computed(() => {
+  if (!game.value) return [];
+  const homeName = getTeamName(homeTeamId.value);
+  return events.value
+    .filter(e => {
+      if ('Penalty' in e) {
+        const p = (e as { Penalty: { team_name: string; scored: boolean } }).Penalty;
+        return p.team_name === homeName;
+      }
+      return false;
+    })
+    .map(e => (e as { Penalty: { team_name: string; scored: boolean } }).Penalty.scored);
+});
+
+const awayPenalties = computed(() => {
+  if (!game.value) return [];
+  const awayName = getTeamName(awayTeamId.value);
+  return events.value
+    .filter(e => {
+      if ('Penalty' in e) {
+        const p = (e as { Penalty: { team_name: string; scored: boolean } }).Penalty;
+        return p.team_name === awayName;
+      }
+      return false;
+    })
+    .map(e => (e as { Penalty: { team_name: string; scored: boolean } }).Penalty.scored);
 });
 
 const availableShirtNumbers = computed(() => {
