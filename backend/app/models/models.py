@@ -147,6 +147,7 @@ class Game(BaseModel):
 
     id: Optional[str] = Field(None, alias="_id")
     tournament: str
+    label: Optional[str] = None
     scheduled_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     finish_date: Optional[datetime] = None
@@ -156,11 +157,20 @@ class Game(BaseModel):
     phase: GamePhase = GamePhase.Group
     home_placeholder: Optional[str] = None
     away_placeholder: Optional[str] = None
+    # Group reference for group phase games
+    group: Optional[str] = None
+    # Structured group reference for knockout advancement
+    home_group_ref: Optional[str] = None
+    home_group_position: Optional[int] = None
+    away_group_ref: Optional[str] = None
+    away_group_position: Optional[int] = None
     current_period: int = 0
     period_elapsed_seconds: int = 0
     timer_active: bool = False
     timer_started_at: Optional[datetime] = None
     events: List[Any] = []
+    next_game_winner: Optional[str] = None
+    next_game_loser: Optional[str] = None
 
 
 class Group(BaseModel):

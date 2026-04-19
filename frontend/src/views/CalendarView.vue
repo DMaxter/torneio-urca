@@ -187,11 +187,13 @@ function getTeamName(id: string): string {
 }
 
 function getHomeName(game: Game): string {
-  return game.home_call ? getTeamName(game.home_call.team) : (game.home_placeholder ?? "?");
+  if (game.home_call) return getTeamName(game.home_call.team);
+  return game.home_placeholder ?? "?";
 }
 
 function getAwayName(game: Game): string {
-  return game.away_call ? getTeamName(game.away_call.team) : (game.away_placeholder ?? "?");
+  if (game.away_call) return getTeamName(game.away_call.team);
+  return game.away_placeholder ?? "?";
 }
 
 function getScore(game: Game): { home: number; away: number } | null {

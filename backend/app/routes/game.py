@@ -7,6 +7,7 @@ from database import (
     GAMES_COLLECTION,
     GAME_CALLS_COLLECTION,
     TOURNAMENTS_COLLECTION,
+    TEAMS_COLLECTION,
 )
 from app.schemas.schemas import (
     CreateGameDto,
@@ -89,10 +90,10 @@ def game_call_to_dto(call: dict) -> GameCallDto:
     return GameCallDto(
         id=str(call["_id"]),
         game=str(call.get("game", "")),
-        team=str(call["team"]),
+        team=str(call["team"]) if call.get("team") else None,
         players=players_dto,
         staff=[str(s) for s in call.get("staff", [])],
-        deputy=str(call["deputy"]) if call.get("deputy") else None,
+        deputy=str(call.get("deputy")) if call.get("deputy") else None,
     )
 
 
@@ -117,6 +118,7 @@ def game_to_dto(game: dict, home_call: dict | None, away_call: dict | None) -> G
     return GameDto(
         id=clean_game["_id"],
         tournament=clean_game["tournament"],
+        label=clean_game.get("label"),
         scheduled_date=clean_game.get("scheduled_date"),
         start_date=clean_game.get("start_date"),
         finish_date=clean_game.get("finish_date"),
@@ -124,6 +126,11 @@ def game_to_dto(game: dict, home_call: dict | None, away_call: dict | None) -> G
         phase=clean_game.get("phase", GamePhase.Group),
         home_placeholder=clean_game.get("home_placeholder"),
         away_placeholder=clean_game.get("away_placeholder"),
+        group=clean_game.get("group"),
+        home_group_ref=clean_game.get("home_group_ref"),
+        home_group_position=clean_game.get("home_group_position"),
+        away_group_ref=clean_game.get("away_group_ref"),
+        away_group_position=clean_game.get("away_group_position"),
         home_call=game_call_to_dto(clean_home) if clean_home else None,
         away_call=game_call_to_dto(clean_away) if clean_away else None,
         events=clean_game.get("events", []),
@@ -131,6 +138,8 @@ def game_to_dto(game: dict, home_call: dict | None, away_call: dict | None) -> G
         period_elapsed_seconds=clean_game.get("period_elapsed_seconds", 0),
         timer_active=clean_game.get("timer_active", False),
         timer_started_at=clean_game.get("timer_started_at"),
+        next_game_winner=clean_game.get("next_game_winner"),
+        next_game_loser=clean_game.get("next_game_loser"),
     )
 
 
@@ -141,15 +150,34 @@ async def add_game(game: CreateGameDto, current_user=Depends(require_manage_game
     get_logger().info(
         f"[{current_user['username']}] Creating game for tournament '{game.tournament}'"
     )
+
     tournament = await get_tournament(game.tournament)
 
     game_dict = {
         "tournament": ObjectId(game.tournament),
+        "label": game.label,
         "scheduled_date": game.scheduled_date,
         "status": GameStatus.Scheduled,
         "phase": game.phase,
         "home_placeholder": game.home_placeholder,
         "away_placeholder": game.away_placeholder,
+        # Group reference for group phase games
+        "group": ObjectId(game.group) if game.group else None,
+        # Structured group reference for knockout
+        "home_group_ref": ObjectId(game.home_group_ref)
+        if game.home_group_ref
+        else None,
+        "home_group_position": game.home_group_position,
+        "away_group_ref": ObjectId(game.away_group_ref)
+        if game.away_group_ref
+        else None,
+        "away_group_position": game.away_group_position,
+        "next_game_winner": ObjectId(game.next_game_winner)
+        if game.next_game_winner
+        else None,
+        "next_game_loser": ObjectId(game.next_game_loser)
+        if game.next_game_loser
+        else None,
         "current_period": 0,
         "period_elapsed_minutes": 0,
         "period_elapsed_seconds": 0,
@@ -161,7 +189,9 @@ async def add_game(game: CreateGameDto, current_user=Depends(require_manage_game
     home_call_dict = None
     away_call_dict = None
 
+    # Always create game calls (for all games - group and knockout)
     if game.home_call and game.away_call:
+        # Create with teams (group games with specified teams)
         home_team = await db.db["teams"].find_one(
             {"_id": ObjectId(game.home_call.team)}
         )
@@ -194,11 +224,28 @@ async def add_game(game: CreateGameDto, current_user=Depends(require_manage_game
         }
 
         get_logger().info("Creating game calls with all team players")
-        home_result = await db.db[GAME_CALLS_COLLECTION].insert_one(home_call_dict)
-        away_result = await db.db[GAME_CALLS_COLLECTION].insert_one(away_call_dict)
+    else:
+        # Create empty game calls (knockout games without resolved teams)
+        home_call_dict = {
+            "team": None,
+            "players": [],
+            "staff": [],
+            "deputy": None,
+        }
+        away_call_dict = {
+            "team": None,
+            "players": [],
+            "staff": [],
+            "deputy": None,
+        }
 
-        game_dict["home_call"] = home_result.inserted_id
-        game_dict["away_call"] = away_result.inserted_id
+        get_logger().info("Creating empty game calls for knockout game")
+
+    home_result = await db.db[GAME_CALLS_COLLECTION].insert_one(home_call_dict)
+    away_result = await db.db[GAME_CALLS_COLLECTION].insert_one(away_call_dict)
+
+    game_dict["home_call"] = home_result.inserted_id
+    game_dict["away_call"] = away_result.inserted_id
 
     result = await db.db[GAMES_COLLECTION].insert_one(game_dict)
 
@@ -307,6 +354,202 @@ async def delete_game(game_id: str, current_user=Depends(require_manage_game_eve
     get_logger().info(f"[{current_user['username']}] Deleted game '{game_id}'")
 
 
+async def calculate_game_scores(game: dict) -> tuple[int, int]:
+    """Calculate home and away goals for a finished game."""
+    home_goals = 0
+    away_goals = 0
+
+    for event in game.get("events", []):
+        if "Goal" in event:
+            goal = event["Goal"]
+            team_name = goal.get("team_name", "")
+
+            home_call = await db.db[GAME_CALLS_COLLECTION].find_one(
+                {"_id": game.get("home_call")}
+            )
+            away_call = await db.db[GAME_CALLS_COLLECTION].find_one(
+                {"_id": game.get("away_call")}
+            )
+
+            if home_call and away_call:
+                home_team = await db.db[TEAMS_COLLECTION].find_one(
+                    {"_id": home_call.get("team")}
+                )
+                away_team = await db.db[TEAMS_COLLECTION].find_one(
+                    {"_id": away_call.get("team")}
+                )
+
+                if home_team and team_name == home_team.get("name", ""):
+                    home_goals += 1
+                elif away_team and team_name == away_team.get("name", ""):
+                    away_goals += 1
+
+    return home_goals, away_goals
+
+
+async def advance_winner_to_next_game(game: dict):
+    """Advance winner/loser to next knockout game when a game finishes."""
+    if game.get("phase") == GamePhase.Group:
+        return
+
+    if not game.get("next_game_winner") and not game.get("next_game_loser"):
+        return
+
+    home_goals, away_goals = await calculate_game_scores(game)
+
+    home_call = await db.db[GAME_CALLS_COLLECTION].find_one(
+        {"_id": game.get("home_call")}
+    )
+    away_call = await db.db[GAME_CALLS_COLLECTION].find_one(
+        {"_id": game.get("away_call")}
+    )
+
+    if not home_call or not away_call:
+        return
+
+    winner_call = None
+    loser_call = None
+
+    if home_goals > away_goals:
+        winner_call = home_call
+        loser_call = away_call
+    elif away_goals > home_goals:
+        winner_call = away_call
+        loser_call = home_call
+    else:
+        get_logger().warning(f"Game '{game.get('_id')}' ended in tie, cannot advance")
+        return
+
+    winner_team_id = winner_call.get("team")
+    loser_team_id = loser_call.get("team")
+
+    # Advance winner to next game (via direct game call ID)
+    if game.get("next_game_winner"):
+        # Fetch team players like group→knockout advance (set numbers to None)
+        if winner_team_id:
+            winner_team = await db.db[TEAMS_COLLECTION].find_one(
+                {"_id": winner_team_id}
+            )
+            players = (
+                [{"player": p, "number": None} for p in winner_team.get("players", [])]
+                if winner_team
+                else []
+            )
+        else:
+            players = []
+        await db.db[GAME_CALLS_COLLECTION].update_one(
+            {"_id": game.get("next_game_winner")},
+            {"$set": {"team": winner_team_id, "players": players, "staff": []}},
+        )
+        get_logger().info(
+            f"Advanced winner to next game (call: {game.get('next_game_winner')})"
+        )
+
+    # Advance loser to next game (for third place)
+    if game.get("next_game_loser"):
+        # Fetch team players like group→knockout advance (set numbers to None)
+        if loser_team_id:
+            loser_team = await db.db[TEAMS_COLLECTION].find_one({"_id": loser_team_id})
+            players = (
+                [{"player": p, "number": None} for p in loser_team.get("players", [])]
+                if loser_team
+                else []
+            )
+        else:
+            players = []
+        await db.db[GAME_CALLS_COLLECTION].update_one(
+            {"_id": game.get("next_game_loser")},
+            {"$set": {"team": loser_team_id, "players": players, "staff": []}},
+        )
+        get_logger().info(
+            f"Advanced loser to next game (call: {game.get('next_game_loser')})"
+        )
+
+
+async def initialize_knockout_dependencies(tournament_id: str):
+    """Initialize next_game references based on game labels for knockout phase."""
+    games = (
+        await db.db[GAMES_COLLECTION]
+        .find(
+            {
+                "tournament": ObjectId(tournament_id),
+                "phase": {"$ne": GamePhase.Group},
+            }
+        )
+        .to_list(100)
+    )
+
+    # Build a map of game labels to game IDs
+    label_map: dict[str, ObjectId] = {}
+    for g in games:
+        label = g.get("label", "")
+        if label:
+            label_map[label] = g["_id"]
+
+    # Map of label -> game_id for winners/losers references
+    def resolve_ref(text: str) -> ObjectId | None:
+        if "Vencedor" in text:
+            # Extract game label like "Vencedor Quartos de Final - Jogo 1"
+            # or "Vencedor Meia Final - Jogo 1"
+            for label, gid in label_map.items():
+                if label in text:
+                    return gid
+        elif "Perdedor" in text:
+            for label, gid in label_map.items():
+                if label in text:
+                    return gid
+        return None
+
+    # Update each game with references to next games
+    for g in games:
+        updates: dict = {}
+
+        home_placeholder = g.get("home_placeholder", "")
+        away_placeholder = g.get("away_placeholder", "")
+
+        if home_placeholder and "Vencedor" in home_placeholder:
+            next_gid = resolve_ref(home_placeholder)
+            if next_gid:
+                updates["next_game_home"] = next_gid
+
+        if away_placeholder and "Vencedor" in away_placeholder:
+            next_gid = resolve_ref(away_placeholder)
+            if next_gid:
+                updates["next_game_away"] = next_gid
+
+        # Check label for loser references (third place)
+        label = g.get("label") if g.get("label") else ""
+        if label and "Meia Final" in label and label in label_map:
+            # This SF winner goes to Final, loser goes to 3rd place
+            final_label = "Final"
+            third_label = "3º e 4º Lugar"
+
+            if final_label in label_map:
+                updates["next_game_home"] = label_map[final_label]
+            if third_label in label_map:
+                updates["next_game_loser"] = label_map[third_label]
+
+        if label and "Quartos de Final" in label:
+            # This QF winner goes to SF
+            if label in label_map:
+                if "Jogo 1" in label or "Jogo 2" in label:
+                    # Winners go to SF Jogo 1
+                    sf_label = "Meia Final - Jogo 1"
+                    if sf_label in label_map:
+                        updates["next_game_home"] = label_map[sf_label]
+                else:
+                    # Winners go to SF Jogo 2
+                    sf_label = "Meia Final - Jogo 2"
+                    if sf_label in label_map:
+                        updates["next_game_home"] = label_map[sf_label]
+
+        if updates:
+            await db.db[GAMES_COLLECTION].update_one(
+                {"_id": g["_id"]}, {"$set": updates}
+            )
+            get_logger().info(f"Initialized dependencies for game {label}")
+
+
 @router.patch("/{game_id}/status", response_model=GameDto)
 async def update_game_status(
     game_id: str, body: UpdateGameStatusDto, current_user=Depends(get_current_user)
@@ -355,6 +598,9 @@ async def update_game_status(
         await db.db[GAMES_COLLECTION].update_one(
             {"_id": game["_id"]}, {"$set": {"finish_date": game["finish_date"]}}
         )
+
+        # Auto-advance winner to next game (knockout phase)
+        await advance_winner_to_next_game(game)
 
     get_logger().info(
         f"[{current_user['username']}] Updated game '{game_id}' status to {new_status}"
@@ -709,7 +955,9 @@ async def add_manual_game_event(
 
 @router.delete("/{game_id}/events/{event_index}", status_code=204)
 async def delete_game_event(
-    game_id: str, event_index: int, current_user: dict = Depends(require_manage_game_events)
+    game_id: str,
+    event_index: int,
+    current_user: dict = Depends(require_manage_game_events),
 ):
     """Delete a specific game event by its index in the events list."""
     get_logger().info(
@@ -784,9 +1032,15 @@ async def populate_game_call(call_id: str, current_user=Depends(get_current_user
         raise Error.not_found("Team")
 
     players = [{"player": pid, "number": None} for pid in team.get("players", [])]
-    
+
     staff_ids = []
-    for role in ["main_coach", "assistant_coach", "physiotherapist", "first_deputy", "second_deputy"]:
+    for role in [
+        "main_coach",
+        "assistant_coach",
+        "physiotherapist",
+        "first_deputy",
+        "second_deputy",
+    ]:
         if team.get(role):
             staff_ids.append(team[role])
 
@@ -821,7 +1075,9 @@ def check_game_running(tournament_id: ObjectId, game: dict) -> None:
 
 @router.post("/{game_id}/penalties", status_code=201)
 async def assign_penalty(
-    game_id: str, body: AssignPenaltyDto, current_user=Depends(require_manage_game_events)
+    game_id: str,
+    body: AssignPenaltyDto,
+    current_user=Depends(require_manage_game_events),
 ):
     """Add a penalty event (scored or failed) to the game."""
     get_logger().info(

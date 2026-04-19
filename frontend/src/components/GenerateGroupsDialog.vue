@@ -1,6 +1,6 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal header="Gerar Grupos" class="w-11/12 md:w-8/12 lg:w-6/12">
-    <div class="flex flex-col gap-4">
+    <div class="mt-3 flex flex-col gap-4">
       <template v-if="!finalGroups.length">
         <P-FloatLabel variant="on">
           <P-Select
@@ -124,10 +124,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useToast } from "primevue/usetoast";
 
 import { CreateGroup } from "@router/backend/services/group/types";
+import { useGameStore } from "@stores/games";
 import { useGroupStore } from "@stores/groups";
 import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
@@ -135,6 +136,7 @@ import { useTournamentStore } from "@stores/tournaments";
 const toast = useToast();
 const enabled = defineModel<boolean>();
 
+const gameStore = useGameStore();
 const groupStore = useGroupStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
@@ -157,6 +159,15 @@ const MIN_PLAYERS = 5;
 const tournamentTeams = computed(() =>
   teamStore.teams.filter(t => t.tournament === selectedTournament.value)
 );
+
+onMounted(async () => {
+  await Promise.all([
+    tournamentStore.getTournaments(),
+    teamStore.getTeams(),
+    gameStore.getGames(),
+    groupStore.getGroups(),
+  ]);
+});
 
 function getPlayerCount(teamId: string): number {
   return teamStore.teams.find(t => t.id === teamId)?.players.length ?? 0;

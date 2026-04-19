@@ -1,6 +1,6 @@
 <template>
   <P-Dialog v-model:visible="enabled" modal header="Gerar Jogos" class="w-11/12 md:w-8/12 lg:w-6/12">
-    <div class="flex flex-col gap-4">
+    <div class="mt-3 flex flex-col gap-4">
       <template v-if="!generated">
         <P-FloatLabel variant="on">
           <P-Select
@@ -16,103 +16,59 @@
           <label for="tournament">Torneio</label>
         </P-FloatLabel>
 
-        <!-- Knockout-only mode (no groups) -->
-        <template v-if="knockoutOnlyMode">
-          <P-FloatLabel variant="on">
-            <P-Select
-              id="startingPhase"
-              v-model="startingPhase"
-              :options="phaseOptions"
-              optionLabel="label"
-              optionValue="value"
-              optionDisabled="disabled"
-              fluid
-              :disabled="!selectedTournament"
-              @change="onPhaseChange"
-            />
-            <label for="startingPhase">Fase inicial</label>
-          </P-FloatLabel>
-
-          <div v-if="directKnockoutGames.length > 0" class="border border-amber-200 rounded-lg overflow-hidden">
-            <div class="bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
-              Fase a Eliminar — {{ directKnockoutGames.length }} jogos
-            </div>
-            <div class="divide-y divide-stone-100">
-              <div
-                v-for="game in directKnockoutGames"
-                :key="game.label"
-                class="px-3 py-2 flex items-center gap-3"
-                :class="game.homeTeamId ? 'bg-white' : 'bg-stone-50'"
-              >
-                <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-44">{{ game.label }}</span>
-                <span class="text-xs truncate" :class="game.homeTeamId ? 'text-stone-800 font-medium' : 'text-stone-400 italic'">{{ game.home }}</span>
-                <span class="text-xs text-stone-400 shrink-0">vs</span>
-                <span class="text-xs truncate" :class="game.awayTeamId ? 'text-stone-800 font-medium' : 'text-stone-400 italic'">{{ game.away }}</span>
+        <!-- Group stage preview -->
+        <div v-if="preview.length > 0" class="border border-stone-200 rounded-lg overflow-hidden">
+          <div class="bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600">
+            Fase de Grupos — {{ totalGroupGames }} jogo{{ totalGroupGames !== 1 ? 's' : '' }} em {{ preview.length }} grupo{{ preview.length !== 1 ? 's' : '' }}
+          </div>
+          <div class="divide-y divide-stone-100">
+            <div v-for="group in preview" :key="group.name" class="p-3">
+              <p class="font-semibold text-stone-700 text-sm mb-2">{{ group.name }}</p>
+              <div v-for="(round, ri) in group.rounds" :key="ri" class="mb-2">
+                <p class="text-xs font-semibold text-stone-400 mb-1">Jornada {{ ri + 1 }}</p>
+                <ul class="space-y-1">
+                  <li v-for="(match, i) in round" :key="i" class="text-xs text-stone-600 flex items-center gap-1">
+                    <span class="truncate">{{ match.home }}</span>
+                    <span class="text-stone-400 shrink-0">vs</span>
+                    <span class="truncate">{{ match.away }}</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
+        </div>
 
-          <p v-if="selectedTournament && tournamentTeams.length < 4" class="text-sm text-red-500 text-center py-2">
-            São necessárias pelo menos 4 equipas para gerar a fase a eliminar.
-          </p>
-        </template>
-
-        <!-- Group-based mode (groups exist) -->
-        <template v-else>
-          <!-- Group stage preview -->
-          <div v-if="preview.length > 0" class="border border-stone-200 rounded-lg overflow-hidden">
-            <div class="bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-600">
-              Fase de Grupos — {{ totalGroupGames }} jogo{{ totalGroupGames !== 1 ? 's' : '' }} em {{ preview.length }} grupo{{ preview.length !== 1 ? 's' : '' }}
-            </div>
-            <div class="divide-y divide-stone-100">
-              <div v-for="group in preview" :key="group.name" class="p-3">
-                <p class="font-semibold text-stone-700 text-sm mb-2">{{ group.name }}</p>
-                <div v-for="(round, ri) in group.rounds" :key="ri" class="mb-2">
-                  <p class="text-xs font-semibold text-stone-400 mb-1">Jornada {{ ri + 1 }}</p>
-                  <ul class="space-y-1">
-                    <li v-for="(match, i) in round" :key="i" class="text-xs text-stone-600 flex items-center gap-1">
-                      <span class="truncate">{{ match.home }}</span>
-                      <span class="text-stone-400 shrink-0">vs</span>
-                      <span class="truncate">{{ match.away }}</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+        <!-- Knockout phase preview (placeholders) -->
+        <div v-if="knockoutPreview.length > 0" class="border border-amber-200 rounded-lg overflow-hidden">
+          <div class="bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
+            Fase a Eliminar — {{ knockoutPreview.length }} jogos
+          </div>
+          <div class="divide-y divide-stone-100">
+            <div v-for="game in knockoutPreview" :key="game.label" class="px-3 py-2 flex items-center gap-3">
+              <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
+              <span class="text-xs text-stone-600 truncate">
+                <template v-if="getPlaceholderChunks(game.home).position">
+                  <strong>{{ getPlaceholderChunks(game.home).position }}</strong> {{ getPlaceholderChunks(game.home).baseStr }} — <strong>{{ getPlaceholderChunks(game.home).name }}</strong>
+                </template>
+                <template v-else>{{ game.home }}</template>
+              </span>
+              <span class="text-xs text-stone-400 shrink-0">vs</span>
+              <span class="text-xs text-stone-600 truncate">
+                <template v-if="getPlaceholderChunks(game.away).position">
+                  <strong>{{ getPlaceholderChunks(game.away).position }}</strong> {{ getPlaceholderChunks(game.away).baseStr }} — <strong>{{ getPlaceholderChunks(game.away).name }}</strong>
+                </template>
+                <template v-else>{{ game.away }}</template>
+              </span>
             </div>
           </div>
+        </div>
 
-          <!-- Knockout phase preview (placeholders) -->
-          <div v-if="knockoutPreview.length > 0" class="border border-amber-200 rounded-lg overflow-hidden">
-            <div class="bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
-              Fase a Eliminar — {{ knockoutPreview.length }} jogos
-            </div>
-            <div class="divide-y divide-stone-100">
-              <div v-for="game in knockoutPreview" :key="game.label" class="px-3 py-2 flex items-center gap-3">
-                <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
-                <span class="text-xs text-stone-600 truncate">
-                  <template v-if="getPlaceholderChunks(game.home).position">
-                    <strong>{{ getPlaceholderChunks(game.home).position }}</strong> {{ getPlaceholderChunks(game.home).baseStr }} — <strong>{{ getPlaceholderChunks(game.home).name }}</strong>
-                  </template>
-                  <template v-else>{{ game.home }}</template>
-                </span>
-                <span class="text-xs text-stone-400 shrink-0">vs</span>
-                <span class="text-xs text-stone-600 truncate">
-                  <template v-if="getPlaceholderChunks(game.away).position">
-                    <strong>{{ getPlaceholderChunks(game.away).position }}</strong> {{ getPlaceholderChunks(game.away).baseStr }} — <strong>{{ getPlaceholderChunks(game.away).name }}</strong>
-                  </template>
-                  <template v-else>{{ game.away }}</template>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <p v-if="selectedTournament && preview.length === 0" class="text-sm text-stone-400 text-center py-2">
-            Nenhum grupo encontrado para este torneio.
-          </p>
-          <p v-if="selectedTournament && preview.length > 0 && knockoutPreview.length === 0" class="text-xs text-stone-400 text-center">
-            São necessários 4 grupos para gerar a fase a eliminar.
-          </p>
-        </template>
+        <p v-if="selectedTournament && preview.length === 0" class="text-sm text-stone-400 text-center py-2">
+          Nenhum grupo encontrado para este torneio.
+        </p>
+        <p v-if="selectedTournament && preview.length > 0 && knockoutPreview.length === 0" class="text-xs text-stone-400 text-center">
+          São necessários 4 grupos para gerar a fase a eliminar.
+        </p>
       </template>
 
       <!-- Success state -->
@@ -122,60 +78,42 @@
             {{ getTournamentName(selectedTournament) }} — {{ totalGeneratedGames }} jogos gerados com sucesso
           </div>
 
-          <!-- Group phase success -->
-          <template v-if="!knockoutOnlyMode">
-            <div class="divide-y divide-stone-100">
-              <div v-for="group in preview" :key="group.name" class="p-3">
-                <p class="font-semibold text-stone-700 text-sm mb-2">{{ group.name }}</p>
-                <div v-for="(round, ri) in group.rounds" :key="ri" class="mb-2">
-                  <p class="text-xs font-semibold text-stone-400 mb-1">Jornada {{ ri + 1 }}</p>
-                  <ul class="space-y-1">
-                    <li v-for="(match, i) in round" :key="i" class="text-xs text-stone-600 flex items-center gap-1">
-                      <span class="truncate">{{ match.home }}</span>
-                      <span class="text-stone-400 shrink-0">vs</span>
-                      <span class="truncate">{{ match.away }}</span>
-                    </li>
-                  </ul>
-                </div>
+          <!-- Group phase -->
+          <div class="divide-y divide-stone-100">
+            <div v-for="group in preview" :key="group.name" class="p-3">
+              <p class="font-semibold text-stone-700 text-sm mb-2">{{ group.name }}</p>
+              <div v-for="(round, ri) in group.rounds" :key="ri" class="mb-2">
+                <p class="text-xs font-semibold text-stone-400 mb-1">Jornada {{ ri + 1 }}</p>
+                <ul class="space-y-1">
+                  <li v-for="(match, i) in round" :key="i" class="text-xs text-stone-600 flex items-center gap-1">
+                    <span class="truncate">{{ match.home }}</span>
+                    <span class="text-stone-400 shrink-0">vs</span>
+                    <span class="truncate">{{ match.away }}</span>
+                  </li>
+                </ul>
               </div>
             </div>
-            <div v-if="knockoutPreview.length > 0">
-              <div class="bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">Fase a Eliminar</div>
-              <div v-for="game in knockoutPreview" :key="game.label" class="px-3 py-2 flex items-center gap-3 border-t border-stone-100">
-                <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
-                <span class="text-xs text-stone-600 truncate">
-                  <template v-if="getPlaceholderChunks(game.home).position">
-                    <strong>{{ getPlaceholderChunks(game.home).position }}</strong> {{ getPlaceholderChunks(game.home).baseStr }} — <strong>{{ getPlaceholderChunks(game.home).name }}</strong>
-                  </template>
-                  <template v-else>{{ game.home }}</template>
-                </span>
-                <span class="text-xs text-stone-400 shrink-0">vs</span>
-                <span class="text-xs text-stone-600 truncate">
-                  <template v-if="getPlaceholderChunks(game.away).position">
-                    <strong>{{ getPlaceholderChunks(game.away).position }}</strong> {{ getPlaceholderChunks(game.away).baseStr }} — <strong>{{ getPlaceholderChunks(game.away).name }}</strong>
-                  </template>
-                  <template v-else>{{ game.away }}</template>
-                </span>
-              </div>
+          </div>
+          <!-- Knockout phase preview -->
+          <div v-if="knockoutPreview.length > 0">
+            <div class="bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">Fase a Eliminar</div>
+            <div v-for="game in knockoutPreview" :key="game.label" class="px-3 py-2 flex items-center gap-3 border-t border-stone-100">
+              <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-48">{{ game.label }}</span>
+              <span class="text-xs text-stone-600 truncate">
+                <template v-if="getPlaceholderChunks(game.home).position">
+                  <strong>{{ getPlaceholderChunks(game.home).position }}</strong> {{ getPlaceholderChunks(game.home).baseStr }} — <strong>{{ getPlaceholderChunks(game.home).name }}</strong>
+                </template>
+                <template v-else>{{ game.home }}</template>
+              </span>
+              <span class="text-xs text-stone-400 shrink-0">vs</span>
+              <span class="text-xs text-stone-600 truncate">
+                <template v-if="getPlaceholderChunks(game.away).position">
+                  <strong>{{ getPlaceholderChunks(game.away).position }}</strong> {{ getPlaceholderChunks(game.away).baseStr }} — <strong>{{ getPlaceholderChunks(game.away).name }}</strong>
+                </template>
+                <template v-else>{{ game.away }}</template>
+              </span>
             </div>
-          </template>
-
-          <!-- Knockout-only success -->
-          <template v-else>
-            <div class="divide-y divide-stone-100">
-              <div
-                v-for="game in directKnockoutGames"
-                :key="game.label"
-                class="px-3 py-2 flex items-center gap-3"
-                :class="game.homeTeamId ? 'bg-white' : 'bg-stone-50'"
-              >
-                <span class="text-xs font-semibold text-amber-600 shrink-0 whitespace-nowrap w-44">{{ game.label }}</span>
-                <span class="text-xs truncate" :class="game.homeTeamId ? 'text-stone-800 font-medium' : 'text-stone-400 italic'">{{ game.home }}</span>
-                <span class="text-xs text-stone-400 shrink-0">vs</span>
-                <span class="text-xs truncate" :class="game.awayTeamId ? 'text-stone-800 font-medium' : 'text-stone-400 italic'">{{ game.away }}</span>
-              </div>
-            </div>
-          </template>
+          </div>
         </div>
       </template>
     </div>
@@ -203,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useToast } from "primevue/usetoast";
 
 import { CreateGame, CreateGameCall } from "@router/backend/services/game/types";
@@ -224,7 +162,6 @@ const tournamentStore = useTournamentStore();
 const selectedTournament = ref<string>("");
 const loading = ref(false);
 const generated = ref(false);
-const startingPhase = ref<"semi_final" | "quarter_final">("semi_final");
 
 interface MatchPreview {
   home: string;
@@ -235,6 +172,7 @@ interface MatchPreview {
 
 interface GroupPreview {
   name: string;
+  groupId: string;
   rounds: MatchPreview[][];
 }
 
@@ -243,62 +181,28 @@ interface KnockoutGamePreview {
   home: string;
   away: string;
   phase: GamePhase;
+  home_group_ref?: string;
+  home_group_position?: number;
+  away_group_ref?: string;
+  away_group_position?: number;
+  next_game_winner?: string;
+  next_game_loser?: string;
 }
 
-interface DirectKnockoutGame {
-  label: string;
-  phase: GamePhase;
-  homeTeamId: string | null;
-  awayTeamId: string | null;
-  home: string;
-  away: string;
-}
+
 
 const preview = ref<GroupPreview[]>([]);
 const knockoutPreview = ref<KnockoutGamePreview[]>([]);
-const directKnockoutGames = ref<DirectKnockoutGame[]>([]);
-const shuffledTeamIds = ref<string[]>([]);
 
-const tournamentTeams = computed(() =>
-  teamStore.teams.filter(t => t.tournament === selectedTournament.value)
-);
-
-const knockoutOnlyMode = computed(() => {
-  if (!selectedTournament.value) return false;
-  return !groupStore.groups.some(g => g.tournament === selectedTournament.value);
-});
-
-const phaseOptions = computed(() => [
-  {
-    label: "Meias-finais (4 equipas)",
-    value: "semi_final" as const,
-    disabled: tournamentTeams.value.length < 4,
-  },
-  {
-    label: "Quartos de Final (8 equipas)",
-    value: "quarter_final" as const,
-    disabled: tournamentTeams.value.length < 8,
-  },
-]);
+const canGenerate = computed(() => selectedTournament.value && preview.value.length > 0);
 
 const totalGroupGames = computed(() =>
   preview.value.reduce((sum, g) => sum + g.rounds.reduce((s, r) => s + r.length, 0), 0)
 );
 
 const totalGeneratedGames = computed(() =>
-  knockoutOnlyMode.value
-    ? directKnockoutGames.value.length
-    : totalGroupGames.value + knockoutPreview.value.length
+  totalGroupGames.value + knockoutPreview.value.length
 );
-
-const canGenerate = computed(() => {
-  if (!selectedTournament.value) return false;
-  if (knockoutOnlyMode.value) {
-    const needed = startingPhase.value === "quarter_final" ? 8 : 4;
-    return tournamentTeams.value.length >= needed && directKnockoutGames.value.length > 0;
-  }
-  return preview.value.length > 0;
-});
 
 const availableTournaments = computed(() =>
   tournamentStore.tournaments.map(t => ({
@@ -342,158 +246,134 @@ function getPlaceholderChunks(text: string): { position?: string, baseStr?: stri
   return { original: text };
 }
 
-function computeKnockoutPreview(groups: { name: string }[]) {
-  const sorted = [...groups].sort((a, b) => a.name.localeCompare(b.name));
+function computeKnockoutPreview(groups: { id: string; name: string }[]) {
+   const sorted = [...groups].sort((a, b) => a.name.localeCompare(b.name));
 
   // Always include Final and 3rd/4th place match
+  // Order: Final first so it's indexed BEFORE 3rd in backward iteration
   const baseKnockout: KnockoutGamePreview[] = [
-    { label: "3º e 4º Lugar", phase: "third_place" as const, home: "Perdedor Meia Final", away: "Perdedor Meia Final" },
     { label: "Final", phase: "final" as const, home: "Vencedor Meia Final", away: "Vencedor Meia Final" },
+    { label: "3º e 4º Lugar", phase: "third_place" as const, home: "Perdedor Meia Final", away: "Perdedor Meia Final" },
   ];
 
-  if (groups.length >= 4) {
-    // 4+ groups: full quarter_final bracket + semifinals
-    const [A, B, C, D] = sorted.map(g => g.name);
-    knockoutPreview.value = [
-      { label: "Quartos de Final - Jogo 1", phase: "quarter_final", home: `1º Classificado ${A}`, away: `2º Classificado ${B}` },
-      { label: "Quartos de Final - Jogo 2", phase: "quarter_final", home: `1º Classificado ${C}`, away: `2º Classificado ${D}` },
-      { label: "Quartos de Final - Jogo 3", phase: "quarter_final", home: `2º Classificado ${C}`, away: `1º Classificado ${D}` },
-      { label: "Quartos de Final - Jogo 4", phase: "quarter_final", home: `2º Classificado ${A}`, away: `1º Classificado ${B}` },
-      { label: "Meia Final - Jogo 1", phase: "semi_final", home: "Vencedor Quartos de Final - Jogo 1", away: "Vencedor Quartos de Final - Jogo 2" },
-      { label: "Meia Final - Jogo 2", phase: "semi_final", home: "Vencedor Quartos de Final - Jogo 3", away: "Vencedor Quartos de Final - Jogo 4" },
-      ...baseKnockout,
-    ];
-  } else if (groups.length >= 2) {
-    // 2-3 groups: semifinals + final + 3rd place
-    const [A, B] = sorted.map(g => g.name);
-    knockoutPreview.value = [
-      { label: "Meia Final - Jogo 1", phase: "semi_final", home: `1º Classificado ${A}`, away: `2º Classificado ${B}` },
-      { label: "Meia Final - Jogo 2", phase: "semi_final", home: `1º Classificado ${B}`, away: `2º Classificado ${A}` },
-      ...baseKnockout,
-    ];
-  } else if (groups.length === 1) {
-    // 1 group: just final + 3rd/4th (top 2 from group)
-    knockoutPreview.value = [
-      { label: "3º e 4º Lugar", phase: "third_place", home: "3º Classificado", away: "4º Classificado" },
-      { label: "Final", phase: "final", home: "1º Classificado", away: "2º Classificado" },
-    ];
-  } else {
-    knockoutPreview.value = [];
-  }
+if (groups.length >= 4) {
+     // 4+ groups: full quarter_final bracket + semifinals
+     // Order for single-pass creation: Final, 3rd, SF, QF
+     // So refs can be resolved when creating each game
+     const sortedGroups = sorted as { id: string; name: string }[];
+     const [A, B, C, D] = sortedGroups;
+     knockoutPreview.value = [
+       // Final and 3rd place (no refs) - created first
+       ...baseKnockout,
+       // Semi Finals - reference Final/3rd place (created second)
+       { label: "Meia Final - Jogo 1", phase: "semi_final", home: `Vencedor Quartos de Final - Jogo 1`, away: `Vencedor Quartos de Final - Jogo 2`, next_game_winner: "Final_HOME", next_game_loser: "3º e 4º Lugar_HOME" },
+       { label: "Meia Final - Jogo 2", phase: "semi_final", home: `Vencedor Quartos de Final - Jogo 3`, away: `Vencedor Quartos de Final - Jogo 4`, next_game_winner: "Final_AWAY", next_game_loser: "3º e 4º Lugar_AWAY" },
+       // Quarter Finals - reference Semi Finals (created third)
+       { label: "Quartos de Final - Jogo 1", phase: "quarter_final" as const, home: `1º Classificado ${A.name}`, away: `2º Classificado ${B.name}`, home_group_ref: A.id, home_group_position: 1, away_group_ref: B.id, away_group_position: 2, next_game_winner: "Meia Final - Jogo 1_HOME" },
+       { label: "Quartos de Final - Jogo 2", phase: "quarter_final" as const, home: `1º Classificado ${B.name}`, away: `2º Classificado ${A.name}`, home_group_ref: B.id, home_group_position: 1, away_group_ref: A.id, away_group_position: 2, next_game_winner: "Meia Final - Jogo 1_AWAY" },
+       { label: "Quartos de Final - Jogo 3", phase: "quarter_final" as const, home: `1º Classificado ${C.name}`, away: `2º Classificado ${D.name}`, home_group_ref: C.id, home_group_position: 1, away_group_ref: D.id, away_group_position: 2, next_game_winner: "Meia Final - Jogo 2_HOME" },
+       { label: "Quartos de Final - Jogo 4", phase: "quarter_final" as const, home: `1º Classificado ${D.name}`, away: `2º Classificado ${C.name}`, home_group_ref: D.id, home_group_position: 1, away_group_ref: C.id, away_group_position: 2, next_game_winner: "Meia Final - Jogo 2_AWAY" }
+     ];
+} else if (groups.length >= 2) {
+     // 2-3 groups: semifinals + final + 3rd place
+     const sortedGroups = sorted as { id: string; name: string }[];
+     const [A, B] = sortedGroups;
+     // Order for single-pass creation: Final, 3rd, SF
+     // So refs can be resolved when creating each game
+     knockoutPreview.value = [
+       // Final and 3rd place (no refs) - created first
+       { label: "3º e 4º Lugar", phase: "third_place" as const, home: "Perdedor Meia Final", away: "Perdedor Meia Final" },
+       { label: "Final", phase: "final" as const, home: "Vencedor Meia Final", away: "Vencedor Meia Final" },
+       // Semi Finals - winners go to Final, losers go to 3rd place (created second)
+       { label: "Meia Final - Jogo 1", phase: "semi_final", home: `1º Classificado ${A.name}`, away: `2º Classificado ${B.name}`, home_group_ref: A.id, home_group_position: 1, away_group_ref: B.id, away_group_position: 2, next_game_winner: "Final_HOME", next_game_loser: "3º e 4º Lugar_HOME" },
+       { label: "Meia Final - Jogo 2", phase: "semi_final", home: `1º Classificado ${B.name}`, away: `2º Classificado ${A.name}`, home_group_ref: B.id, home_group_position: 1, away_group_ref: A.id, away_group_position: 2, next_game_winner: "Final_AWAY", next_game_loser: "3º e 4º Lugar_AWAY" },
+     ];
+   }
 }
 
-function buildDirectKnockout() {
-  const t = shuffledTeamIds.value;
-  const games: DirectKnockoutGame[] = [];
 
-  if (startingPhase.value === "semi_final") {
-    games.push({ label: "Meia Final - Jogo 1", phase: "semi_final",  homeTeamId: t[0], awayTeamId: t[1], home: getTeamName(t[0]), away: getTeamName(t[1]) });
-    games.push({ label: "Meia Final - Jogo 2", phase: "semi_final",  homeTeamId: t[2], awayTeamId: t[3], home: getTeamName(t[2]), away: getTeamName(t[3]) });
-    games.push({ label: "3º e 4º Lugar",       phase: "third_place", homeTeamId: null, awayTeamId: null, home: "Perdedor Meia Final - Jogo 1", away: "Perdedor Meia Final - Jogo 2" });
-    games.push({ label: "Final",               phase: "final",       homeTeamId: null, awayTeamId: null, home: "Vencedor Meia Final - Jogo 1", away: "Vencedor Meia Final - Jogo 2" });
-  } else {
-    games.push({ label: "Quartos de Final - Jogo 1", phase: "quarter_final", homeTeamId: t[0], awayTeamId: t[1], home: getTeamName(t[0]), away: getTeamName(t[1]) });
-    games.push({ label: "Quartos de Final - Jogo 2", phase: "quarter_final", homeTeamId: t[2], awayTeamId: t[3], home: getTeamName(t[2]), away: getTeamName(t[3]) });
-    games.push({ label: "Quartos de Final - Jogo 3", phase: "quarter_final", homeTeamId: t[4], awayTeamId: t[5], home: getTeamName(t[4]), away: getTeamName(t[5]) });
-    games.push({ label: "Quartos de Final - Jogo 4", phase: "quarter_final", homeTeamId: t[6], awayTeamId: t[7], home: getTeamName(t[6]), away: getTeamName(t[7]) });
-    games.push({ label: "Meia Final - Jogo 1", phase: "semi_final",  homeTeamId: null, awayTeamId: null, home: "Vencedor Quartos de Final - Jogo 1", away: "Vencedor Quartos de Final - Jogo 2" });
-    games.push({ label: "Meia Final - Jogo 2", phase: "semi_final",  homeTeamId: null, awayTeamId: null, home: "Vencedor Quartos de Final - Jogo 3", away: "Vencedor Quartos de Final - Jogo 4" });
-    games.push({ label: "3º e 4º Lugar",       phase: "third_place", homeTeamId: null, awayTeamId: null, home: "Perdedor Meia Final - Jogo 1",       away: "Perdedor Meia Final - Jogo 2" });
-    games.push({ label: "Final",               phase: "final",       homeTeamId: null, awayTeamId: null, home: "Vencedor Meia Final - Jogo 1",       away: "Vencedor Meia Final - Jogo 2" });
-  }
 
-  directKnockoutGames.value = games;
-}
-
-function onTournamentChange() {
-  directKnockoutGames.value = [];
+async function onTournamentChange() {
   preview.value = [];
   knockoutPreview.value = [];
 
   if (!selectedTournament.value) return;
 
-  if (knockoutOnlyMode.value) {
-    const count = tournamentTeams.value.length;
-    startingPhase.value = count >= 8 ? "quarter_final" : "semi_final";
-    shuffledTeamIds.value = [...tournamentTeams.value].sort(() => Math.random() - 0.5).map(t => t.id);
-    buildDirectKnockout();
-  } else {
-    const groups = groupStore.groups.filter(g => g.tournament === selectedTournament.value);
-    preview.value = groups.map(group => ({ name: group.name, rounds: buildRounds(group.teams) }));
-    computeKnockoutPreview(groups);
-  }
-}
-
-function onPhaseChange() {
-  shuffledTeamIds.value = [...tournamentTeams.value].sort(() => Math.random() - 0.5).map(t => t.id);
-  buildDirectKnockout();
+  await groupStore.getGroups();
+  const groups = groupStore.groups.filter(g => g.tournament === selectedTournament.value);
+  preview.value = groups.map(group => ({ name: group.name, groupId: group.id, rounds: buildRounds(group.teams) }));
+  computeKnockoutPreview(groups);
 }
 
 async function generate() {
   loading.value = true;
   let allOk = true;
 
-  if (knockoutOnlyMode.value) {
-    for (const game of directKnockoutGames.value) {
-      const dto = new CreateGame();
-      dto.tournament = selectedTournament.value;
-      dto.phase = game.phase;
-
-      if (game.homeTeamId && game.awayTeamId) {
+  // Create group phase games
+  for (const groupPreview of preview.value) {
+    for (const round of groupPreview.rounds) {
+      for (const match of round) {
+        const dto = new CreateGame();
+        dto.tournament = selectedTournament.value;
         dto.home_call = new CreateGameCall();
-        dto.home_call.team = game.homeTeamId;
+        dto.home_call.team = match.homeId;
         dto.away_call = new CreateGameCall();
-        dto.away_call.team = game.awayTeamId;
-        dto.home_placeholder = null;
-        dto.away_placeholder = null;
-      } else {
-        dto.home_call = null;
-        dto.away_call = null;
-        dto.home_placeholder = game.home;
-        dto.away_placeholder = game.away;
-      }
+        dto.away_call.team = match.awayId;
+        dto.phase = "group";
+        // Include group reference to link game to group
+        dto['group'] = groupPreview.groupId;
 
-      const result = await gameStore.createGame(dto);
-      if (!result.success) {
-        allOk = false;
-        toast.add({ severity: "error", summary: "Erro", detail: `Falha ao criar ${game.label}`, life: 4000 });
-      }
-    }
-  } else {
-    for (const group of preview.value) {
-      for (const round of group.rounds) {
-        for (const match of round) {
-          const dto = new CreateGame();
-          dto.tournament = selectedTournament.value;
-          dto.home_call = new CreateGameCall();
-          dto.home_call.team = match.homeId;
-          dto.away_call = new CreateGameCall();
-          dto.away_call.team = match.awayId;
-          dto.phase = "group";
-
-          const result = await gameStore.createGame(dto);
-          if (!result.success) {
-            allOk = false;
-            toast.add({ severity: "error", summary: "Erro", detail: `Falha ao criar jogo ${match.home} vs ${match.away}`, life: 4000 });
-          }
+        const result = await gameStore.createGame(dto);
+        if (!result.success) {
+          allOk = false;
+          toast.add({ severity: "error", summary: "Erro", detail: `Falha ao criar jogo ${match.home} vs ${match.away}`, life: 4000 });
         }
       }
     }
+  }
 
-    for (const ko of knockoutPreview.value) {
-      const dto = new CreateGame();
-      dto.tournament = selectedTournament.value;
-      dto.home_call = null;
-      dto.away_call = null;
-      dto.phase = ko.phase;
-      dto.home_placeholder = ko.home;
-      dto.away_placeholder = ko.away;
+  // Single pass: Create knockout games with next_game references
+  // Games are in order: Final, 3rd, SF, QF - so referenced games exist from previous iterations
+  const createdCalls: Record<string, string> = {};
 
-      const result = await gameStore.createGame(dto);
-      if (!result.success) {
-        allOk = false;
-        toast.add({ severity: "error", summary: "Erro", detail: `Falha ao criar jogo ${ko.label}`, life: 4000 });
-      }
+  for (const ko of knockoutPreview.value) {
+    const dto = new CreateGame();
+    dto.tournament = selectedTournament.value;
+    dto.home_call = null;
+    dto.away_call = null;
+    dto.phase = ko.phase;
+    dto.label = ko.label;
+    dto.home_placeholder = ko.home;
+    dto.away_placeholder = ko.away;
+
+    // Include group reference fields for knockout games
+    dto['home_group_ref'] = ko.home_group_ref;
+    dto['home_group_position'] = ko.home_group_position;
+    dto['away_group_ref'] = ko.away_group_ref;
+    dto['away_group_position'] = ko.away_group_position;
+
+    // Include next_game references from previously created games
+    if (ko.next_game_winner && createdCalls[ko.next_game_winner]) {
+      dto['next_game_winner'] = createdCalls[ko.next_game_winner];
+    }
+    if (ko.next_game_loser && createdCalls[ko.next_game_loser]) {
+      dto['next_game_loser'] = createdCalls[ko.next_game_loser];
+    }
+
+    const result = await gameStore.createGame(dto);
+    if (!result.success) {
+      allOk = false;
+      toast.add({ severity: "error", summary: "Erro", detail: `Falha ao criar jogo ${ko.label}`, life: 4000 });
+      continue;
+    }
+
+    // Store call IDs for future games to reference
+    const game = result.entity;
+    if (game?.home_call?.id) {
+      createdCalls[`${ko.label}_HOME`] = game.home_call.id;
+    }
+    if (game?.away_call?.id) {
+      createdCalls[`${ko.label}_AWAY`] = game.away_call.id;
     }
   }
 
@@ -505,18 +385,16 @@ function close() {
   enabled.value = false;
   preview.value = [];
   knockoutPreview.value = [];
-  directKnockoutGames.value = [];
   selectedTournament.value = "";
   generated.value = false;
-  startingPhase.value = "semi_final";
 }
 
 onMounted(async () => {
   await Promise.all([
-    gameStore.getGames(),
+    tournamentStore.getTournaments(),
     groupStore.getGroups(),
     teamStore.getTeams(),
-    tournamentStore.getTournaments(),
+    gameStore.getGames(),
   ]);
 });
 </script>

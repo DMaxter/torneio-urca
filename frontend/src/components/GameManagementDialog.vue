@@ -45,9 +45,9 @@
           </template>
           <template #body="{ data }">
             <div class="flex items-center gap-1 text-sm justify-center">
-              <span class="font-medium truncate max-w-24">{{ getTeamName(data.home_call?.team) }}</span>
+              <span class="font-medium truncate max-w-24">{{ getGameTeamName(data, 'home') }}</span>
               <span class="text-stone-400">vs</span>
-              <span class="font-medium truncate max-w-24">{{ getTeamName(data.away_call?.team) }}</span>
+              <span class="font-medium truncate max-w-24">{{ getGameTeamName(data, 'away') }}</span>
             </div>
           </template>
         </P-Column>
@@ -226,6 +226,13 @@ const sortedGames = computed(() => {
 
 function getTeamName(teamId: string): string {
   return teamStore.teams.find(t => t.id === teamId)?.name ?? "N/A";
+}
+
+function getGameTeamName(game: Game, side: "home" | "away"): string {
+  const call = side === "home" ? game.home_call : game.away_call;
+  if (call) return getTeamName(call.team);
+  const placeholder = side === "home" ? game.home_placeholder : game.away_placeholder;
+  return placeholder ?? "N/A";
 }
 
 function getTournamentName(tournamentId: string): string {

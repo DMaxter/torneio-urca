@@ -5,7 +5,7 @@ from contextvars import ContextVar
 from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from fastapi import UploadFile
-from database import db
+from database import db as _database_db
 
 from app.constants import MAX_FILE_SIZE, TOURNAMENT_START_DATE, AGE_FOR_ENROLLMENT
 
@@ -86,4 +86,4 @@ async def upload_single_file(
             detail=f"O ficheiro '{file.filename}' excede o limite de 5MB",
         )
     content_type = file.content_type or "application/octet-stream"
-    return await db.upload_file(filename, content_type, content)
+    return await _database_db.upload_file(filename, content_type, content)

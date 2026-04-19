@@ -97,19 +97,19 @@ export function createGenericStore<T extends Entity, C extends CreateEntity, E =
    * @param data - The Creation object implementing `CreateEntity`.
    * @returns Resolves the action APIStatus block representing the process outcome.
    */
-  async function create(data: C): Promise<APIResponse<string | null>> {
+  async function create(data: C): Promise<APIResponse<string | null, T>> {
     try {
       const response = await service.create(data);
       const successStatus = response.status === 200 || response.status === 201;
       if (successStatus) {
         add(response.data as T);
-        return { success: true, content: null };
+        return { success: true, content: null, entity: response.data as T };
       } else {
-        return { success: false, content: ((response.data as unknown) as Error).message, status: response.status };
+        return { success: false, content: ((response.data as unknown) as Error).message, status: response.status, entity: null };
       }
     } catch (error) {
       const _error = error as AxiosError<string>;
-      return { success: false, status: _error.response?.status, content: null };
+      return { success: false, status: _error.response?.status, content: null, entity: null };
     }
   }
 

@@ -138,6 +138,7 @@ export type Game = {
   phase: GamePhase,
   home_placeholder: string | null,
   away_placeholder: string | null,
+  group: string | null,
   home_call: GameCall | null,
   away_call: GameCall | null,
   events: GameEvent[],
@@ -153,10 +154,18 @@ export class CreateGameCall {
 
 export class CreateGame {
   tournament: string = "";
+  label: string | null = null;
   scheduled_date: Date | null = null;
   home_call: CreateGameCall | null = new CreateGameCall();
   away_call: CreateGameCall | null = new CreateGameCall();
   phase: GamePhase = "group";
   home_placeholder: string | null = null;
   away_placeholder: string | null = null;
+  home_group_ref: string | null = null;
+  home_group_position: number | null = null;
+  away_group_ref: string | null = null;
+  away_group_position: number | null = null;
+  next_game_winner: string | null = null;
+  next_game_loser: string | null = null;
+  group: string | null = null;
 }

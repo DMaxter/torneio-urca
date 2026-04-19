@@ -296,7 +296,7 @@ function getRoundName(game: Game): string {
 }
 
 function getGameLabel(game: Game): string {
-  if (game.home_call && game.away_call) {
+  if (game.home_call?.team && game.away_call?.team) {
     return `${getTeamName(game.home_call.team)} vs ${getTeamName(game.away_call.team)}`;
   }
   return `${game.home_placeholder ?? "?"} vs ${game.away_placeholder ?? "?"}`;

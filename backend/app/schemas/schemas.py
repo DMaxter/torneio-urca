@@ -161,18 +161,28 @@ class ConfirmGameCallDto(BaseModel):
 
 class CreateGameDto(BaseModel):
     tournament: str
+    label: Optional[str] = None
     scheduled_date: Optional[datetime] = None
     home_call: Optional[CreateGameCallDto] = None
     away_call: Optional[CreateGameCallDto] = None
     phase: GamePhase = GamePhase.Group
     home_placeholder: Optional[str] = None
     away_placeholder: Optional[str] = None
+    # Group reference for group phase games
+    group: Optional[str] = None
+    # Structured group reference for knockout
+    home_group_ref: Optional[str] = None
+    home_group_position: Optional[int] = None
+    away_group_ref: Optional[str] = None
+    away_group_position: Optional[int] = None
+    next_game_winner: Optional[str] = None
+    next_game_loser: Optional[str] = None
 
 
 class GameCallDto(BaseModel):
     id: str
     game: str
-    team: str
+    team: str | None = None
     players: List[dict]  # [{"player": str, "number": int | None}]
     staff: List[str] = []
     deputy: Optional[str] = None
@@ -185,6 +195,7 @@ class GameEventDto(BaseModel):
 class GameDto(BaseModel):
     id: str
     tournament: str
+    label: Optional[str] = None
     scheduled_date: Optional[datetime] = None
     start_date: Optional[datetime] = None
     finish_date: Optional[datetime] = None
@@ -192,6 +203,11 @@ class GameDto(BaseModel):
     phase: GamePhase = GamePhase.Group
     home_placeholder: Optional[str] = None
     away_placeholder: Optional[str] = None
+    group: Optional[str] = None
+    home_group_ref: Optional[str] = None
+    home_group_position: Optional[int] = None
+    away_group_ref: Optional[str] = None
+    away_group_position: Optional[int] = None
     home_call: Optional[GameCallDto] = None
     away_call: Optional[GameCallDto] = None
     events: List[Any] = []
@@ -199,6 +215,8 @@ class GameDto(BaseModel):
     period_elapsed_seconds: int = 0
     timer_active: bool = False
     timer_started_at: Optional[datetime] = None
+    next_game_winner: Optional[str] = None
+    next_game_loser: Optional[str] = None
 
 
 class CreateGroupDto(BaseModel):

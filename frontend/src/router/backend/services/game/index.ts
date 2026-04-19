@@ -18,11 +18,21 @@ export async function createGame(game: CreateGame): Promise<AxiosResponse<Game |
     tournament: game.tournament,
     phase: game.phase,
   };
+  if (game.label) body.label = game.label;
   if (game.home_call) body.home_call = { team: game.home_call.team };
   if (game.away_call) body.away_call = { team: game.away_call.team };
   if (game.scheduled_date != null) body.scheduled_date = toLocalISOString(game.scheduled_date as Date);
   if (game.home_placeholder) body.home_placeholder = game.home_placeholder;
   if (game.away_placeholder) body.away_placeholder = game.away_placeholder;
+  // Include group reference fields for knockout games
+  if (game.home_group_ref) body.home_group_ref = game.home_group_ref;
+  if (game.home_group_position != null) body.home_group_position = game.home_group_position;
+  if (game.away_group_ref) body.away_group_ref = game.away_group_ref;
+  if (game.away_group_position != null) body.away_group_position = game.away_group_position;
+  if (game.next_game_winner) body.next_game_winner = game.next_game_winner;
+  if (game.next_game_loser) body.next_game_loser = game.next_game_loser;
+  // Include group reference for group phase games
+  if (game.group) body.group = game.group;
   return await http.post("/games", body);
 }
 

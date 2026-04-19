@@ -72,6 +72,7 @@ async def calculate_team_standings(
             "losses": 0,
             "goals_scored": 0,
             "goals_suffered": 0,
+            "fouls": 0,
         }
 
     for game in games:
@@ -91,6 +92,8 @@ async def calculate_team_standings(
 
         hg = 0
         ag = 0
+        fouls_htid = 0
+        fouls_atid = 0
         for event in game.get("events", []):
             if "Goal" in event:
                 g = event["Goal"]
@@ -101,6 +104,13 @@ async def calculate_team_standings(
                     hg += 1
                 elif gn == atn:
                     ag += 1
+            elif "Foul" in event:
+                f = event["Foul"]
+                foul_team_id = str(f.get("team_id"))
+                if foul_team_id == htid:
+                    fouls_htid += 1
+                elif foul_team_id == atid:
+                    fouls_atid += 1
 
         standings[htid]["games"] += 1
         standings[atid]["games"] += 1
@@ -108,6 +118,8 @@ async def calculate_team_standings(
         standings[htid]["goals_suffered"] += ag
         standings[atid]["goals_scored"] += ag
         standings[atid]["goals_suffered"] += hg
+        standings[htid]["fouls"] += fouls_htid
+        standings[atid]["fouls"] += fouls_atid
 
         if hg > ag:
             standings[htid]["wins"] += 1
@@ -126,11 +138,19 @@ async def calculate_team_standings(
     sorted_standings = sorted(
         standings.values(),
         key=lambda s: (
-            -s["points"],
-            -(s["goals_scored"] - s["goals_suffered"]),
-            -s["goals_scored"],
-            s["goals_suffered"],
+            (s["points"] / s["games"]) if s["games"] > 0 else 0,
+            ((s["goals_scored"] - s["goals_suffered"]) / s["games"])
+            if s["games"] > 0
+            else 0,
+            (s["goals_scored"] / s["games"]) if s["games"] > 0 else 0,
+            (s["goals_suffered"] / s["games"])
+            if s["games"] > 0
+            else float("inf"),  # Lower is better
+            (s["fouls"] / s["games"])
+            if s["games"] > 0
+            else float("inf"),  # Lower is better
         ),
+        reverse=True,  # Higher is better for points, goal difference, goals scored
     )
     return sorted_standings
 
@@ -266,9 +286,9 @@ async def get_prizes(tournament_id: str):
             {"_id": ObjectId(tournament_id)}
         )
     except Exception:
-        raise Error.invalid_id("tournament")
+        raise Error.invalid_id("torneio")
     if not tournament:
-        raise Error.not_found("Tournament")
+        raise Error.not_found("Torneio")
 
     logger = get_logger()
     logger.info(f"Calculating prizes for tournament '{tournament['name']}'")

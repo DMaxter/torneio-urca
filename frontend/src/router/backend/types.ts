@@ -1,7 +1,8 @@
-export type APIResponse<T> = {
+export type APIResponse<T, E = unknown> = {
   success: boolean,
   content: T,
   status?: number,
+  entity?: E,
 };
 
 export type Error = {
