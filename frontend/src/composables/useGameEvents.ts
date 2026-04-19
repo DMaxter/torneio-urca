@@ -2,57 +2,98 @@ import { computed } from 'vue';
 
 export function useGameEvents(gameRef: any) {
   const getEventIcon = (event: any) => {
-    if (event.Goal) return 'pi pi-bullseye text-green-500';
+    if (event.Goal) return 'sports_soccer';
     if (event.Foul) {
-      if (event.Foul.card === 'Yellow') return 'pi pi-file text-yellow-500';
-      if (event.Foul.card === 'Red') return 'pi pi-file text-red-500';
-      return 'pi pi-exclamation-triangle text-orange-500';
+      if (event.Foul.card === 'Yellow' || event.Foul.card === 'Red') return 'style';
+      return 'warning';
     }
-    if (event.PeriodStart) return 'pi pi-play text-blue-500';
-    if (event.PeriodEnd) return 'pi pi-stop text-blue-500';
-    if (event.PeriodPause) return 'pi pi-pause text-orange-500';
-    if (event.PeriodResume) return 'pi pi-play text-green-500';
-    if (event.Penalty) return 'pi pi-bullseye ' + (event.Penalty.scored ? 'text-green-500' : 'text-red-500');
-    if (event.Manual) return 'pi pi-info-circle text-gray-500';
-    return 'pi pi-circle-fill text-gray-500';
+    if (event.PeriodStart) return 'play_circle';
+    if (event.PeriodEnd) return 'flag';
+    if (event.PeriodPause) return 'pause_circle';
+    if (event.PeriodResume) return 'play_circle';
+    if (event.Penalty) return event.Penalty.scored ? 'sports_soccer' : 'close';
+    if (event.Manual) return 'info';
+    if (event.GameEnd) return 'emoji_events';
+    if (event.PenaltyShootoutStart) return 'sports_and_outdoors';
+    return 'circle';
+  };
+
+  const getEventIconColorClass = (event: any) => {
+    if (event.Goal) return 'text-green-500';
+    if (event.Foul) {
+      if (event.Foul.card === 'Yellow') return 'text-yellow-500';
+      if (event.Foul.card === 'Red') return 'text-red-500';
+      return 'text-orange-500';
+    }
+    if (event.PeriodStart || event.PeriodEnd) return 'text-blue-500';
+    if (event.PeriodPause) return 'text-orange-500';
+    if (event.PeriodResume) return 'text-green-500';
+    if (event.Penalty) return event.Penalty.scored ? 'text-green-500' : 'text-red-500';
+    if (event.Manual) return 'text-gray-500';
+    if (event.GameEnd) return 'text-amber-500';
+    if (event.PenaltyShootoutStart) return 'text-purple-500';
+    return 'text-gray-400';
   };
 
   const getEventDescription = (event: any) => {
     if (event.Goal) {
-      if (event.Goal.own_goal) {
-        return `Auto-Golo: ${event.Goal.player_name || event.Goal.player_number || 'Desconhecido'} (${event.Goal.own_goal_committed_by})`;
+      const g = event.Goal;
+      if (g.own_goal) {
+        return `Auto-golo de ${g.own_goal_committed_by || 'Equipa desconhecida'}`;
       }
-      return `Golo: ${event.Goal.player_name || event.Goal.player_number || 'Sem número'}`;
+      return `Golo de ${g.player_name || g.player_number || 'Sem número'}`;
     }
     if (event.Foul) {
-      const target = event.Foul.player_name || event.Foul.staff_name || 'Desconhecido';
-      let desc = 'Falta';
-      if (event.Foul.card === 'Yellow') desc = 'Cartão Amarelo';
-      if (event.Foul.card === 'Red') desc = 'Cartão Vermelho';
-      return `${desc}: ${target}`;
+      const f = event.Foul;
+      const target = f.player_name || f.staff_name || 'Desconhecido';
+      if (f.card === 'Yellow') return `Cartão Amarelo para ${target}`;
+      if (f.card === 'Red') return `Cartão Vermelho para ${target}`;
+      return `Falta de ${target}`;
     }
-    if (event.PeriodStart) return `Início da Parte ${event.PeriodStart.period}`;
-    if (event.PeriodEnd) return `Fim da Parte ${event.PeriodEnd.period}`;
-    if (event.PeriodPause) return `Pausa na Parte ${event.PeriodPause.period}`;
-    if (event.PeriodResume) return `Retoma na Parte ${event.PeriodResume.period}`;
+    if (event.PeriodStart) {
+      const p = event.PeriodStart.period;
+      return `Início do ${p === 5 ? 'período de penalidades' : `${p}º período`}`;
+    }
+    if (event.PeriodEnd) {
+      const p = event.PeriodEnd.period;
+      return `Fim do ${p === 5 ? 'período de penalidades' : `${p}º período`}`;
+    }
+    if (event.PeriodPause) {
+      const p = event.PeriodPause.period;
+      return `Pausa no ${p === 5 ? 'período de penalidades' : `${p}º período`}`;
+    }
+    if (event.PeriodResume) {
+      const p = event.PeriodResume.period;
+      return `Retoma do ${p === 5 ? 'período de penalidades' : `${p}º período`}`;
+    }
     if (event.Penalty) {
       return `Penálti (${event.Penalty.scored ? 'Marcado' : 'Falhado'}): ${event.Penalty.player_name || event.Penalty.player_number}`;
     }
     if (event.Manual) return event.Manual.description;
+    if (event.GameEnd) {
+      const g = event.GameEnd;
+      let desc = `Fim do Jogo: ${g.home_score} - ${g.away_score}`;
+      if (g.home_penalty_score > 0 || g.away_penalty_score > 0) {
+        desc += ` (Pen: ${g.home_penalty_score} - ${g.away_penalty_score})`;
+      }
+      return desc;
+    }
+    if (event.PenaltyShootoutStart) return 'Início do Desempate por Grandes Penalidades';
     return 'Evento Desconhecido';
   };
 
   const getEventTime = (event: any) => {
     const ev = Object.values(event)[0] as any;
-    if (ev.minute !== undefined && ev.second !== undefined) {
-      return `${ev.minute.toString().padStart(2, '0')}:${ev.second.toString().padStart(2, '0')}`;
+    if (ev.minute !== undefined) {
+      return `${ev.minute}'`;
     }
     if (ev.elapsed_seconds !== undefined) {
       const m = Math.floor(ev.elapsed_seconds / 60);
-      const s = ev.elapsed_seconds % 60;
-      return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      return `${m}'`;
     }
-    return '--:--';
+    if (event.GameEnd) return 'Fim';
+    if (event.PenaltyShootoutStart) return 'P5';
+    return '--\'';
   };
 
   const getEventTeam = (event: any) => {
@@ -64,6 +105,7 @@ export function useGameEvents(gameRef: any) {
 
   return {
     getEventIcon,
+    getEventIconColorClass,
     getEventDescription,
     getEventTime,
     getEventTeam,

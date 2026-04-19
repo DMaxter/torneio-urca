@@ -92,7 +92,7 @@
             <div class="flex-1 pb-4">
               <div class="flex items-center justify-between gap-2">
                 <span class="text-sm font-semibold text-stone-800">{{ getEventDescription(event) }}</span>
-                <span class="text-lg">{{ getEventIcon(event) }}</span>
+                <span class="material-symbols-outlined text-lg" :class="getEventIconColorClass(event)">{{ getEventIcon(event) }}</span>
               </div>
               <div class="text-[10px] font-bold text-stone-400 uppercase tracking-wide mt-0.5">
                 {{ getEventTeamName(event) || 'Aviso' }}
@@ -142,6 +142,7 @@ const props = defineProps<{
 
 const tournamentStore = useTournamentStore();
 const gameStore = useGameStore();
+const teamStore = useTeamStore();
 const { formatDateTime } = useDateFormatter();
 
 const localGame = ref<Game | null>(null);
@@ -152,9 +153,9 @@ let refreshInterval: number | undefined;
 // Use localGame if available (has full details), otherwise use props.game
 const game = computed(() => localGame.value || props.game);
 
-const { getTeamName } = useGameHelpers(game, computed(() => tournamentStore.tournaments.find(t => t.id === game.value?.tournament)?.teams || []));
+const { getTeamName } = useGameHelpers(game, computed(() => teamStore.teams));
 const { displayScore, totalScore, getPenaltiesScore } = useGameScore(game);
-const { getEventIcon: getEventIconLib, getEventDescription, getEventTime, getEventTeam } = useGameEvents(game);
+const { getEventIcon, getEventDescription, getEventTime, getEventTeam, getEventIconColorClass } = useGameEvents(game);
 
 async function refreshGame() {
   if (!props.game?.id || isRefreshing.value) return;
@@ -283,7 +284,16 @@ const awayPenaltyScore = computed(() => getPenaltiesScore().away);
 const importantEvents = computed(() => {
   if (!game.value) return [];
   return (game.value.events || []).filter(e =>
-    'Goal' in e || 'Penalty' in e || ('Foul' in e && (e.Foul.card || e.Foul.is_direct_free_kick)) || 'PeriodStart' in e || 'PeriodEnd' in e
+    'Goal' in e || 
+    'Penalty' in e || 
+    ('Foul' in e && (e.Foul.card || e.Foul.is_direct_free_kick)) || 
+    'PeriodStart' in e || 
+    'PeriodEnd' in e || 
+    'PeriodPause' in e || 
+    'PeriodResume' in e || 
+    'Manual' in e ||
+    'GameEnd' in e ||
+    'PenaltyShootoutStart' in e
   );
 });
 
@@ -303,6 +313,9 @@ function getEventTimestamp(event: GameEvent): number {
   if ('PeriodEnd' in event) return new Date(event.PeriodEnd.timestamp).getTime();
   if ('PeriodPause' in event) return new Date(event.PeriodPause.timestamp).getTime();
   if ('PeriodResume' in event) return new Date(event.PeriodResume.timestamp).getTime();
+  if ('Manual' in event) return new Date(event.Manual.timestamp).getTime();
+  if ('GameEnd' in event) return new Date(event.GameEnd.timestamp).getTime();
+  if ('PenaltyShootoutStart' in event) return new Date(event.PenaltyShootoutStart.timestamp).getTime();
   return 0;
 }
 
@@ -311,27 +324,19 @@ function getEventTimeDisplay(event: GameEvent): string {
   if ('Goal' in event) period = event.Goal.period;
   else if ('Penalty' in event) period = event.Penalty.period;
   else if ('Foul' in event) period = event.Foul.period;
+  else if ('Manual' in event) period = event.Manual.period;
   else if ('PeriodStart' in event) return `P${event.PeriodStart.period} INI`;
   else if ('PeriodEnd' in event) return `P${event.PeriodEnd.period} FIM`;
+  else if ('PeriodPause' in event) return `P${event.PeriodPause.period} PAR`;
+  else if ('PeriodResume' in event) return `P${event.PeriodResume.period} RET`;
+  else if ('GameEnd' in event) return 'FIM';
+  else if ('PenaltyShootoutStart' in event) return 'PEN';
   
   if (period === 5) return 'PEN';
   return `${getEventTime(event)} (P${period})`;
 }
 
-function getEventIcon(event: GameEvent): string {
-  const libIcon = getEventIconLib(event);
-  if (libIcon.includes('bullseye')) return ('Goal' in event && event.Goal.own_goal) ? '🥅' : '⚽';
-  if (libIcon.includes('check') || ('Penalty' in event && event.Penalty.scored)) return '✅';
-  if (libIcon.includes('times') || ('Penalty' in event && !event.Penalty.scored)) return '❌';
-  if ('Foul' in event) {
-    if (event.Foul.card === 'Yellow') return '🟨';
-    if (event.Foul.card === 'Red') return '🟥';
-    return '⚠️';
-  }
-  if ('PeriodStart' in event) return '▶️';
-  if ('PeriodEnd' in event) return '⏹️';
-  return '';
-}
+// We now use the icons from useGameEvents composable directly
 
 function getEventTeamName(event: GameEvent): string {
    return getEventTeam(event) || '';
@@ -342,9 +347,11 @@ function getEventDotClass(event: GameEvent): string {
   if ('Penalty' in event) return event.Penalty.scored ? 'border-green-500 bg-green-500' : 'border-red-500 bg-red-500';
   if ('Foul' in event) {
     if (event.Foul.card === 'Yellow') return 'border-yellow-400 bg-yellow-400';
-    if (event.Foul.card === 'Red') return 'border-red-600 bg-red-600';
+    if (event.Foul.card === 'Red')    return 'border-red-600 bg-red-600';
     return 'border-orange-400 bg-orange-400';
   }
+  if ('GameEnd' in event) return 'border-amber-500 bg-amber-500 scale-125';
+  if ('PenaltyShootoutStart' in event) return 'border-purple-500 bg-purple-500 scale-110';
   return 'border-stone-300 bg-stone-300';
 }
 </script>

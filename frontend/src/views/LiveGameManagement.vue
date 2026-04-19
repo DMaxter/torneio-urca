@@ -76,7 +76,7 @@
           @click="stopTimer"
         />
         <P-Button
-          v-if="game.current_period < 5"
+          v-if="game.current_period < 5 && (game.phase !== 'group' || game.current_period < 2)"
           :label="getNextPeriodLabel(game.current_period)"
           :severity="getNextPeriodSeverity()"
           size="large"
@@ -85,7 +85,7 @@
           @click="endPeriod"
         />
         <P-Button
-          v-else-if="game.current_period === 4"
+          v-else-if="game.current_period === 4 && game.phase !== 'group'"
           :label="getNextPeriodLabel(game.current_period)"
           :severity="getNextPeriodSeverity()"
           size="large"
@@ -94,7 +94,7 @@
           @click="startPenalties"
         />
         <P-Button
-          v-if="game.current_period >= 5"
+          v-if="game.current_period >= 5 || (game.phase === 'group' && game.current_period >= 2)"
           label="Finalizar Jogo"
           severity="danger"
           size="large"
@@ -238,7 +238,9 @@
               <div class="text-base font-semibold text-stone-900">{{ getEventDescription(item.event) }}</div>
               <div v-if="getEventMetadata(item.event)" class="text-xs text-stone-400">{{ getEventMetadata(item.event) }}</div>
             </div>
-            <div class="text-2xl shrink-0">{{ getEventIcon(item.event) }}</div>
+            <span class="material-symbols-outlined text-2xl shrink-0" :class="getEventIconColorClass(item.event)">
+              {{ getEventIcon(item.event) }}
+            </span>
             <button
               class="material-symbols-outlined text-red-600 cursor-pointer hover:bg-red-50 rounded-full p-1 transition-colors shrink-0"
               @click="deleteEvent(item.index)"
@@ -585,9 +587,9 @@ const adjustClockDialogVisible = ref(false);
 const adjMinute = ref(0);
 const adjSecond = ref(0);
 
-const { getTeamName } = useGameHelpers(game, computed(() => tournamentStore.tournaments.find(t => t.id === game.value?.tournament)?.teams || []));
-const { totalScore, getPenaltiesScore } = useGameScore(game);
-const { getEventIcon, getEventDescription, getEventTime, getEventTeam } = useGameEvents(game);
+const { getTeamName, homeTeamName, awayTeamName } = useGameHelpers(game, computed(() => teamStore.teams));
+const { totalScore, getPenaltiesScore } = useGameScore(game, homeTeamName, awayTeamName);
+const { getEventIcon, getEventIconColorClass, getEventDescription, getEventTime, getEventTeam } = useGameEvents(game);
 
 const eventDialogTitle = computed(() => {
   if (!eventType.value || !eventTeam.value) return '';
@@ -782,11 +784,17 @@ function getTimerLabel(period: number): string {
 const canProceedToNextPeriod = computed(() => {
   if (!game.value) return false;
   if (game.value.current_period < 2) return true;
+  
+  // Extra periods and penalties only for knockout phase
+  if (game.value.phase === 'group') return false;
+
   if (game.value.current_period === 2) {
     return homeScore.value === awayScore.value;
   }
   if (game.value.current_period === 3) return true;
-  if (game.value.current_period === 4) return true;
+  if (game.value.current_period === 4) {
+    return homeScore.value === awayScore.value;
+  }
   return false;
 });
 
@@ -1016,7 +1024,7 @@ function getEventMetadata(event: GameEvent): string {
 const sortedEventsWithIndex = computed(() => {
   const eventsWithIndex = events.value.map((e, i) => ({ event: e, index: i }));
   return eventsWithIndex.sort((a, b) => {
-    return getEventTimestamp(b.event) - getEventTimestamp(a.event);
+    return (getEventTimestamp(b.event) - getEventTimestamp(a.event)) || (b.index - a.index);
   });
 });
 
@@ -1209,6 +1217,22 @@ async function loadGame() {
 
 async function finishGame() {
   if (!game.value) return;
+
+  // In knockout phase, do not allow finishing a tied game
+  if (game.value.phase !== 'group') {
+    const { home, away } = totalScore.value;
+    const { home: hp, away: ap } = getPenaltiesScore();
+
+    if (home === away && hp === ap) {
+      toast.add({
+        severity: 'error',
+        summary: 'Erro',
+        detail: 'Jogos de eliminatórias não podem terminar empatados. Por favor, proceda para prolongamento ou penalidades.',
+        life: 5000
+      });
+      return;
+    }
+  }
 
   const confirmed = confirm('Tem a certeza que deseja terminar este jogo?');
   if (!confirmed) return;

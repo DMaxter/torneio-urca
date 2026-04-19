@@ -78,7 +78,18 @@ export type GameEvent =
   { PeriodEnd: PeriodEvent } |
   { PeriodPause: PeriodEvent } |
   { PeriodResume: PeriodEvent } |
-  { Penalty: PenaltyEvent }
+  { Penalty: PenaltyEvent } |
+  { GameEnd: GameEndEvent } |
+  { PenaltyShootoutStart: PeriodEvent }
+
+export type GameEndEvent = {
+  home_score: number,
+  away_score: number,
+  home_penalty_score: number,
+  away_penalty_score: number,
+  winner_id: string | null,
+  timestamp: string,
+}
 
 export type GoalEvent = {
   player_id: string,

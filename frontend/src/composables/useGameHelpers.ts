@@ -10,11 +10,11 @@ export function useGameHelpers(gameRef: any, tournamentTeamsRef: any) {
   };
 
   const homeTeamName = computed(() => {
-    return gameRef.value?.home_team ? getTeamName(gameRef.value.home_team) : 'Equipa Casa';
+    return gameRef.value?.home_call?.team ? getTeamName(gameRef.value.home_call.team) : 'Equipa Casa';
   });
 
   const awayTeamName = computed(() => {
-    return gameRef.value?.away_team ? getTeamName(gameRef.value.away_team) : 'Equipa Fora';
+    return gameRef.value?.away_call?.team ? getTeamName(gameRef.value.away_call.team) : 'Equipa Fora';
   });
 
   return {

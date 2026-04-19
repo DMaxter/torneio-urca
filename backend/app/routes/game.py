@@ -343,37 +343,73 @@ async def delete_game(game_id: str, current_user=Depends(require_manage_game_eve
     get_logger().info(f"[{current_user['username']}] Deleted game '{game_id}'")
 
 
-async def calculate_game_scores(game: dict) -> tuple[int, int]:
-    """Calculate home and away goals for a finished game."""
+async def calculate_game_outcome(game: dict) -> tuple[int, int, int, int, Optional[str]]:
+    """
+    Calculate final scores and determine the winner.
+    Returns: (home_goals, away_goals, home_pens, away_pens, winner_team_id)
+    """
     home_goals = 0
     away_goals = 0
+    home_pens = 0
+    away_pens = 0
+
+    home_call_id = game.get("home_call")
+    away_call_id = game.get("away_call")
+
+    if not home_call_id or not away_call_id:
+        return 0, 0, 0, 0, None
+
+    home_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": home_call_id})
+    away_call = await db.db[GAME_CALLS_COLLECTION].find_one({"_id": away_call_id})
+
+    if not home_call or not away_call:
+        return 0, 0, 0, 0, None
+
+    home_team_id = str(home_call.get("team"))
+    away_team_id = str(away_call.get("team"))
+
+    home_team = await db.db[TEAMS_COLLECTION].find_one({"_id": home_call.get("team")})
+    away_team = await db.db[TEAMS_COLLECTION].find_one({"_id": away_call.get("team")})
+
+    home_name = home_team.get("name", "") if home_team else ""
+    away_name = away_team.get("name", "") if away_team else ""
 
     for event in game.get("events", []):
         if "Goal" in event:
             goal = event["Goal"]
             team_name = goal.get("team_name", "")
+            if team_name == home_name:
+                home_goals += 1
+            elif team_name == away_name:
+                away_goals += 1
+        elif "Penalty" in event:
+            penalty = event["Penalty"]
+            if penalty.get("scored"):
+                team_name = penalty.get("team_name", "")
+                if team_name == home_name:
+                    home_pens += 1
+                elif team_name == away_name:
+                    away_pens += 1
 
-            home_call = await db.db[GAME_CALLS_COLLECTION].find_one(
-                {"_id": game.get("home_call")}
-            )
-            away_call = await db.db[GAME_CALLS_COLLECTION].find_one(
-                {"_id": game.get("away_call")}
-            )
+    winner_id = None
+    if home_goals > away_goals:
+        winner_id = home_team_id
+    elif away_goals > home_goals:
+        winner_id = away_team_id
+    else:
+        # Tied in goals, check penalties
+        if home_pens > away_pens:
+            winner_id = home_team_id
+        elif away_pens > home_pens:
+            winner_id = away_team_id
 
-            if home_call and away_call:
-                home_team = await db.db[TEAMS_COLLECTION].find_one(
-                    {"_id": home_call.get("team")}
-                )
-                away_team = await db.db[TEAMS_COLLECTION].find_one(
-                    {"_id": away_call.get("team")}
-                )
+    return home_goals, away_goals, home_pens, away_pens, winner_id
 
-                if home_team and team_name == home_team.get("name", ""):
-                    home_goals += 1
-                elif away_team and team_name == away_team.get("name", ""):
-                    away_goals += 1
 
-    return home_goals, away_goals
+async def calculate_game_scores(game: dict) -> tuple[int, int]:
+    """Calculate home and away goals for a finished game (compatibility helper)."""
+    hg, ag, _, _, _ = await calculate_game_outcome(game)
+    return hg, ag
 
 
 async def advance_winner_to_next_game(game: dict):
@@ -384,75 +420,41 @@ async def advance_winner_to_next_game(game: dict):
     if not game.get("next_game_winner") and not game.get("next_game_loser"):
         return
 
-    home_goals, away_goals = await calculate_game_scores(game)
+    home_goals, away_goals, home_pens, away_pens, winner_id = await calculate_game_outcome(game)
 
-    home_call = await db.db[GAME_CALLS_COLLECTION].find_one(
-        {"_id": game.get("home_call")}
-    )
-    away_call = await db.db[GAME_CALLS_COLLECTION].find_one(
-        {"_id": game.get("away_call")}
-    )
-
-    if not home_call or not away_call:
-        return
-
-    winner_call = None
-    loser_call = None
-
-    if home_goals > away_goals:
-        winner_call = home_call
-        loser_call = away_call
-    elif away_goals > home_goals:
-        winner_call = away_call
-        loser_call = home_call
-    else:
+    if not winner_id:
         get_logger().warning(f"Game '{game.get('_id')}' ended in tie, cannot advance")
         return
 
-    winner_team_id = winner_call.get("team")
-    loser_team_id = loser_call.get("team")
+    home_call_id = game.get("home_call")
+    away_call_id = game.get("away_call")
+
+    if home_goals > away_goals or (home_goals == away_goals and home_pens > away_pens):
+        winner_team_id = str((await db.db[GAME_CALLS_COLLECTION].find_one({"_id": home_call_id})).get("team"))
+        loser_team_id = str((await db.db[GAME_CALLS_COLLECTION].find_one({"_id": away_call_id})).get("team"))
+    else:
+        winner_team_id = str((await db.db[GAME_CALLS_COLLECTION].find_one({"_id": away_call_id})).get("team"))
+        loser_team_id = str((await db.db[GAME_CALLS_COLLECTION].find_one({"_id": home_call_id})).get("team"))
 
     # Advance winner to next game (via direct game call ID)
     if game.get("next_game_winner"):
-        # Fetch team players like group→knockout advance (set numbers to None)
-        if winner_team_id:
-            winner_team = await db.db[TEAMS_COLLECTION].find_one(
-                {"_id": winner_team_id}
-            )
-            players = (
-                [{"player": p, "number": None} for p in winner_team.get("players", [])]
-                if winner_team
-                else []
-            )
-        else:
-            players = []
+        winner_team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(winner_team_id)})
+        players = [{"player": p, "number": None} for p in winner_team.get("players", [])] if winner_team else []
         await db.db[GAME_CALLS_COLLECTION].update_one(
             {"_id": game.get("next_game_winner")},
-            {"$set": {"team": winner_team_id, "players": players, "staff": []}},
+            {"$set": {"team": ObjectId(winner_team_id), "players": players, "staff": []}},
         )
-        get_logger().info(
-            f"Advanced winner to next game (call: {game.get('next_game_winner')})"
-        )
+        get_logger().info(f"Advanced winner to next game (call: {game.get('next_game_winner')})")
 
     # Advance loser to next game (for third place)
     if game.get("next_game_loser"):
-        # Fetch team players like group→knockout advance (set numbers to None)
-        if loser_team_id:
-            loser_team = await db.db[TEAMS_COLLECTION].find_one({"_id": loser_team_id})
-            players = (
-                [{"player": p, "number": None} for p in loser_team.get("players", [])]
-                if loser_team
-                else []
-            )
-        else:
-            players = []
+        loser_team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(loser_team_id)})
+        players = [{"player": p, "number": None} for p in loser_team.get("players", [])] if loser_team else []
         await db.db[GAME_CALLS_COLLECTION].update_one(
             {"_id": game.get("next_game_loser")},
-            {"$set": {"team": loser_team_id, "players": players, "staff": []}},
+            {"$set": {"team": ObjectId(loser_team_id), "players": players, "staff": []}},
         )
-        get_logger().info(
-            f"Advanced loser to next game (call: {game.get('next_game_loser')})"
-        )
+        get_logger().info(f"Advanced loser to next game (call: {game.get('next_game_loser')})")
 
 
 async def initialize_knockout_dependencies(tournament_id: str):
@@ -605,10 +607,33 @@ async def update_game_status(
         )
 
     if new_status == GameStatus.Finished:
-        game["finish_date"] = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc)
+        game["finish_date"] = now
+        
+        # In knockout phase, do not allow finishing a tied game
+        if game.get("phase") != GamePhase.Group:
+            hg, ag, hp, ap, winner = await calculate_game_outcome(game)
+            if not winner:
+                raise Error.bad_request("Jogos de eliminatórias não podem terminar empatados. Por favor, proceda para prolongamento ou penalidades.")
+        else:
+            hg, ag, hp, ap, winner = await calculate_game_outcome(game)
+
         await db.db[GAMES_COLLECTION].update_one(
             {"_id": game["_id"]}, {"$set": {"finish_date": game["finish_date"]}}
         )
+
+        # Add GameEnd event
+        game_end_event = {
+            "GameEnd": {
+                "home_score": hg,
+                "away_score": ag,
+                "home_penalty_score": hp,
+                "away_penalty_score": ap,
+                "winner_id": str(winner) if winner else None,
+                "timestamp": now.isoformat(),
+            }
+        }
+        await add_game_event(game["_id"], game_end_event)
 
         # Auto-advance winner to next game (knockout phase)
         await advance_winner_to_next_game(game)
@@ -723,6 +748,8 @@ async def update_period(
     period_elapsed_seconds = game.get("period_elapsed_seconds", 0)
     timer_active = game.get("timer_active", False)
     timer_started_at = game.get("timer_started_at")
+    if timer_started_at and timer_started_at.tzinfo is None:
+        timer_started_at = timer_started_at.replace(tzinfo=timezone.utc)
 
     if body.action == "start_new":
         if body.period is not None:
@@ -732,6 +759,10 @@ async def update_period(
         else:
             # Period already set (e.g., by "end" action), just start the timer
             new_period = current_period
+
+        # Only allow extra periods (3+) in knockout phase
+        if new_period > 2 and game.get("phase") == GamePhase.Group:
+            raise Error.bad_request("Períodos extra e penalidades apenas são permitidos na fase de eliminatórias.")
 
         # Validate tie for overtime (period 3) and penalties (period 5)
         if new_period in (3, 5):
@@ -796,50 +827,59 @@ async def update_period(
         updates["timer_started_at"] = None
     elif body.action == "end":
         new_period = current_period + 1
-        # Validate tie for overtime (period 3) and penalties (period 5)
-        if new_period in (3, 5):
-            home_call_doc = (
-                await db.db[GAME_CALLS_COLLECTION].find_one(
-                    {"_id": game.get("home_call")}
-                )
-                if game.get("home_call")
-                else None
-            )
-            away_call_doc = (
-                await db.db[GAME_CALLS_COLLECTION].find_one(
-                    {"_id": game.get("away_call")}
-                )
-                if game.get("away_call")
-                else None
-            )
-            if not home_call_doc or not away_call_doc:
-                raise Error.bad_request("Game calls not found")
-            home_team_id = str(home_call_doc["team"])
-            away_team_id = str(away_call_doc["team"])
-            home_goals = 0
-            away_goals = 0
-            for e in game.get("events", []):
-                if "Goal" in e:
-                    goal = e["Goal"]
-                    if goal.get("period", 0) < new_period:
-                        team_id = str(goal.get("team_id"))
-                        if team_id == home_team_id:
-                            home_goals += 1
-                        elif team_id == away_team_id:
-                            away_goals += 1
-            if home_goals != away_goals:
-                if new_period == 3:
-                    raise Error.bad_request(
-                        "Scores must be tied to proceed to overtime"
+
+        # Only allow extra periods (3+) in knockout phase
+        if new_period > 2 and game.get("phase") == GamePhase.Group:
+            # If group phase, we don't advance to period 3. We stay in period 2 (finished).
+            # The UI will then allow finishing the game.
+            updates["timer_active"] = False
+            updates["timer_started_at"] = None
+        else:
+            # Validate tie for overtime (period 3) and penalties (period 5)
+            if new_period in (3, 5):
+                home_call_doc = (
+                    await db.db[GAME_CALLS_COLLECTION].find_one(
+                        {"_id": game.get("home_call")}
                     )
-                else:
-                    raise Error.bad_request(
-                        "Scores must be tied to proceed to penalties"
+                    if game.get("home_call")
+                    else None
+                )
+                away_call_doc = (
+                    await db.db[GAME_CALLS_COLLECTION].find_one(
+                        {"_id": game.get("away_call")}
                     )
-        updates["current_period"] = new_period
-        updates["period_elapsed_seconds"] = 0
-        updates["timer_active"] = False
-        updates["timer_started_at"] = None
+                    if game.get("away_call")
+                    else None
+                )
+                if not home_call_doc or not away_call_doc:
+                    raise Error.bad_request("Game calls not found")
+                home_team_id = str(home_call_doc["team"])
+                away_team_id = str(away_call_doc["team"])
+                home_goals = 0
+                away_goals = 0
+                for e in game.get("events", []):
+                    if "Goal" in e:
+                        goal = e["Goal"]
+                        if goal.get("period", 0) < new_period:
+                            team_id = str(goal.get("team_id"))
+                            if team_id == home_team_id:
+                                home_goals += 1
+                            elif team_id == away_team_id:
+                                away_goals += 1
+                if home_goals != away_goals:
+                    if new_period == 3:
+                        raise Error.bad_request(
+                            "Scores must be tied to proceed to overtime"
+                        )
+                    else:
+                        raise Error.bad_request(
+                            "Scores must be tied to proceed to penalties"
+                        )
+
+            updates["current_period"] = new_period
+            updates["period_elapsed_seconds"] = 0
+            updates["timer_active"] = False
+            updates["timer_started_at"] = None
     elif body.action == "set_seconds":
         if body.seconds is None:
             raise Error.bad_request("Seconds is required")
@@ -881,6 +921,16 @@ async def update_period(
             }
         }
         await add_game_event(game["_id"], start_event)
+
+        # If it's the beginning of penalty shootout, add a special event
+        if period_num == 5:
+            shootout_start_event = {
+                "PenaltyShootoutStart": {
+                    "period": 5,
+                    "timestamp": now.isoformat(),
+                }
+            }
+            await add_game_event(game["_id"], shootout_start_event)
     elif body.action == "resume":
         period_num = game.get("current_period", 0)
         resume_event = {
