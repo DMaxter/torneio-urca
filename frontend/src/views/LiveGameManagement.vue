@@ -33,11 +33,11 @@
         <div class="text-sm text-stone-500">Cronómetro</div>
         <div class="flex items-center justify-center gap-2 mt-1">
           <div class="text-4xl font-bold text-stone-900 ml-6">{{ timerDisplay }}</div>
-          <P-Button 
+          <P-Button
             v-if="!game.timer_active"
-            icon="material-symbols-outlined" 
-            text 
-            rounded 
+            icon="material-symbols-outlined"
+            text
+            rounded
             class="text-stone-400 hover:text-stone-600"
             @click="openAdjustClock"
           >
@@ -125,7 +125,7 @@
               </div>
               <div v-if="game.current_period > 0 && !isShootout" class="flex flex-col items-center">
                 <div class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Faltas</div>
-                <div 
+                <div
                   class="text-3xl font-black px-4 py-1 rounded-xl border-2 transition-all duration-500"
                   :class="homeFoulLimitReached ? 'bg-red-600 text-white border-red-700 shadow-lg shadow-red-200 animate-pulse' : 'bg-stone-50 text-stone-400 border-stone-100'"
                 >
@@ -177,7 +177,7 @@
               </div>
               <div v-if="game.current_period > 0 && !isShootout" class="flex flex-col items-center">
                 <div class="text-[10px] font-bold text-stone-500 uppercase tracking-widest mb-1">Faltas</div>
-                <div 
+                <div
                   class="text-3xl font-black px-4 py-1 rounded-xl border-2 transition-all duration-500"
                   :class="awayFoulLimitReached ? 'bg-red-600 text-white border-red-700 shadow-lg shadow-red-200 animate-pulse' : 'bg-stone-50 text-stone-400 border-stone-100'"
                 >
@@ -227,7 +227,7 @@
         </div>
 
         <div v-else class="space-y-2">
-          <div v-for="item in sortedEventsWithIndex" :key="item.index" 
+          <div v-for="item in sortedEventsWithIndex" :key="item.index"
                class="flex items-center gap-3 p-3 rounded-lg border-2 group"
                :class="getEventBorderClass(item.event)">
             <div class="font-bold text-stone-600 text-xl w-24 text-center shrink-0">
@@ -239,7 +239,7 @@
               <div v-if="getEventMetadata(item.event)" class="text-xs text-stone-400">{{ getEventMetadata(item.event) }}</div>
             </div>
             <div class="text-2xl shrink-0">{{ getEventIcon(item.event) }}</div>
-            <button 
+            <button
               class="material-symbols-outlined text-red-600 cursor-pointer hover:bg-red-50 rounded-full p-1 transition-colors shrink-0"
               @click="deleteEvent(item.index)"
               v-tooltip.top="'Eliminar evento'"
@@ -370,10 +370,10 @@
             <div v-if="cardTarget === 'player'">
               <label class="block text-sm font-medium text-stone-700 mb-2">Número do Jogador</label>
               <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                <P-Button 
-                  v-for="num in availableShirtNumbers" 
+                <P-Button
+                  v-for="num in availableShirtNumbers"
                   :key="num"
-                  :label="`#${num}`" 
+                  :label="`#${num}`"
                   :severity="playerNumber === num ? 'success' : 'secondary'"
                   class="text-lg py-3"
                   @click="playerNumber = num"
@@ -384,8 +384,8 @@
             <div v-else-if="hasStaffForTeam">
               <label class="block text-sm font-medium text-stone-700 mb-2">Membro do Staff</label>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <P-Button 
-                  v-for="staff in staffOptions" 
+                <P-Button
+                  v-for="staff in staffOptions"
                   :key="staff.id"
                   :severity="staffId === staff.id ? 'success' : 'secondary'"
                   class="py-3 px-2 h-auto"
@@ -411,10 +411,10 @@
         <div v-if="eventType === 'foul'">
           <div class="mb-4">
             <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
-              <P-Button 
-                v-for="num in availableShirtNumbers" 
+              <P-Button
+                v-for="num in availableShirtNumbers"
                 :key="num"
-                :label="`#${num}`" 
+                :label="`#${num}`"
                 :severity="playerNumber === num ? 'warning' : 'secondary'"
                 class="text-lg py-3"
                 @click="playerNumber = num"
@@ -433,32 +433,32 @@
       <template #footer>
         <div class="flex gap-2 w-full justify-between">
           <P-Button severity="secondary" @click="closeEventDialog">Cancelar</P-Button>
-          <P-Button 
-            :severity="eventType === 'goal' || eventType === 'penalty' ? 'success' : 'warning'" 
+          <P-Button
+            :severity="eventType === 'goal' || eventType === 'penalty' ? 'success' : 'warning'"
             :loading="saving"
             :disabled="!canSubmitEvent"
             @click="submitEvent"
           >
-            {{ 
-              eventType === 'goal' ? 'Marcar Golo' : 
-              eventType === 'foul' ? 'Registar Falta' : 
+            {{
+              eventType === 'goal' ? 'Marcar Golo' :
+              eventType === 'foul' ? 'Registar Falta' :
               eventType === 'penalty' ? (penaltyScored ? 'Registar Penalti Marcado' : 'Registar Penalti Falhado') :
-              'Atribuir Cartão' 
+              'Atribuir Cartão'
             }}
           </P-Button>
         </div>
       </template>
     </P-Dialog>
-    
+
     <!-- Manual Event Dialog -->
     <P-Dialog v-model:visible="manualEventDialogVisible" modal header="Evento Manual" class="w-11/12 md:w-[450px]">
       <div class="p-2 md:p-4">
         <div class="mb-4">
           <label class="block text-sm font-medium text-stone-700 mb-2">Descrição do Evento</label>
-          <P-Textarea 
-            v-model="manualEventDescription" 
-            rows="4" 
-            class="w-full text-base" 
+          <P-Textarea
+            v-model="manualEventDescription"
+            rows="4"
+            class="w-full text-base"
             placeholder="Ex: Substituição múltipla, Incidente, etc."
             autoResize
           />
@@ -468,8 +468,8 @@
       <template #footer>
         <div class="flex gap-2 w-full justify-between">
           <P-Button severity="secondary" @click="manualEventDialogVisible = false">Cancelar</P-Button>
-          <P-Button 
-            severity="primary" 
+          <P-Button
+            severity="primary"
             :loading="saving"
             :disabled="!manualEventDescription.trim()"
             @click="submitManualEvent"
@@ -486,24 +486,24 @@
         <div class="mb-4 flex flex-col sm:flex-row gap-4">
           <div class="flex-1">
             <label class="block text-sm font-medium text-stone-700 mb-2">Minutos</label>
-            <P-InputNumber 
-              v-model="adjMinute" 
-              :min="0" 
-              :max="30" 
-              showButtons 
-              buttonLayout="horizontal" 
+            <P-InputNumber
+              v-model="adjMinute"
+              :min="0"
+              :max="30"
+              showButtons
+              buttonLayout="horizontal"
               class="w-full"
               inputClass="w-full text-center font-bold text-xl"
             />
           </div>
           <div class="flex-1">
             <label class="block text-sm font-medium text-stone-700 mb-2">Segundos</label>
-            <P-InputNumber 
-              v-model="adjSecond" 
-              :min="0" 
-              :max="59" 
-              showButtons 
-              buttonLayout="horizontal" 
+            <P-InputNumber
+              v-model="adjSecond"
+              :min="0"
+              :max="59"
+              showButtons
+              buttonLayout="horizontal"
               class="w-full"
               inputClass="w-full text-center font-bold text-xl"
             />
@@ -517,8 +517,8 @@
       <template #footer>
         <div class="flex gap-2 w-full justify-between">
           <P-Button severity="secondary" @click="adjustClockDialogVisible = false">Cancelar</P-Button>
-          <P-Button 
-            severity="warning" 
+          <P-Button
+            severity="warning"
             :loading="saving"
             @click="saveClockAdjustment"
           >
@@ -632,11 +632,11 @@ function countFouls(teamId: string, currentPeriod: number) {
     if ('Foul' in e) {
       const foul = (e as { Foul: FoulEvent }).Foul;
       if (foul.team_name !== teamName) return false;
-      
-      // Every foul that leads to a direct free kick counts. 
+
+      // Every foul that leads to a direct free kick counts.
       // For cards it is always a free kick foul.
       if (!foul.is_direct_free_kick && !foul.card) return false;
-      
+
       const p = foul.period;
       if (currentPeriod <= 1) {
         return p <= 1;
@@ -731,7 +731,7 @@ const staffOptions = computed(() => {
     const name = s?.name || 'Desconhecido';
     const firstNames = name.split(' ');
     const shortName = firstNames.length > 1 ? `${firstNames[0]} ${firstNames[firstNames.length - 1]}` : name;
-    
+
     return {
       id,
       label: `${name} (${getStaffTypeLabel(s?.staff_type)})`,
@@ -980,7 +980,7 @@ function getEventDescription(event: GameEvent): string {
   if ('Foul' in event) {
     const foul = (event as { Foul: FoulEvent }).Foul;
     const displayName = foul.staff_name || foul.player_name || 'Desconhecido';
-    
+
     if (foul.card === null || foul.card === undefined) {
       const suffix = foul.is_direct_free_kick ? ' (Livre Direto)' : '';
       return `${displayName} - Falta${suffix}`;
@@ -1116,7 +1116,7 @@ function getEventTimestamp(event: GameEvent): number {
     const utc = raw.endsWith('Z') ? raw : raw + 'Z';
     return new Date(utc).getTime();
   };
-  
+
   if ('Goal' in event) {
     const goal = (event as { Goal: { timestamp: string } }).Goal;
     return getTs(goal.timestamp);
@@ -1197,7 +1197,7 @@ function getEventTeamName(event: GameEvent): string {
 
 function openEventDialog(teamId: string | undefined, type: 'goal' | 'card' | 'foul' | 'penalty') {
   if (!teamId) return;
-  
+
   selectedTeam.value = teamId;
   eventTeam.value = teamId;
   eventType.value = type;
@@ -1206,8 +1206,7 @@ function openEventDialog(teamId: string | undefined, type: 'goal' | 'card' | 'fo
   cardTarget.value = 'player';
   playerNumber.value = null;
   staffId.value = null;
-  // Default to true for cards, false for fouls
-  isDirectFreeKick.value = type === 'card';
+  isDirectFreeKick.value = true;
   penaltyScored.value = true;
   eventDialogVisible.value = true;
 }
@@ -1218,14 +1217,14 @@ function closeEventDialog() {
 
 async function submitEvent() {
   if (!canSubmitEvent.value || !game.value) return;
-  
+
   saving.value = true;
-  
+
   try {
     const totalSeconds = Math.floor(currentElapsedSeconds.value);
     const currentMinute = Math.floor(totalSeconds / 60);
     const currentSecond = totalSeconds % 60;
-    
+
     const baseDto = {
       tournament: game.value.tournament,
       game: game.value.id,
@@ -1274,7 +1273,7 @@ async function submitEvent() {
 
     await loadGame();
     await gameStore.forceGetGames();
-    
+
   } catch (e: unknown) {
     handleApiError(e, 'Erro ao registar evento');
   } finally {
@@ -1285,7 +1284,7 @@ async function submitEvent() {
 
 async function startPeriod() {
   if (!game.value) return;
-  
+
   try {
     const response = await gameService.updatePeriod(game.value.id, { action: 'start_new' });
     if (response.status === 200) {
@@ -1300,7 +1299,7 @@ async function startPeriod() {
 
 async function resumePeriod() {
   if (!game.value) return;
-  
+
   try {
     const action = game.value.period_elapsed_seconds === 0 ? 'start_new' : 'resume';
     const response = await gameService.updatePeriod(game.value.id, { action });
@@ -1317,7 +1316,7 @@ async function resumePeriod() {
 
 async function stopTimer() {
   if (!game.value) return;
-  
+
   try {
     const response = await gameService.updatePeriod(game.value.id, { action: 'stop' });
     if (response.status === 200) {
@@ -1332,10 +1331,10 @@ async function stopTimer() {
 
 async function endPeriod() {
   if (!game.value) return;
-  
+
   const confirmed = confirm('Tem a certeza que deseja terminar o período?');
   if (!confirmed) return;
-  
+
   try {
     const response = await gameService.updatePeriod(game.value.id, { action: 'end' });
     if (response.status === 200) {
@@ -1350,7 +1349,7 @@ async function endPeriod() {
 
 async function startPenalties() {
   if (!game.value) return;
-  
+
   try {
     const response = await gameService.updatePeriod(game.value.id, { action: 'start_new', period: 5 });
     if (response.status === 200) {
@@ -1385,10 +1384,10 @@ async function loadGame() {
 
 async function finishGame() {
   if (!game.value) return;
-  
+
   const confirmed = confirm('Tem a certeza que deseja terminar este jogo?');
   if (!confirmed) return;
-  
+
   try {
     const response = await gameService.updateGameStatus(game.value.id, GameStatus.Finished);
     if (response.status === 200) {
@@ -1403,10 +1402,10 @@ async function finishGame() {
 
 async function deleteEvent(eventIndex: number) {
   if (!game.value) return;
-  
+
   const confirmed = confirm('Tem a certeza que deseja eliminar este evento?');
   if (!confirmed) return;
-  
+
   try {
     const response = await gameService.deleteGameEvent(game.value.id, eventIndex);
     if (response.status === 204) {
@@ -1423,7 +1422,7 @@ function openAdjustClock() {
   if (!game.value) return;
   const duration = getDurationForPeriod(game.value.current_period);
   const remaining = Math.max(0, duration - currentElapsedSeconds.value);
-  
+
   adjMinute.value = Math.floor(remaining / 60);
   adjSecond.value = Math.floor(remaining % 60);
   adjustClockDialogVisible.value = true;
@@ -1431,18 +1430,18 @@ function openAdjustClock() {
 
 async function saveClockAdjustment() {
   if (!game.value) return;
-  
+
   saving.value = true;
   try {
     const duration = getDurationForPeriod(game.value.current_period);
     const targetRemaining = adjMinute.value * 60 + adjSecond.value;
     const targetElapsed = Math.max(0, duration - targetRemaining);
-    
-    await gameService.updatePeriod(game.value.id, { 
-      action: 'set_seconds', 
-      seconds: targetElapsed 
+
+    await gameService.updatePeriod(game.value.id, {
+      action: 'set_seconds',
+      seconds: targetElapsed
     });
-    
+
     toast.add({ severity: 'success', summary: 'Sucesso', detail: 'Cronómetro ajustado', life: 3000 });
     await loadGame();
     await gameStore.forceGetGames();
@@ -1456,7 +1455,7 @@ async function saveClockAdjustment() {
 
 async function submitManualEvent() {
   if (!game.value || !manualEventDescription.value.trim()) return;
-  
+
   saving.value = true;
   try {
     await gameService.addManualEvent(game.value.id, manualEventDescription.value.trim());
@@ -1483,9 +1482,9 @@ onMounted(async () => {
     staffStore.getStaff(),
   ]);
   await loadGame();
-  
+
   refreshInterval = setInterval(loadGame, 10000);
-  
+
   timerTickInterval = setInterval(async () => {
     if (game.value?.timer_active) {
       const duration = getDurationForPeriod(game.value.current_period);
@@ -1493,7 +1492,7 @@ onMounted(async () => {
       const startTime = game.value.timer_started_at ? Date.parse(game.value.timer_started_at + 'Z') : 0;
       const activeElapsed = startTime > 0 ? (Date.now() - startTime) / 1000 : 0;
       const totalElapsed = elapsed + activeElapsed;
-      
+
       // Auto-stop timer when it reaches 0
       if (duration > 0 && totalElapsed >= duration) {
         await stopTimer();
