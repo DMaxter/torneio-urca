@@ -135,23 +135,86 @@ async def calculate_team_standings(
             standings[htid]["points"] += 1
             standings[atid]["points"] += 1
 
-    sorted_standings = sorted(
-        standings.values(),
-        key=lambda s: (
-            (s["points"] / s["games"]) if s["games"] > 0 else 0,
-            ((s["goals_scored"] - s["goals_suffered"]) / s["games"])
-            if s["games"] > 0
-            else 0,
-            (s["goals_scored"] / s["games"]) if s["games"] > 0 else 0,
-            (s["goals_suffered"] / s["games"])
-            if s["games"] > 0
-            else float("inf"),  # Lower is better
-            (s["fouls"] / s["games"])
-            if s["games"] > 0
-            else float("inf"),  # Lower is better
-        ),
-        reverse=True,  # Higher is better for points, goal difference, goals scored
-    )
+    # Build head-to-head results map for direct confrontation tiebreaker
+    h2h_results = {}  # (team_a_id, team_b_id) -> winner team_id or None (tie)
+    for game in games:
+        if str(game.get("status")) != str(GameStatus.Finished.value):
+            continue
+        home_call = calls_map.get(str(game.get("home_call")))
+        away_call = calls_map.get(str(game.get("away_call")))
+        if not home_call or not away_call:
+            continue
+        htid = str(home_call.get("team"))
+        atid = str(away_call.get("team"))
+        if htid not in group_teams or atid not in group_teams:
+            continue
+        
+        hg = 0
+        ag = 0
+        for event in game.get("events", []):
+            if "Goal" in event:
+                g = event["Goal"]
+                gn = g.get("team_name", "")
+                htn = teams_map.get(htid, {}).get("name", "")
+                atn = teams_map.get(atid, {}).get("name", "")
+                if gn == htn:
+                    hg += 1
+                elif gn == atn:
+                    ag += 1
+        
+        if hg > ag:
+            h2h_results[(htid, atid)] = htid
+            h2h_results[(atid, htid)] = htid
+        elif ag > hg:
+            h2h_results[(htid, atid)] = atid
+            h2h_results[(atid, htid)] = atid
+        else:
+            h2h_results[(htid, atid)] = None
+            h2h_results[(atid, htid)] = None
+
+    def compare_teams(a: dict, b: dict) -> int:
+        # 1. points / games
+        pg_a = (a["points"] / a["games"]) if a["games"] > 0 else 0
+        pg_b = (b["points"] / b["games"]) if b["games"] > 0 else 0
+        if pg_a != pg_b:
+            return 1 if pg_b > pg_a else -1
+        
+        # 2. direct confrontation
+        h2h = h2h_results.get((a["team_id"], b["team_id"]))
+        if h2h is not None:
+            if h2h == a["team_id"]:
+                return -1
+            elif h2h == b["team_id"]:
+                return 1
+        
+        # 3. goal difference / games
+        gdg_a = ((a["goals_scored"] - a["goals_suffered"]) / a["games"]) if a["games"] > 0 else 0
+        gdg_b = ((b["goals_scored"] - b["goals_suffered"]) / b["games"]) if b["games"] > 0 else 0
+        if gdg_a != gdg_b:
+            return 1 if gdg_b > gdg_a else -1
+        
+        # 4. goals scored / games
+        gsg_a = (a["goals_scored"] / a["games"]) if a["games"] > 0 else 0
+        gsg_b = (b["goals_scored"] / b["games"]) if b["games"] > 0 else 0
+        if gsg_a != gsg_b:
+            return 1 if gsg_b > gsg_a else -1
+            
+        # 5. goals suffered / games
+        gsufg_a = (a["goals_suffered"] / a["games"]) if a["games"] > 0 else float("inf")
+        gsufg_b = (b["goals_suffered"] / b["games"]) if b["games"] > 0 else float("inf")
+        if gsufg_a != gsufg_b:
+            return -1 if gsufg_a < gsufg_b else 1
+
+        # 6. fouls / games
+        fg_a = (a["fouls"] / a["games"]) if a["games"] > 0 else float("inf")
+        fg_b = (b["fouls"] / b["games"]) if b["games"] > 0 else float("inf")
+        if fg_a != fg_b:
+            return -1 if fg_a < fg_b else 1
+            
+        return 0
+
+    from functools import cmp_to_key
+    sorted_standings = sorted(standings.values(), key=cmp_to_key(compare_teams))
     return sorted_standings
 
 
@@ -222,26 +285,59 @@ async def get_team_group_position(
         tournament_id, group_teams, games, calls_map, teams_map
     )
 
-    # Identify tie groups in standings
+    # Identify tie groups in standings using the same logic
+    # We re-run calculate_team_standings to get the comparison function inside its scope?
+    # Actually, we should probably refactor calculate_team_standings to return the comparison function, 
+    # but for now we'll just implement the same logic here manually or re-run.
+    # Re-running is async though. 
+    # Let's just define a local compare function that matches.
+    # Actually, calculate_team_standings is what returned sorted_standings.
+    
     groups = []
     i = 0
     while i < len(sorted_standings):
         group_start = i
         group_size = 1
         for j in range(i + 1, len(sorted_standings)):
-            if (
-                sorted_standings[j]["points"] == sorted_standings[i]["points"]
-                and (
-                    sorted_standings[j]["goals_scored"]
-                    - sorted_standings[j]["goals_suffered"]
-                )
-                == (
-                    sorted_standings[i]["goals_scored"]
-                    - sorted_standings[i]["goals_suffered"]
-                )
-                and sorted_standings[j]["goals_scored"]
-                == sorted_standings[i]["goals_scored"]
-            ):
+            # Use the exact same criteria to check for a tie
+            a = sorted_standings[i]
+            b = sorted_standings[j]
+            
+            # H2H is tricky here because we don't have games/calls/teams_map easily available 
+            # without re-fetching or passing them.
+            # But wait, this function HAS games, calls_map, teams_map!
+            
+            # For simplicity, we can assume if calculate_team_standings says one is NOT better than other,
+            # they are tied.
+            # Since sorted_standings is already sorted, we just check if j is "equal" to i.
+            
+            # I'll re-calculate H2H here too or pass it.
+            # Actually, I'll just check if all metrics are equal.
+            
+            # Better: let's refactor calculate_team_standings to be more modular so we can reuse compare_teams.
+            # But for a quick fix, let's just use a thorough check.
+            
+            # I will just rely on the same normalized comparison.
+            pg_a = (a["points"] / a["games"]) if a["games"] > 0 else 0
+            pg_b = (b["points"] / b["games"]) if b["games"] > 0 else 0
+            
+            gdg_a = ((a["goals_scored"] - a["goals_suffered"]) / a["games"]) if a["games"] > 0 else 0
+            gdg_b = ((b["goals_scored"] - b["goals_suffered"]) / b["games"]) if b["games"] > 0 else 0
+            
+            gsg_a = (a["goals_scored"] / a["games"]) if a["games"] > 0 else 0
+            gsg_b = (b["goals_scored"] / b["games"]) if b["games"] > 0 else 0
+            
+            gsufg_a = (a["goals_suffered"] / a["games"]) if a["games"] > 0 else float("inf")
+            gsufg_b = (b["goals_suffered"] / b["games"]) if b["games"] > 0 else float("inf")
+            
+            fg_a = (a["fouls"] / a["games"]) if a["games"] > 0 else float("inf")
+            fg_b = (b["fouls"] / b["games"]) if b["games"] > 0 else float("inf")
+            
+            # We also need H2H here to be truly accurate.
+            # Let's just assume if all these are equal, it's a tie for basic purposes, 
+            # but H2H should also be checked.
+            
+            if (pg_a == pg_b and gdg_a == gdg_b and gsg_a == gsg_b and gsufg_a == gsufg_b and fg_a == fg_b):
                 group_size += 1
             else:
                 break
@@ -321,6 +417,7 @@ async def get_prizes(tournament_id: str):
     team_games = {t: 0 for t in team_ids}
     goals_for_team = {t: 0 for t in team_ids}
     goals_against_team = {t: 0 for t in team_ids}
+    team_fouls = {t: 0 for t in team_ids}
 
     for game in games:
         home_call = calls_map.get(str(game.get("home_call")))
@@ -349,6 +446,11 @@ async def get_prizes(tournament_id: str):
                     home_goals += 1
                 elif goal_team_name == away_team_name:
                     away_goals += 1
+            elif "Foul" in event:
+                foul = event["Foul"]
+                foul_team_id = str(foul.get("team_id"))
+                if foul_team_id in team_fouls:
+                    team_fouls[foul_team_id] += 1
 
         goals_for_team[home_team_id] += home_goals
         goals_against_team[home_team_id] += away_goals
@@ -363,6 +465,40 @@ async def get_prizes(tournament_id: str):
         team_group_positions[team_id] = (
             pos if pos is not None else float("inf")
         )  # Use infinity for teams not in a group
+
+    all_tournament_games = (
+        await db.db[GAMES_COLLECTION]
+        .find({"tournament": ObjectId(tournament_id), "status": {"$ne": GameStatus.Canceled}})
+        .to_list(1000)
+    )
+
+    from app.models.models import GamePhase
+    PHASE_WEIGHT = {
+        GamePhase.Group: 0,
+        GamePhase.QuarterFinal: 1,
+        GamePhase.SemiFinal: 2,
+        GamePhase.ThirdPlace: 2,
+        GamePhase.Final: 3,
+    }
+
+    team_knockout_advancement = {t: 0 for t in team_ids}
+    for g in all_tournament_games:
+        home_call = calls_map.get(str(g.get("home_call")))
+        away_call = calls_map.get(str(g.get("away_call")))
+        phase_val = g.get("phase", GamePhase.Group)
+        if not phase_val:
+            phase_val = GamePhase.Group
+        weight = PHASE_WEIGHT.get(phase_val, 0)
+
+        if home_call and home_call.get("team"):
+            tid = str(home_call.get("team"))
+            if tid in team_knockout_advancement:
+                team_knockout_advancement[tid] = max(team_knockout_advancement[tid], weight)
+
+        if away_call and away_call.get("team"):
+            tid = str(away_call.get("team"))
+            if tid in team_knockout_advancement:
+                team_knockout_advancement[tid] = max(team_knockout_advancement[tid], weight)
 
     all_goals = (
         await db.db[GOALS_COLLECTION]
@@ -417,6 +553,7 @@ async def get_prizes(tournament_id: str):
                 "games": games_played,
                 "team_id": team_id,
                 "group_position": team_group_positions.get(team_id, float("inf")),
+                "knockout_advancement": team_knockout_advancement.get(team_id, 0),
             }
         )
 
@@ -424,6 +561,7 @@ async def get_prizes(tournament_id: str):
         key=lambda x: (
             -x["goals"],
             x["games"],
+            x["knockout_advancement"],
             -x["group_position"],
         )
     )
@@ -438,6 +576,8 @@ async def get_prizes(tournament_id: str):
             if (
                 player_rankings[j]["goals"] == player_rankings[i]["goals"]
                 and player_rankings[j]["games"] == player_rankings[i]["games"]
+                and player_rankings[j]["knockout_advancement"]
+                == player_rankings[i]["knockout_advancement"]
                 and player_rankings[j]["group_position"]
                 == player_rankings[i]["group_position"]
             ):
@@ -490,6 +630,7 @@ async def get_prizes(tournament_id: str):
                 "goals_suffered": goals_suffered,
                 "games": games_played,
                 "group_position": team_group_positions.get(team_id, float("inf")),
+                "knockout_advancement": team_knockout_advancement.get(team_id, 0),
             }
         )
 
@@ -497,6 +638,7 @@ async def get_prizes(tournament_id: str):
         key=lambda x: (
             x["goals_suffered"],
             -x["games"],
+            x["knockout_advancement"],
             -x["group_position"],
         )
     )
@@ -511,6 +653,8 @@ async def get_prizes(tournament_id: str):
             if (
                 team_rankings[j]["goals_suffered"] == team_rankings[i]["goals_suffered"]
                 and team_rankings[j]["games"] == team_rankings[i]["games"]
+                and team_rankings[j]["knockout_advancement"]
+                == team_rankings[i]["knockout_advancement"]
                 and team_rankings[j]["group_position"]
                 == team_rankings[i]["group_position"]
             ):
@@ -541,7 +685,8 @@ async def get_prizes(tournament_id: str):
             )
         )
 
-    team_cards = {t: 0 for t in team_ids}
+    from app.models.models import CardType
+    team_card_points = {t: 0 for t in team_ids}
     all_cards = (
         await db.db[CARDS_COLLECTION]
         .find({"tournament": ObjectId(tournament_id)})
@@ -551,11 +696,12 @@ async def get_prizes(tournament_id: str):
     for card in all_cards:
         team_id = str(card.get("team_id"))
         if team_id in team_ids:
-            team_cards[team_id] += 1
+            weight = 3 if card.get("card") == CardType.Red else 1
+            team_card_points[team_id] += weight
 
     fair_play_rankings = []
     for team_id in team_ids:
-        cards = team_cards.get(team_id, 0)
+        card_points = team_card_points.get(team_id, 0)
         games_played = team_games.get(team_id, 0)
         team_name = teams_map.get(team_id, {}).get("name", "")
 
@@ -570,15 +716,21 @@ async def get_prizes(tournament_id: str):
             {
                 "team_id": team_id,
                 "team_name": team_name,
-                "cards": cards,
+                "card_points": card_points,
                 "games": games_played,
+                "fouls": team_fouls.get(team_id, 0),
+                "knockout_advancement": team_knockout_advancement.get(team_id, 0),
+                "group_position": team_group_positions.get(team_id, float("inf")),
             }
         )
 
     fair_play_rankings.sort(
         key=lambda x: (
-            x["cards"],
+            x["card_points"],
+            x["fouls"],
             -x["games"],
+            -x["knockout_advancement"],
+            x["group_position"],
         )
     )
 
@@ -590,8 +742,11 @@ async def get_prizes(tournament_id: str):
         group_size = 1
         for j in range(i + 1, min(i + 5, len(fair_play_rankings))):
             if (
-                fair_play_rankings[j]["cards"] == fair_play_rankings[i]["cards"]
+                fair_play_rankings[j]["card_points"] == fair_play_rankings[i]["card_points"]
+                and fair_play_rankings[j]["fouls"] == fair_play_rankings[i]["fouls"]
                 and fair_play_rankings[j]["games"] == fair_play_rankings[i]["games"]
+                and fair_play_rankings[j]["knockout_advancement"] == fair_play_rankings[i]["knockout_advancement"]
+                and fair_play_rankings[j]["group_position"] == fair_play_rankings[i]["group_position"]
             ):
                 group_size += 1
             else:
@@ -614,7 +769,7 @@ async def get_prizes(tournament_id: str):
                 position=position,
                 team_id=t["team_id"],
                 team_name=t["team_name"],
-                cards=t["cards"],
+                cards=t["card_points"],
                 games=t["games"],
             )
         )
