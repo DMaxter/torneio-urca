@@ -582,6 +582,28 @@ async def update_game_status(
             f"Transição inválida de {current_status} para {new_status}"
         )
 
+    # Validate required fields before allowing CallsPending (blocks all later statuses)
+    if new_status == GameStatus.CallsPending:
+        if not game.get("scheduled_date"):
+            raise Error.bad_request("Não é possível iniciar o jogo sem data atribuída")
+
+        if game.get("phase") and game.get("phase") != GamePhase.Group:
+            home_call = await db.db[GAME_CALLS_COLLECTION].find_one(
+                {"_id": game.get("home_call")}
+            )
+            away_call = await db.db[GAME_CALLS_COLLECTION].find_one(
+                {"_id": game.get("away_call")}
+            )
+            if not (
+                home_call
+                and away_call
+                and home_call.get("team")
+                and away_call.get("team")
+            ):
+                raise Error.bad_request(
+                    "Não é possível iniciar o jogo de eliminatórias sem ambas as equipas atribuídas"
+                )
+
     await db.db[GAMES_COLLECTION].update_one(
         {"_id": game["_id"]}, {"$set": {"status": new_status}}
     )
