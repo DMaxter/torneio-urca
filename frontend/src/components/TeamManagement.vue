@@ -54,7 +54,7 @@
           <div v-else>
             <div v-for="role in staffRoles" :key="role.field" class="flex items-center gap-2 mb-2">
               <span class="text-sm text-stone-600 w-32 shrink-0">{{ role.label }}</span>
-              <P-Select v-model="(teamForm as unknown as Record<string, unknown>)[role.field]" :options="staffOptions" optionLabel="name" optionValue="id"
+              <P-Select v-model="(teamForm as unknown as Record<string, unknown>)[role.field]" :options="getStaffOptions(role.type, role.field)" optionLabel="name" optionValue="id"
                 placeholder="Selecionar..." class="flex-1" showClear />
             </div>
           </div>
@@ -157,11 +157,11 @@ const showAddPlayerDialog = ref(false);
 const selectedPlayerId = ref<string | null>(null);
 
 const staffRoles = [
-  { field: 'main_coach', label: 'Treinador Principal' },
-  { field: 'assistant_coach', label: 'Treinador Adjunto' },
-  { field: 'physiotherapist', label: 'Fisioterapeuta' },
-  { field: 'first_deputy', label: '1º Delegado' },
-  { field: 'second_deputy', label: '2º Delegado' },
+  { field: 'main_coach', label: 'Treinador Principal', type: 'Coach' },
+  { field: 'assistant_coach', label: 'Treinador Adjunto', type: 'AssistantCoach' },
+  { field: 'physiotherapist', label: 'Fisioterapeuta', type: 'Physiotherapist' },
+  { field: 'first_deputy', label: '1º Delegado', type: 'GameDeputy' },
+  { field: 'second_deputy', label: '2º Delegado', type: 'GameDeputy' },
 ];
 
 const playerCount = computed(() => teamPlayers.value.length);
@@ -171,7 +171,31 @@ const staffStore = useStaffStore();
 const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
 
-const staffOptions = computed(() => staffStore.staff);
+function getStaffOptions(roleType: string, field: string) {
+  const currentStaffId = (teamForm.value as unknown as Record<string, unknown>)[field] as string | undefined;
+
+  return staffStore.staff.filter(s => {
+    if (s.staff_type !== roleType) return false;
+
+    // Allow if currently selected in this specific dropdown
+    if (currentStaffId && s.id === currentStaffId) return true;
+
+    // Don't show if they are selected in another field in the same form
+    const isSelectedElsewhere = staffRoles.some(r => {
+      if (r.field === field) return false;
+      return (teamForm.value as unknown as Record<string, unknown>)[r.field] === s.id;
+    });
+    if (isSelectedElsewhere) return false;
+
+    // Show if they are not in any team
+    if (!s.team_name) return true;
+
+    // Show if they belong to the team we are currently editing
+    if (props.team && props.team.name === s.team_name) return true;
+
+    return false;
+  });
+}
 
 const availablePlayers = computed(() => {
   const currentIds = new Set(teamPlayers.value.map(p => p.id));

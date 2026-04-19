@@ -82,6 +82,7 @@ class Staff(BaseModel):
     place_of_birth: Optional[str] = None
     fiscal_number: Optional[str] = None
     staff_type: StaffType
+    team: Optional[str] = None
     citizen_card_file_id: Optional[str] = None
     proof_of_residency_file_id: Optional[str] = None
     authorization_file_id: Optional[str] = None

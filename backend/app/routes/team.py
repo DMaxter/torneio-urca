@@ -458,6 +458,7 @@ async def register_add_staff(
         "place_of_birth": place_of_birth,
         "fiscal_number": fiscal_number,
         "staff_type": staff_type,
+        "team": team_id,
         **file_dict,
     }
     result = await db.db[STAFF_COLLECTION].insert_one(staff_data)

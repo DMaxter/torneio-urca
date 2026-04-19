@@ -119,6 +119,7 @@ async def update_staff(
         "birth_date": datetime.fromisoformat(birth_date.replace("Z", "+00:00")),
         "fiscal_number": fiscal_number,
         "staff_type": staff_type,
+        "team": team_id,
     }
 
     if address:
@@ -133,9 +134,44 @@ async def update_staff(
         )
         update_data["citizen_card_file_id"] = file_id
 
+    # Get old team before updating
+    old_team_id = existing.get("team")
+
     await db.db[STAFF_COLLECTION].update_one(
         {"_id": ObjectId(staff_id)}, {"$set": update_data}
     )
+
+    # Staff field mappings (moved outside for reuse)
+    staff_field_map = {
+        StaffType.Coach: "main_coach",
+        StaffType.AssistantCoach: "assistant_coach",
+        StaffType.Physiotherapist: "physiotherapist",
+        StaffType.GameDeputy: "first_deputy",
+        "Coach": "main_coach",
+        "AssistantCoach": "assistant_coach",
+        "Physiotherapist": "physiotherapist",
+        "GameDeputy": "first_deputy",
+    }
+    staff_type_labels = {
+        StaffType.Coach: "Treinador Principal",
+        StaffType.AssistantCoach: "Treinador Adjunto",
+        StaffType.Physiotherapist: "Fisioterapeuta",
+        StaffType.GameDeputy: "Delegado",
+    }
+
+    # Clear old team using OLD staff_type (in case it changed during update)
+    old_staff_type = existing.get("staff_type")
+    old_staff_field = staff_field_map.get(old_staff_type)
+
+    # Clear old team if staff is moving to a different team or changing role
+    if old_staff_field and old_team_id:
+        if str(old_team_id) != str(team_id) or old_staff_type != staff_type:
+            await db.db[TEAMS_COLLECTION].update_one(
+                {"_id": ObjectId(str(old_team_id))},
+                {"$set": {old_staff_field: None}},
+            )
+
+    staff_field = staff_field_map.get(staff_type)
 
     if team_id:
         try:
@@ -145,19 +181,6 @@ async def update_staff(
         if not team:
             raise Error.not_found("Team")
 
-        staff_field_map = {
-            StaffType.Coach: "main_coach",
-            StaffType.AssistantCoach: "assistant_coach",
-            StaffType.Physiotherapist: "physiotherapist",
-            StaffType.GameDeputy: "first_deputy",
-        }
-        staff_type_labels = {
-            StaffType.Coach: "Treinador Principal",
-            StaffType.AssistantCoach: "Treinador Adjunto",
-            StaffType.Physiotherapist: "Fisioterapeuta",
-            StaffType.GameDeputy: "Delegado",
-        }
-        staff_field = staff_field_map.get(staff_type)
         if staff_field:
             existing_staff_id = team.get(staff_field)
             if existing_staff_id and str(existing_staff_id) != staff_id:
@@ -184,6 +207,28 @@ async def delete_staff(staff_id: str, current_user=Depends(require_manage_player
         raise Exception("Invalid staff ID")
     if not staff:
         raise Exception("Staff not found")
+
+    staff_field_map = {
+        StaffType.Coach: "main_coach",
+        StaffType.AssistantCoach: "assistant_coach",
+        StaffType.Physiotherapist: "physiotherapist",
+        StaffType.GameDeputy: "first_deputy",
+        "Coach": "main_coach",
+        "AssistantCoach": "assistant_coach",
+        "Physiotherapist": "physiotherapist",
+        "GameDeputy": "first_deputy",
+    }
+
+    old_team_id = staff.get("team")
+    old_staff_type = staff.get("staff_type")
+    old_staff_field = staff_field_map.get(old_staff_type)
+
+    if old_staff_field and old_team_id:
+        await db.db[TEAMS_COLLECTION].update_one(
+            {"_id": ObjectId(str(old_team_id))},
+            {"$set": {old_staff_field: None}},
+        )
+
     await db.db[STAFF_COLLECTION].delete_one({"_id": ObjectId(staff_id)})
 
 
@@ -249,6 +294,7 @@ async def create_staff_admin(
         "place_of_birth": place_of_birth,
         "fiscal_number": fiscal_number,
         "staff_type": staff_type,
+        "team": team_id,
         **file_dict,
     }
     result = await db.db[STAFF_COLLECTION].insert_one(staff_dict)
