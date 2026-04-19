@@ -81,7 +81,7 @@ const { timeLeft, isOpen } = useRegistrationDeadline();
   align-items: center;
   justify-content: center;
   padding: 2rem 1rem;
-  background: var(--bg-surface);
+  background: var(--color-stone-50);
 }
 
 .hero {
@@ -92,8 +92,8 @@ const { timeLeft, isOpen } = useRegistrationDeadline();
 .hero-badge {
   display: inline-block;
   padding: 4px 12px;
-  background: var(--primary-light);
-  color: var(--primary-dark);
+  background: var(--color-orange-50);
+  color: var(--color-orange-700);
   border-radius: 50px;
   font-size: 0.6875rem;
   font-weight: 600;
@@ -105,14 +105,14 @@ const { timeLeft, isOpen } = useRegistrationDeadline();
 .hero h1 {
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--color-stone-900);
   margin: 0 0 0.5rem 0;
   line-height: 1.2;
 }
 
 .subtitle {
   font-size: 0.9375rem;
-  color: var(--text-muted);
+  color: var(--color-stone-500);
   margin: 0;
 }
 
@@ -127,7 +127,7 @@ const { timeLeft, isOpen } = useRegistrationDeadline();
 
 .info-card {
   background: white;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--color-stone-200);
   border-radius: 16px;
   padding: 1.5rem;
   text-align: center;
@@ -142,22 +142,22 @@ const { timeLeft, isOpen } = useRegistrationDeadline();
 .info-card h3 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--bg-hover);
+  color: var(--color-stone-800);
   margin: 0 0 0.5rem 0;
 }
 
 .deadline {
   font-size: 0.875rem;
-  color: var(--text-muted);
+  color: var(--color-stone-500);
   margin: 0 0 1.25rem 0;
 }
 
 .deadline strong {
-  color: var(--primary);
+  color: var(--color-orange-500);
 }
 
 .welcome-text {
-  color: var(--text-muted);
+  color: var(--color-stone-500);
   font-size: 0.9375rem;
   margin: 0;
   line-height: 1.5;
@@ -174,7 +174,7 @@ const { timeLeft, isOpen } = useRegistrationDeadline();
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: var(--bg-surface);
+  background: var(--color-stone-50);
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   min-width: 60px;
@@ -183,13 +183,13 @@ const { timeLeft, isOpen } = useRegistrationDeadline();
 .countdown-value {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--color-stone-900);
   font-variant-numeric: tabular-nums;
 }
 
 .countdown-label {
   font-size: 0.625rem;
-  color: var(--text-muted);
+  color: var(--color-stone-500);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -216,7 +216,7 @@ const { timeLeft, isOpen } = useRegistrationDeadline();
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  color: var(--text-muted);
+  color: var(--color-stone-500);
   font-size: 0.8125rem;
 }
 

@@ -1,6 +1,7 @@
+import secrets
 from typing import List, Optional
 from bson import ObjectId
-from fastapi import APIRouter, Form, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, Form, UploadFile, File, HTTPException, Depends, Query
 from database import (
     db,
     TEAMS_COLLECTION,
@@ -27,7 +28,7 @@ from app.constants import (
     AGE_FOR_ENROLLMENT,
     AGE_REQUIRES_AUTHORIZATION,
 )
-from app.utils import calculate_age, get_logger, sanitize_for_serialization
+from app.utils import calculate_age, get_logger, sanitize_for_serialization, upload_single_file
 from app.utils.auth import get_current_user, require_manage_players
 from datetime import datetime
 import json
@@ -51,6 +52,7 @@ def team_to_dto(team: dict) -> TeamDto:
         physiotherapist=clean["physiotherapist"],
         first_deputy=clean["first_deputy"],
         second_deputy=clean.get("second_deputy"),
+        cancel_token=clean.get("cancel_token"),
     )
 
 
@@ -112,21 +114,6 @@ async def process_files(files: List[UploadFile]) -> dict[str, str]:
         file_id = await db.upload_file(filename, content_type, content)
         file_dict[filename] = file_id
     return file_dict
-
-
-async def upload_single_file(
-    file: UploadFile,
-    filename: str,
-) -> str:
-    """Upload a single file with size validation."""
-    content = await file.read()
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"O ficheiro '{file.filename}' excede o limite de 5MB",
-        )
-    content_type = file.content_type or "application/octet-stream"
-    return await db.upload_file(filename, content_type, content)
 
 
 async def create_staff_member(
@@ -407,6 +394,8 @@ async def register_team_start(data: RegisterTeamStartDto):
     get_logger().info(f"Starting team registration for '{data.name}'")
     await get_tournament(data.tournament)
 
+    cancel_token = secrets.token_hex(16)
+
     team_data = {
         "tournament": ObjectId(data.tournament),
         "name": data.name,
@@ -420,6 +409,7 @@ async def register_team_start(data: RegisterTeamStartDto):
         "second_deputy": None,
         "valid": False,
         "registration_status": "in_progress",
+        "cancel_token": cancel_token,
     }
 
     result = await db.db[TEAMS_COLLECTION].insert_one(team_data)
@@ -638,11 +628,12 @@ async def register_complete(data: RegisterTeamCompleteDto):
 
 
 @router.delete("/register/{team_id}", status_code=204)
-async def cancel_registration(team_id: str):
+async def cancel_registration(team_id: str, cancel_token: str = Query(...)):
     """
     Cancel a team registration and delete all associated records.
 
-    Used to cleanup if the user abandons the registration process.
+    Requires the cancel_token returned by POST /register/start to prevent
+    unauthenticated users from deleting arbitrary registrations (OWASP A01).
     """
     try:
         team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(team_id)})
@@ -650,6 +641,12 @@ async def cancel_registration(team_id: str):
         raise Error.invalid_id("team")
     if not team:
         raise Error.not_found("Team")
+
+    stored_token = team.get("cancel_token")
+    if not stored_token or not secrets.compare_digest(cancel_token, stored_token):
+        raise HTTPException(
+            status_code=403, detail={"error": "Token de cancelamento inválido"}
+        )
 
     player_ids = team.get("players", [])
     if player_ids:

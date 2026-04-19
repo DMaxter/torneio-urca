@@ -14,13 +14,15 @@ REQUEST_ID: ContextVar[str] = ContextVar("request_id", default="no-request-id")
 
 
 def sanitize_for_serialization(obj):
-    """Recursively convert ObjectId to string for JSON serialization."""
+    """Recursively convert ObjectId and datetime to JSON-safe types."""
     if isinstance(obj, dict):
         return {k: sanitize_for_serialization(v) for k, v in obj.items()}
     elif isinstance(obj, list):
         return [sanitize_for_serialization(item) for item in obj]
     elif isinstance(obj, ObjectId):
         return str(obj)
+    elif isinstance(obj, datetime):
+        return obj.isoformat()
     return obj
 
 

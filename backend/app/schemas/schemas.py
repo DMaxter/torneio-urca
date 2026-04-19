@@ -130,6 +130,7 @@ class TeamDto(BaseModel):
     physiotherapist: Optional[str] = None
     first_deputy: Optional[str] = None
     second_deputy: Optional[str] = None
+    cancel_token: Optional[str] = None
 
 
 class TournamentDto(BaseModel):

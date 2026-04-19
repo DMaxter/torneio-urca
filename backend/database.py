@@ -1,5 +1,5 @@
 from typing import Any, Optional
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 from pymongo import AsyncMongoClient
 from gridfs.asynchronous import AsyncGridFS
@@ -98,7 +98,7 @@ class Database:
             file_data,
             filename=filename,
             content_type=content_type,
-            upload_date=datetime.utcnow(),
+            upload_date=datetime.now(timezone.utc),
         )
         return str(file_id)
 

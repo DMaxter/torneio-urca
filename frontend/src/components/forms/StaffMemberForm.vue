@@ -38,7 +38,7 @@ function handleFileError(message: string) {
 
 <style lang="scss" scoped>
 fieldset {
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--color-stone-200);
   padding: 10px;
   margin-top: 15px;
   border-radius: 4px;

@@ -126,7 +126,7 @@ const saving = ref(false);
 const staffForm = reactive({
   team_id: null as string | null,
   tournament_id: null as string | null,
-  staff_type: "Coach",
+  staff_type: "Coach" as NonNullable<CreateAdminStaff["staff_type"]>,
   enabled: true,
   data: {
     name: "",

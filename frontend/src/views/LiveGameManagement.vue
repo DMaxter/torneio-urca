@@ -263,7 +263,7 @@
             <label class="block text-sm font-medium text-stone-700 mb-2">Tipo de Golo</label>
             <div class="flex gap-2">
               <P-Button
-                :label="`Golo (${getTeamName(selectedTeam)})`"
+                :label="`Golo (${getTeamName(selectedTeam || '')})`"
                 :severity="selectedGoalType === 'regular' ? 'success' : 'secondary'"
                 class="flex-1"
                 @click="selectedGoalType = 'regular'"
@@ -542,9 +542,12 @@ import { useStaffStore } from "@stores/staff";
 import * as gameService from "@router/backend/services/game";
 import type { Game, GameEvent } from "@router/backend/services/game/types";
 import { GameStatus } from "@router/backend/services/game/types";
-import type { CardType } from "@router/backend/services/game/types";
+import type { CardType, AssignCardDto, AssignFoulDto, AssignPenaltyDto, FoulEvent } from "@router/backend/services/game/types";
 import { useApiErrorToast } from "@/composables/useApiErrorToast";
 import { getStaffTypeLabel } from "@/utils";
+import { useGameHelpers } from "@/composables/useGameHelpers";
+import { useGameScore } from "@/composables/useGameScore";
+import { useGameEvents } from "@/composables/useGameEvents";
 
 const router = useRouter();
 const route = useRoute();
@@ -564,7 +567,7 @@ const saving = ref(false);
 const eventDialogVisible = ref(false);
 const selectedTeam = ref<string | null>(null);
 const eventTeam = ref<string | null>(null);
-const eventType = ref<'goal' | 'card' | 'foul' | null>(null);
+const eventType = ref<'goal' | 'card' | 'foul' | 'penalty' | null>(null);
 const playerNumber = ref<number | null>(null);
 const cardType = ref<CardType>('Yellow');
 const cardTarget = ref<'player' | 'staff'>('player');
@@ -582,6 +585,9 @@ const adjustClockDialogVisible = ref(false);
 const adjMinute = ref(0);
 const adjSecond = ref(0);
 
+const { getTeamName } = useGameHelpers(game, computed(() => tournamentStore.tournaments.find(t => t.id === game.value?.tournament)?.teams || []));
+const { totalScore, getPenaltiesScore } = useGameScore(game);
+const { getEventIcon, getEventDescription, getEventTime, getEventTeam } = useGameEvents(game);
 
 const eventDialogTitle = computed(() => {
   if (!eventType.value || !eventTeam.value) return '';
@@ -601,29 +607,8 @@ const eventDialogTitle = computed(() => {
 const homeTeamId = computed(() => game.value?.home_call?.team || '');
 const awayTeamId = computed(() => game.value?.away_call?.team || '');
 
-const homeScore = computed(() => {
-  if (!game.value) return 0;
-  const homeName = getTeamName(homeTeamId.value);
-  return events.value.filter(e => {
-    if ('Goal' in e) {
-      const goal = (e as { Goal: { team_name: string } }).Goal;
-      return goal.team_name === homeName;
-    }
-    return false;
-  }).length;
-});
-
-const awayScore = computed(() => {
-  if (!game.value) return 0;
-  const awayName = getTeamName(awayTeamId.value);
-  return events.value.filter(e => {
-    if ('Goal' in e) {
-      const goal = (e as { Goal: { team_name: string } }).Goal;
-      return goal.team_name === awayName;
-    }
-    return false;
-  }).length;
-});
+const homeScore = computed(() => totalScore.value.home);
+const awayScore = computed(() => totalScore.value.away);
 
 function countFouls(teamId: string, currentPeriod: number) {
   if (!game.value) return 0;
@@ -657,29 +642,8 @@ const awayFoulLimitReached = computed(() => awayFouls.value >= 5);
 
 const isShootout = computed(() => game.value?.current_period === 5);
 
-const homePenaltyScore = computed(() => {
-  if (!game.value) return 0;
-  const homeName = getTeamName(homeTeamId.value);
-  return events.value.filter(e => {
-    if ('Penalty' in e) {
-      const p = (e as { Penalty: { team_name: string; scored: boolean } }).Penalty;
-      return p.team_name === homeName && p.scored;
-    }
-    return false;
-  }).length;
-});
-
-const awayPenaltyScore = computed(() => {
-  if (!game.value) return 0;
-  const awayName = getTeamName(awayTeamId.value);
-  return events.value.filter(e => {
-    if ('Penalty' in e) {
-      const p = (e as { Penalty: { team_name: string; scored: boolean } }).Penalty;
-      return p.team_name === awayName && p.scored;
-    }
-    return false;
-  }).length;
-});
+const homePenaltyScore = computed(() => getPenaltiesScore().home);
+const awayPenaltyScore = computed(() => getPenaltiesScore().away);
 
 const homePenalties = computed(() => {
   if (!game.value) return [];
@@ -860,12 +824,6 @@ function getTournamentName(id: string): string {
   return t ? t.name : id;
 }
 
-function getTeamName(id?: string | null): string {
-  if (!id) return '';
-  const team = teamStore.teams.find(t => t.id === id);
-  return team ? team.name : id;
-}
-
 function getPhaseLabel(phase: string): string {
   const labels: Record<string, string> = {
     group: 'Grupo',
@@ -922,94 +880,6 @@ function getEventBorderClass(event: GameEvent): string {
   }
   if ('Manual' in event) {
     return 'border-stone-200 bg-stone-50';
-  }
-  return '';
-
-}
-
-function getEventIcon(event: GameEvent): string {
-  if ('Goal' in event) {
-    const goal = (event as { Goal: { own_goal: boolean } }).Goal;
-    return goal.own_goal ? '🥅' : '⚽';
-  }
-  if ('Penalty' in event) {
-    const p = (event as { Penalty: { scored: boolean } }).Penalty;
-    return p.scored ? '✅' : '❌';
-  }
-  if ('Foul' in event) {
-    const foul = (event as { Foul: { card: string | null } }).Foul;
-    if (foul.card === null || foul.card === undefined) {
-      return '⚠️';
-    }
-    return foul.card === 'Yellow' ? '🟨' : '🟥';
-  }
-  if ('PeriodStart' in event) {
-    return '▶️';
-  }
-  if ('PeriodResume' in event) {
-    return '▶️';
-  }
-  if ('PeriodEnd' in event) {
-    return '⏹️';
-  }
-  if ('PeriodPause' in event) {
-    return '⏸️';
-  }
-  if ('Manual' in event) {
-    return '📝';
-  }
-  return '';
-
-}
-
-function getEventDescription(event: GameEvent): string {
-  if ('Goal' in event) {
-    const goal = (event as { Goal: { own_goal: boolean; own_goal_committed_by?: string; player_name?: string } }).Goal;
-    if (goal.own_goal) {
-      const committedBy = goal.own_goal_committed_by || 'Equipa adversária';
-      return `Auto-golo de ${committedBy}`;
-    }
-    const name = goal.player_name || 'Jogador desconhecido';
-    return `Golo de ${name}`;
-  }
-  if ('Penalty' in event) {
-    const p = (event as { Penalty: { scored: boolean; player_name: string } }).Penalty;
-    const action = p.scored ? 'marcou' : 'falhou';
-    return `${p.player_name} ${action} penalti`;
-  }
-  if ('Foul' in event) {
-    const foul = (event as { Foul: FoulEvent }).Foul;
-    const displayName = foul.staff_name || foul.player_name || 'Desconhecido';
-
-    if (foul.card === null || foul.card === undefined) {
-      const suffix = foul.is_direct_free_kick ? ' (Livre Direto)' : '';
-      return `${displayName} - Falta${suffix}`;
-    }
-    const cardText = foul.card === 'Yellow' ? 'Amarelo' : 'Vermelho';
-    return `${displayName} - Cartão ${cardText}`;
-  }
-  if ('PeriodStart' in event) {
-    const ps = (event as { PeriodStart: { period: number } }).PeriodStart;
-    const isOvertime = ps.period >= 3 && ps.period <= 4;
-    return isOvertime ? `Início do Prolongamento (${ps.period}º)` : `Início do ${ps.period}º Período`;
-  }
-  if ('PeriodResume' in event) {
-    const pr = (event as { PeriodResume: { period: number } }).PeriodResume;
-    const isOvertime = pr.period >= 3 && pr.period <= 4;
-    return isOvertime ? `Retoma do Prolongamento (${pr.period}º)` : `Retoma do ${pr.period}º Período`;
-  }
-  if ('PeriodEnd' in event) {
-    const pe = (event as { PeriodEnd: { period: number } }).PeriodEnd;
-    const isOvertime = pe.period >= 3 && pe.period <= 4;
-    return isOvertime ? `Fim do Prolongamento (${pe.period}º)` : `Fim do ${pe.period}º Período`;
-  }
-  if ('PeriodPause' in event) {
-    const pp = (event as { PeriodPause: { period: number } }).PeriodPause;
-    const isOvertime = pp.period >= 3 && pp.period <= 4;
-    return isOvertime ? `Pausa no Prolongamento (${pp.period}º)` : `Pausa no ${pp.period}º Período`;
-  }
-  if ('Manual' in event) {
-    return (event as { Manual: { description: string } }).Manual.description;
   }
   return '';
 
@@ -1078,36 +948,7 @@ function getEventTimeDisplay(event: GameEvent): string {
     return `P${pr.period}`;
   }
 
-  let minute = 0;
-  let second = 0;
-  if ('Goal' in event) {
-    const goal = (event as { Goal: { minute: number; second?: number } }).Goal;
-    minute = goal.minute || 0;
-    second = goal.second !== undefined ? goal.second : 0;
-  } else if ('Foul' in event) {
-    const foul = (event as { Foul: { minute: number; second?: number } }).Foul;
-    minute = foul.minute || 0;
-    second = foul.second !== undefined ? foul.second : 0;
-  } else if ('Manual' in event) {
-    const manual = (event as { Manual: { minute: number; second?: number } }).Manual;
-    minute = manual.minute || 0;
-    second = manual.second !== undefined ? manual.second : 0;
-  }
-
-  let maxMinute = 0;
-  if (period >= 1 && period <= 2) maxMinute = 20;
-  else if (period >= 3 && period <= 4) maxMinute = 5;
-
-  let timeStr = '';
-  if (minute === 0) {
-    timeStr = `${second}"`;
-  } else if (minute === maxMinute) {
-    timeStr = `${minute}'${second}"`;
-  } else {
-    timeStr = `${minute}'`;
-  }
-
-  return `${timeStr} (P${period})`;
+  return `${getEventTime(event)} (P${period})`;
 }
 
 function getEventTimestamp(event: GameEvent): number {
@@ -1164,7 +1005,7 @@ function getEventMetadata(event: GameEvent): string {
   if ('PeriodStart' in event || 'PeriodEnd' in event || 'PeriodPause' in event || 'PeriodResume' in event) {
     return '';
   }
-  const teamName = getEventTeamName(event);
+  const teamName = getEventTeam(event);
   const periodLabel = getEventPeriodLabel(event);
   if (teamName && periodLabel) {
     return `${teamName} - ${periodLabel}`;
@@ -1178,22 +1019,6 @@ const sortedEventsWithIndex = computed(() => {
     return getEventTimestamp(b.event) - getEventTimestamp(a.event);
   });
 });
-
-function getEventTeamName(event: GameEvent): string {
-  if ('Goal' in event) {
-    const goal = (event as { Goal: { team_name: string } }).Goal;
-    return goal.team_name;
-  }
-  if ('Penalty' in event) {
-    const p = (event as { Penalty: { team_name: string } }).Penalty;
-    return p.team_name;
-  }
-  if ('Foul' in event) {
-    const foul = (event as { Foul: { team_name: string } }).Foul;
-    return foul.team_name;
-  }
-  return '';
-}
 
 function openEventDialog(teamId: string | undefined, type: 'goal' | 'card' | 'foul' | 'penalty') {
   if (!teamId) return;

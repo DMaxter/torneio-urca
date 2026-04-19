@@ -1,15 +1,18 @@
 import logging
 import traceback
 import uuid
+import os
+import pathlib
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.exceptions import RequestValidationError
-from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.errors import RateLimitExceeded
 from database import db
-from app.routes.auth import router as auth_router
+from app.routes.auth import router as auth_router, limiter
 from app.routes.user import router as user_router, create_default_admin
 from app.routes.player import router as player_router
 from app.routes.tournament import router as tournament_router
@@ -59,6 +62,25 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """
+    Attach OWASP-recommended security response headers to every response (A05).
+
+    - X-Content-Type-Options: prevents MIME-type sniffing
+    - X-Frame-Options: prevents clickjacking
+    - Referrer-Policy: limits referrer information sent cross-origin
+    - X-XSS-Protection: enables legacy XSS filter in older browsers
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting up...")
@@ -81,9 +103,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SecurityHeadersMiddleware)
 
 api_router = FastAPI()
 api_router.add_middleware(RequestIDMiddleware)
+
+# Attach slowapi rate-limiter state (used by @limiter.limit decorators in routes)
+api_router.state.limiter = limiter
+api_router.add_middleware(SlowAPIMiddleware)
+
+
+@api_router.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    """Return a user-friendly 429 when the login rate limit is exceeded (OWASP A04)."""
+    return JSONResponse(
+        status_code=429,
+        content={"error": "Demasiadas tentativas. Tente novamente mais tarde."},
+    )
 
 
 @api_router.exception_handler(HTTPException)
@@ -98,9 +134,13 @@ async def api_http_exception_handler(request: Request, exc: HTTPException):
 async def api_validation_exception_handler(
     request: Request, exc: RequestValidationError
 ):
+    """
+    Return a sanitised validation error — do not expose Pydantic schema internals
+    to the client (OWASP A05: Security Misconfiguration).
+    """
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"error": str(exc.errors())},
+        content={"error": "Dados inválidos. Verifique os campos enviados."},
     )
 
 
@@ -132,18 +172,25 @@ api_router.include_router(prizes_router)
 
 app.mount("/api", api_router)
 
-# Serve static frontend if the directory exists, otherwise skip
-import os
+# ---------------------------------------------------------------------------
+# Static SPA serving — path-traversal protected (OWASP A01)
+# ---------------------------------------------------------------------------
+_static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+_static_path = pathlib.Path(_static_dir).resolve()
 
-static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
-if os.path.isdir(static_dir):
+if _static_path.is_dir():
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
-        file_path = os.path.join(static_dir, full_path)
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
-        return FileResponse(os.path.join(static_dir, "index.html"))
+        resolved = (_static_path / full_path).resolve()
+        try:
+            # Reject any path that escapes the static root
+            resolved.relative_to(_static_path)
+        except ValueError:
+            return FileResponse(str(_static_path / "index.html"))
+        if resolved.is_file():
+            return FileResponse(str(resolved))
+        return FileResponse(str(_static_path / "index.html"))
 
 
 @app.get("/")

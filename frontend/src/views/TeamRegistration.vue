@@ -221,6 +221,7 @@ interface PlayerFormData {
   is_federated: boolean;
   federation_team: string;
   federation_exams_up_to_date: boolean;
+  is_goalkeeper: boolean;
 }
 
 interface PlayerFiles {
@@ -316,7 +317,8 @@ function createEmptyPlayer(): PlayerFormData {
     fiscal_number: "",
     is_federated: false,
     federation_team: "",
-    federation_exams_up_to_date: false
+    federation_exams_up_to_date: false,
+    is_goalkeeper: false
   };
 }
 
@@ -577,7 +579,7 @@ async function submit() {
   width: 100%;
   max-width: 90%;
   margin: 0 auto;
-  background: var(--bg-surface);
+  background: var(--color-stone-50);
 }
 
 @media (min-width: 640px) {
@@ -608,19 +610,19 @@ async function submit() {
 .registration-header h1 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--text-dark);
+  color: var(--color-stone-900);
   margin: 0 0 0.25rem 0;
 }
 
 .registration-header p {
-  color: var(--text-muted);
+  color: var(--color-stone-500);
   margin: 0;
   font-size: 0.875rem;
 }
 
 .form-card {
   background: white;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--color-stone-200);
   border-radius: 12px;
   padding: 1rem;
   width: 100%;
@@ -658,14 +660,14 @@ async function submit() {
   display: block;
   margin-top: 0.5rem;
   font-size: 0.875rem;
-  color: var(--text-muted);
+  color: var(--color-stone-500);
   text-align: center;
 }
 
 .step-content h2 {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-dark);
+  color: var(--color-stone-900);
   margin: 0 0 0.75rem 0;
 }
 
@@ -683,7 +685,7 @@ async function submit() {
 }
 
 .optional-note {
-  color: var(--text-muted);
+  color: var(--color-stone-500);
   font-size: 0.75rem;
   margin: -0.5rem 0 0.75rem 0;
 }
@@ -720,7 +722,7 @@ async function submit() {
   margin-bottom: 0.75rem;
   padding: 1rem;
   background: var(--p-surface-50);
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--color-stone-200);
   border-radius: 8px;
 }
 
@@ -741,7 +743,7 @@ async function submit() {
   align-items: center;
   gap: 0.5rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-light);
+  border-top: 1px solid var(--color-stone-200);
 }
 
 .navigation :deep(.p-button) {
@@ -840,7 +842,7 @@ async function submit() {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-muted);
+  color: var(--color-stone-500);
   padding: 0 0.25rem;
   vertical-align: middle;
   display: inline-flex;

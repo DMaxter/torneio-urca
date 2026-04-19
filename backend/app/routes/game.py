@@ -1,7 +1,7 @@
 from typing import List, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends
-from datetime import datetime
+from datetime import datetime, timezone
 from database import (
     db,
     GAMES_COLLECTION,
@@ -35,6 +35,7 @@ from app.utils.auth import (
 from app.schemas.schemas import UserRoles
 from fastapi import HTTPException, status
 from app.utils import get_logger, sanitize_for_serialization
+from app.utils.game_events import get_game_calls_for_team, resolve_player_from_call
 
 router = APIRouter(prefix="/games", tags=["Games"])
 
@@ -96,18 +97,6 @@ def game_call_to_dto(call: dict) -> GameCallDto:
         deputy=str(call.get("deputy")) if call.get("deputy") else None,
     )
 
-
-def sanitize_for_serialization(obj):
-    """Recursively convert ObjectId and datetime to JSON-safe types."""
-    if isinstance(obj, dict):
-        return {k: sanitize_for_serialization(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [sanitize_for_serialization(item) for item in obj]
-    elif isinstance(obj, ObjectId):
-        return str(obj)
-    elif isinstance(obj, datetime):
-        return obj.isoformat()
-    return obj
 
 
 def game_to_dto(game: dict, home_call: dict | None, away_call: dict | None) -> GameDto:
@@ -610,13 +599,13 @@ async def update_game_status(
     game["status"] = new_status
 
     if new_status == GameStatus.InProgress:
-        game["start_date"] = datetime.utcnow()
+        game["start_date"] = datetime.now(timezone.utc)
         await db.db[GAMES_COLLECTION].update_one(
             {"_id": game["_id"]}, {"$set": {"start_date": game["start_date"]}}
         )
 
     if new_status == GameStatus.Finished:
-        game["finish_date"] = datetime.utcnow()
+        game["finish_date"] = datetime.now(timezone.utc)
         await db.db[GAMES_COLLECTION].update_one(
             {"_id": game["_id"]}, {"$set": {"finish_date": game["finish_date"]}}
         )
@@ -729,7 +718,7 @@ async def update_period(
         raise Error.bad_request("O jogo não está em progresso")
 
     updates = {}
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     current_period = game.get("current_period", 0)
     period_elapsed_seconds = game.get("period_elapsed_seconds", 0)
     timer_active = game.get("timer_active", False)
@@ -951,9 +940,12 @@ async def add_manual_game_event(
 
     # Calculate current elapsed seconds
     current_elapsed = game.get("period_elapsed_seconds", 0)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if game.get("timer_active") and game.get("timer_started_at"):
-        active_elapsed = int((now - game["timer_started_at"]).total_seconds())
+        started = game["timer_started_at"]
+        if started.tzinfo is None:
+            started = started.replace(tzinfo=timezone.utc)
+        active_elapsed = int((now - started).total_seconds())
         current_elapsed += active_elapsed
 
     current_minute = int(current_elapsed // 60)
@@ -1111,49 +1103,20 @@ async def assign_penalty(
     if game.get("status") != GameStatus.InProgress:
         raise Error.bad_request("O jogo não está em progresso")
 
-    # Find player in the game call
-    game_calls = (
-        await db.db["game_calls"]
-        .find({"_id": {"$in": [game.get("home_call"), game.get("away_call")]}})
-        .to_list(2)
+    game_id_pending = game_id  # alias for readability
+    team_call, _ = await get_game_calls_for_team(game, body.team)
+    player_id_raw, player_name = await resolve_player_from_call(
+        team_call, body.player_number
     )
-
-    if len(game_calls) != 2:
-        raise Error.game_calls_not_delivered()
-
-    # Find the specific team's call
-    team_call = None
-    for call in game_calls:
-        if str(call.get("team")) == body.team:
-            team_call = call
-            break
-
-    if not team_call:
-        raise Error.bad_request("Chamada de jogo não encontrada para a equipa")
-
-    # Find player by number
-    player_id = None
-    for p in team_call.get("players", []):
-        if p.get("number") == body.player_number:
-            player_id = p.get("player")
-            break
-
-    if not player_id:
-        raise Error.bad_request(
-            f"Jogador com número {body.player_number} não encontrado na chamada"
-        )
-
-    player = await db.db["players"].find_one({"_id": player_id})
-    player_name = player["name"] if player else "Desconhecido"
 
     # Find team name
     team = await db.db["teams"].find_one({"_id": ObjectId(body.team)})
     team_name = team["name"] if team else "Equipa desconhecida"
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     penalty_event = {
         "Penalty": {
-            "player_id": str(player_id),
+            "player_id": str(player_id_raw),
             "player_name": player_name,
             "player_number": body.player_number,
             "team_id": body.team,

@@ -51,7 +51,7 @@ const menuOpen = ref(false);
 
 <style scoped>
 .topbar {
-  background: var(--bg-dark);
+  background: var(--color-stone-900);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -74,7 +74,7 @@ const menuOpen = ref(false);
   font-weight: 700;
   font-size: 1rem;
   text-decoration: none;
-  color: var(--primary);
+  color: var(--color-orange-500);
 }
 
 .logo-icon {
@@ -99,7 +99,7 @@ const menuOpen = ref(false);
 .menu-icon span {
   display: block;
   height: 2px;
-  background: var(--text-light);
+  background: var(--color-stone-300);
   border-radius: 2px;
   transition: all 0.2s ease;
 }
@@ -128,16 +128,16 @@ const menuOpen = ref(false);
   text-decoration: none;
   font-weight: 500;
   font-size: 0.875rem;
-  color: var(--text-light);
+  color: var(--color-stone-300);
   white-space: nowrap;
   border-bottom: 2px solid transparent;
   transition: color 0.15s ease;
 }
 
 .nav-link.router-link-active {
-  color: var(--primary);
-  border-bottom-color: var(--primary);
-  background: var(--bg-hover);
+  color: var(--color-orange-500);
+  border-bottom-color: var(--color-orange-500);
+  background: var(--color-stone-800);
 }
 
   .cta-link,
@@ -173,8 +173,8 @@ const menuOpen = ref(false);
     left: 0.75rem;
     right: 0.75rem;
     flex-direction: column;
-    background: var(--bg-dark);
-    border: 1px solid var(--bg-hover);
+    background: var(--color-stone-900);
+    border: 1px solid var(--color-stone-800);
     border-radius: 8px;
     padding: 0.5rem 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -188,15 +188,15 @@ const menuOpen = ref(false);
     padding: 1rem 1.25rem;
     border-radius: 6px;
     font-size: 1rem;
-    color: var(--text-light);
+    color: var(--color-stone-300);
     margin: 0 0.5rem;
     border-bottom: 2px solid transparent;
   }
 
   .nav-link.router-link-active {
-    color: var(--primary);
-    border-bottom-color: var(--primary);
-    background: var(--bg-hover);
+    color: var(--color-orange-500);
+    border-bottom-color: var(--color-orange-500);
+    background: var(--color-stone-800);
   }
 
   .cta-link,

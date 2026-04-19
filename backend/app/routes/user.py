@@ -13,12 +13,11 @@ from app.schemas.schemas import (
     UserRoles,
 )
 from app.error import Error
-from app.utils.auth import get_current_user, get_admin_user
+from app.utils.auth import get_current_user, get_admin_user, ADMIN_USERNAME
 from app.utils import get_logger
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
 
 

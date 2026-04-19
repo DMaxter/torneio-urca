@@ -2,17 +2,19 @@ from pydantic import BaseModel
 import jwt
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, status, Response, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from database import db, USERS_COLLECTION
 from app.routes.user import verify_password
 from app.config import get_settings
-from app.utils import get_logger, decode_token
+from app.utils import get_logger, decode_token, ALGORITHM
+from app.utils.auth import COOKIE_NAME
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 settings = get_settings()
+limiter = Limiter(key_func=get_remote_address)
 
-ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
-COOKIE_NAME = "auth_token"
 
 
 class LoginDto(BaseModel):
@@ -33,7 +35,7 @@ class CurrentUserDto(BaseModel):
 def create_access_token(data: dict) -> str:
     """
     Generate a JWT access token encoding the provided payload along with an expiration time.
-    
+
     Args:
         data: The dictionary payload intended for the token.
               Should include 'sub' for the username and 'user_id'.
@@ -47,15 +49,18 @@ def create_access_token(data: dict) -> str:
 
 
 @router.post("/login", response_model=TokenDto)
-async def login(credentials: LoginDto, response: Response):
+@limiter.limit("5/minute")
+async def login(credentials: LoginDto, response: Response, request: Request):
     """
     Authenticate a user using their username and password.
-    
-    Upon successful authentication, a JWT is generated and set securely as an HTTP-only 
+
+    Rate-limited to 5 attempts per minute per IP to prevent brute-force attacks.
+    Upon successful authentication, a JWT is generated and set securely as an HTTP-only
     cookie. In a production environment, the cookie will be flagged as secure and same-site.
-    
+
     Raises:
         HTTPException(401) on invalid credentials.
+        HTTPException(429) when rate limit is exceeded.
     """
     get_logger().info(f"Login attempt for user '{credentials.username}'")
     user = await db.db[USERS_COLLECTION].find_one({"username": credentials.username})

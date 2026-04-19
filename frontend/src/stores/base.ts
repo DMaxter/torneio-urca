@@ -105,11 +105,13 @@ export function createGenericStore<T extends Entity, C extends CreateEntity, E =
         add(response.data as T);
         return { success: true, content: null, entity: response.data as T };
       } else {
-        return { success: false, content: ((response.data as unknown) as Error).message, status: response.status, entity: null };
+        return { success: false, content: ((response.data as unknown) as Error).message, status: response.status, entity: undefined };
       }
-    } catch (error) {
-      const _error = error as AxiosError<string>;
-      return { success: false, status: _error.response?.status, content: null, entity: null };
+    } catch (_error: any) {
+      if (_error.response) {
+        return { success: false, status: _error.response?.status, content: null, entity: undefined };
+      }
+      return { success: false, status: 500, content: "Unknown error", entity: undefined };
     }
   }
 

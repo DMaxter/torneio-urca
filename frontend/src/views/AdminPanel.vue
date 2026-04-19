@@ -46,7 +46,7 @@
     <GameList v-if="listGames" v-model="listGames" />
     <GameManagement v-if="manageGame" v-model="manageGame" />
     <GameManagementDialog v-if="manageGames" v-model="manageGames" />
-    <GroupList v-if="listGroups" v-model="listGroups" @edit-group="(group) => { selectedGroup = group; manageGroup = true; }" />
+    <GroupList v-if="listGroups" v-model="listGroups" @edit-group="(group: Group) => { selectedGroup = group; manageGroup = true; }" />
     <GroupManagement v-if="manageGroup" v-model="manageGroup" :group="selectedGroup" />
     <GenerateGroupsDialog v-if="generateGroups" v-model="generateGroups" />
     <GroupView v-if="viewGroups" v-model="viewGroups" />
@@ -207,7 +207,7 @@ const sections: Section[] = [
     transition: all 0.2s ease;
   }
   .admin-card:hover {
-    border-color: var(--border-warning);
+    border-color: var(--color-orange-200);
     box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     transform: translateY(-2px);
   }

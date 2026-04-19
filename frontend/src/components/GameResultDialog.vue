@@ -129,6 +129,9 @@ import { useTeamStore } from "@stores/teams";
 import { useTournamentStore } from "@stores/tournaments";
 import { useGameStore } from "@stores/games";
 import { useDateFormatter } from "@/composables/useDateFormatter";
+import { useGameHelpers } from "@/composables/useGameHelpers";
+import { useGameScore } from "@/composables/useGameScore";
+import { useGameEvents } from "@/composables/useGameEvents";
 import { GameStatus, type Game, type GameEvent } from "@router/backend/services/game/types";
 import * as gameService from "@router/backend/services/game";
 
@@ -137,7 +140,6 @@ const props = defineProps<{
   game: Game | null;
 }>();
 
-const teamStore = useTeamStore();
 const tournamentStore = useTournamentStore();
 const gameStore = useGameStore();
 const { formatDateTime } = useDateFormatter();
@@ -149,6 +151,10 @@ let refreshInterval: number | undefined;
 
 // Use localGame if available (has full details), otherwise use props.game
 const game = computed(() => localGame.value || props.game);
+
+const { getTeamName } = useGameHelpers(game, computed(() => tournamentStore.tournaments.find(t => t.id === game.value?.tournament)?.teams || []));
+const { displayScore, totalScore, getPenaltiesScore } = useGameScore(game);
+const { getEventIcon: getEventIconLib, getEventDescription, getEventTime, getEventTeam } = useGameEvents(game);
 
 async function refreshGame() {
   if (!props.game?.id || isRefreshing.value) return;
@@ -227,7 +233,6 @@ function isStatus(currentStatus: any, target: keyof typeof GameStatus): boolean 
   const s = String(currentStatus);
   const targetValue = GameStatus[target];
 
-  // Handle both string values and potential integer codes
   if (s === targetValue) return true;
 
   const codes: Record<string, string> = {
@@ -245,12 +250,6 @@ function isStatus(currentStatus: any, target: keyof typeof GameStatus): boolean 
 function getTournamentName(id?: string): string {
   if (!id) return '';
   return tournamentStore.tournaments.find(t => t.id === id)?.name || id;
-}
-
-function getTeamName(id?: string | null): string {
-  if (!id) return '';
-  const team = teamStore.teams.find(t => t.id === id);
-  return team ? team.name : id;
 }
 
 function getHomeDisplayName(): string {
@@ -275,55 +274,12 @@ function getPhaseLabel(phase?: string): string {
   return labels[phase] || phase;
 }
 
-// Scores calculation
-const homeScore = computed(() => {
-  if (!game.value) return 0;
-  const homeName = getHomeDisplayName();
-
-  return (game.value.events || []).filter(e => {
-    if ('Goal' in e) {
-      const goal = e.Goal;
-      // Match by team name (from placeholder or actual team name)
-      return goal.team_name === homeName;
-    }
-    return false;
-  }).length;
-});
-
-const awayScore = computed(() => {
-  if (!game.value) return 0;
-  const awayName = getAwayDisplayName();
-
-  return (game.value.events || []).filter(e => {
-    if ('Goal' in e) {
-      const goal = e.Goal;
-      return goal.team_name === awayName;
-    }
-    return false;
-  }).length;
-});
-
+const homeScore = computed(() => totalScore.value.home);
+const awayScore = computed(() => totalScore.value.away);
 const isShootout = computed(() => game.value?.current_period === 5);
+const homePenaltyScore = computed(() => getPenaltiesScore().home);
+const awayPenaltyScore = computed(() => getPenaltiesScore().away);
 
-const homePenaltyScore = computed(() => {
-  if (!game.value || !game.value.home_call) return 0;
-  const homeName = getTeamName(game.value.home_call.team);
-  return (game.value.events || []).filter(e => {
-    if ('Penalty' in e) return e.Penalty.team_name === homeName && e.Penalty.scored;
-    return false;
-  }).length;
-});
-
-const awayPenaltyScore = computed(() => {
-  if (!game.value || !game.value.away_call) return 0;
-  const awayName = getTeamName(game.value.away_call.team);
-  return (game.value.events || []).filter(e => {
-    if ('Penalty' in e) return e.Penalty.team_name === awayName && e.Penalty.scored;
-    return false;
-  }).length;
-});
-
-// Event filtering and sorting
 const importantEvents = computed(() => {
   if (!game.value) return [];
   return (game.value.events || []).filter(e =>
@@ -352,21 +308,21 @@ function getEventTimestamp(event: GameEvent): number {
 
 function getEventTimeDisplay(event: GameEvent): string {
   let period = 0;
-  let minute = 0;
-
-  if ('Goal' in event) { period = event.Goal.period; minute = event.Goal.minute; }
-  else if ('Penalty' in event) { period = event.Penalty.period; minute = event.Penalty.minute; }
-  else if ('Foul' in event) { period = event.Foul.period; minute = event.Foul.minute; }
-  else if ('PeriodStart' in event) { period = event.PeriodStart.period; return `P${period} INI`; }
-  else if ('PeriodEnd' in event) { period = event.PeriodEnd.period; return `P${period} FIM`; }
-
+  if ('Goal' in event) period = event.Goal.period;
+  else if ('Penalty' in event) period = event.Penalty.period;
+  else if ('Foul' in event) period = event.Foul.period;
+  else if ('PeriodStart' in event) return `P${event.PeriodStart.period} INI`;
+  else if ('PeriodEnd' in event) return `P${event.PeriodEnd.period} FIM`;
+  
   if (period === 5) return 'PEN';
-  return `${minute}' (P${period})`;
+  return `${getEventTime(event)} (P${period})`;
 }
 
 function getEventIcon(event: GameEvent): string {
-  if ('Goal' in event) return event.Goal.own_goal ? '🥅' : '⚽';
-  if ('Penalty' in event) return event.Penalty.scored ? '✅' : '❌';
+  const libIcon = getEventIconLib(event);
+  if (libIcon.includes('bullseye')) return ('Goal' in event && event.Goal.own_goal) ? '🥅' : '⚽';
+  if (libIcon.includes('check') || ('Penalty' in event && event.Penalty.scored)) return '✅';
+  if (libIcon.includes('times') || ('Penalty' in event && !event.Penalty.scored)) return '❌';
   if ('Foul' in event) {
     if (event.Foul.card === 'Yellow') return '🟨';
     if (event.Foul.card === 'Red') return '🟥';
@@ -377,29 +333,8 @@ function getEventIcon(event: GameEvent): string {
   return '';
 }
 
-function getEventDescription(event: GameEvent): string {
-  if ('Goal' in event) {
-    if (event.Goal.own_goal) return `Auto-golo (${event.Goal.own_goal_committed_by || 'equipa adversária'})`;
-    return `Golo de ${event.Goal.player_name || 'Jogador'}`;
-  }
-  if ('Penalty' in event) {
-    return `${event.Penalty.player_name} ${event.Penalty.scored ? 'marcou' : 'falhou'} penalti`;
-  }
-  if ('Foul' in event) {
-    const name = event.Foul.staff_name || event.Foul.player_name || 'Desconhecido';
-    if (event.Foul.card) return `${name} - Cartão ${event.Foul.card === 'Yellow' ? 'Amarelo' : 'Vermelho'}`;
-    return `${name} - Falta (Livre Direto)`;
-  }
-  if ('PeriodStart' in event) return `Início do ${event.PeriodStart.period}º Período`;
-  if ('PeriodEnd' in event) return `Final do ${event.PeriodEnd.period}º Período`;
-  return '';
-}
-
 function getEventTeamName(event: GameEvent): string {
-  if ('Goal' in event) return event.Goal.team_name;
-  if ('Penalty' in event) return event.Penalty.team_name;
-  if ('Foul' in event) return event.Foul.team_name;
-  return '';
+   return getEventTeam(event) || '';
 }
 
 function getEventDotClass(event: GameEvent): string {

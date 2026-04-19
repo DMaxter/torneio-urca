@@ -233,7 +233,7 @@ function handleFileError(message: string) {
 }
 
 fieldset {
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--color-stone-200);
   padding: 10px;
   margin-top: 15px;
   border-radius: 4px;
@@ -278,13 +278,13 @@ legend {
   position: relative;
   z-index: 1;
   background: var(--p-surface-50) !important;
-  color: #ea580c !important;
+  color: var(--color-orange-600) !important;
   border-radius: 50%;
   border: none !important;
   box-shadow: none !important;
 }
 
 .delete-btn .material-symbols-outlined {
-  color: #ea580c !important;
+  color: var(--color-orange-600) !important;
 }
 </style>

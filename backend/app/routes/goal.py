@@ -1,12 +1,17 @@
 from bson import ObjectId
 from fastapi import APIRouter, Depends
-from datetime import datetime
+from datetime import datetime, timezone
 from database import db, GOALS_COLLECTION, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import AssignGoalDto
 from app.models.models import GameStatus
 from app.error import Error
 from app.utils.auth import get_current_user
 from app.utils import get_logger
+from app.utils.game_events import (
+    get_game_calls_for_team,
+    resolve_player_from_call,
+    calculate_event_second,
+)
 from app.routes.tournament import get_tournament
 from app.routes.game import get_game, add_game_event
 from app.routes.team import get_team
@@ -35,48 +40,10 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
         get_logger().info(
             f"Looking up player by shirt number {goal.player_number} in game calls"
         )
-        game_calls = (
-            await db.db["game_calls"]
-            .find({"_id": {"$in": [game.get("home_call"), game.get("away_call")]}})
-            .to_list(2)
+        team_call, _ = await get_game_calls_for_team(game, goal.team)
+        player_id, player_name = await resolve_player_from_call(
+            team_call, goal.player_number
         )
-
-        if len(game_calls) != 2:
-            raise Error.game_calls_not_delivered()
-
-        # Build map of team_id -> call
-        team_calls = {}
-        for call in game_calls:
-            team_id = str(call.get("team"))
-            team_calls[team_id] = call
-
-        scoring_team_id = str(goal.team)
-        if scoring_team_id not in team_calls:
-            raise Error.bad_request(
-                "Chamada de jogo não encontrada para a equipa que marcou"
-            )
-
-        # Regular goal: player is from scoring team
-        team_call = team_calls[scoring_team_id]
-
-        player_found = False
-        for p in team_call.get("players", []):
-            if p.get("number") == goal.player_number:
-                player_id = p.get("player")
-                player_found = True
-                break
-
-        if not player_found or not player_id:
-            raise Error.bad_request(
-                f"Jogador com número {goal.player_number} não encontrado na chamada"
-            )
-
-        player = await db.db["players"].find_one({"_id": player_id})
-        if player:
-            player_name = player["name"]
-            player_id = str(player_id)
-        else:
-            player_id = str(player_id)
 
     get_logger().info(
         f"Recording goal for player number {goal.player_number} at minute {goal.minute}"
@@ -101,21 +68,18 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
 
         scoring_team_id = str(goal.team)
         if home_call and str(home_call.get("team")) != scoring_team_id:
-            # Opposing team is home team
             credited_team_id = str(home_call.get("team"))
             credited_team = await db.db["teams"].find_one(
                 {"_id": home_call.get("team")}
             )
             credited_team_name = credited_team["name"] if credited_team else ""
         elif away_call and str(away_call.get("team")) != scoring_team_id:
-            # Opposing team is away team
             credited_team_id = str(away_call.get("team"))
             credited_team = await db.db["teams"].find_one(
                 {"_id": away_call.get("team")}
             )
             credited_team_name = credited_team["name"] if credited_team else ""
         else:
-            # Fallback: use the team as-is
             credited_team_id = goal.team
             credited_team_name = team["name"]
             get_logger().warning(
@@ -125,16 +89,9 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
         credited_team_id = goal.team
         credited_team_name = team["name"]
 
-    # Calculate live elapsed seconds if timer is active
-    current_elapsed = game.get("period_elapsed_seconds", 0)
-    if game.get("timer_active") and game.get("timer_started_at"):
-        now_utc = datetime.utcnow()
-        # Ensure timer_started_at is compared correctly
-        active_elapsed = int((now_utc - game["timer_started_at"]).total_seconds())
-        current_elapsed += active_elapsed
+    event_second = calculate_event_second(game, goal.second)
 
-    event_second = goal.second if goal.second is not None else (current_elapsed % 60)
-
+    now = datetime.now(timezone.utc)
     goal_dict = {
         "tournament": ObjectId(goal.tournament),
         "team_id": ObjectId(credited_team_id),
@@ -147,7 +104,7 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
         "period": game.get("current_period", 0),
         "minute": goal.minute,
         "second": event_second,
-        "timestamp": datetime.utcnow(),
+        "timestamp": now,
     }
 
     result = await db.db[GOALS_COLLECTION].insert_one(goal_dict)
@@ -170,7 +127,7 @@ async def assign_goal(goal: AssignGoalDto, current_user=Depends(get_current_user
             "period": game.get("current_period", 0),
             "minute": goal.minute,
             "second": event_second,
-            "timestamp": goal_dict["timestamp"].isoformat(),
+            "timestamp": now.isoformat(),
         }
     }
 

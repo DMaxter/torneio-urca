@@ -1,12 +1,18 @@
 from bson import ObjectId
 from fastapi import APIRouter, Depends
-from datetime import datetime
+from datetime import datetime, timezone
 from database import db, TOURNAMENTS_COLLECTION
 from app.schemas.schemas import AssignFoulDto
-from app.models.models import GameStatus, StaffType
+from app.models.models import GameStatus
 from app.error import Error
 from app.utils.auth import get_current_user
 from app.utils import get_logger
+from app.utils.game_events import (
+    get_game_calls_for_team,
+    resolve_player_from_call,
+    resolve_staff_from_call,
+    calculate_event_second,
+)
 from app.routes.tournament import get_tournament
 from app.routes.game import get_game, add_game_event
 from app.routes.team import get_team
@@ -34,68 +40,19 @@ async def assign_foul(foul: AssignFoulDto, current_user=Depends(get_current_user
     staff_type = None
 
     get_logger().info("Looking up team call in game calls")
-    game_calls = (
-        await db.db["game_calls"]
-        .find({"_id": {"$in": [game.get("home_call"), game.get("away_call")]}})
-        .to_list(2)
-    )
-
-    if len(game_calls) != 2:
-        raise Error.game_calls_not_delivered()
-
-    team_call = None
-    for call in game_calls:
-        if str(call.get("team")) == str(foul.team):
-            team_call = call
-            break
-
-    if not team_call:
-        raise Error.bad_request("Chamada de jogo não encontrada para esta equipa")
+    team_call, _ = await get_game_calls_for_team(game, foul.team)
 
     if foul.player_number is not None:
-        player_found = False
-        for p in team_call.get("players", []):
-            if p.get("number") == foul.player_number:
-                player_id = p.get("player")
-                player_found = True
-                break
-
-        if not player_found or not player_id:
-            raise Error.bad_request(
-                f"Jogador com número {foul.player_number} não encontrado na chamada"
-            )
-
-        player = await db.db["players"].find_one({"_id": player_id})
-        if player:
-            player_name = player["name"]
-            player_id = str(player_id)
-        else:
-            player_id = str(player_id)
+        player_id, player_name = await resolve_player_from_call(
+            team_call, foul.player_number
+        )
     elif foul.staff_id:
-        staff_found = False
-        for s_id in team_call.get("staff", []):
-            if str(s_id) == str(foul.staff_id):
-                staff_found = True
-                break
-
-        if not staff_found:
-            raise Error.bad_request("Membro do staff não encontrado na chamada deste jogo")
-
-        staff = await db.db["staff"].find_one({"_id": ObjectId(foul.staff_id)})
-        if staff:
-            staff_name = staff["name"]
-            staff_type = staff.get("staff_type")
+        staff_name, staff_type = await resolve_staff_from_call(team_call, foul.staff_id)
 
     get_logger().info(f"Recording foul at minute {foul.minute}")
-    # Calculate live elapsed seconds if timer is active
-    current_elapsed = game.get("period_elapsed_seconds", 0)
-    if game.get("timer_active") and game.get("timer_started_at"):
-        now_utc = datetime.utcnow()
-        active_elapsed = int((now_utc - game["timer_started_at"]).total_seconds())
-        current_elapsed += active_elapsed
+    event_second = calculate_event_second(game, foul.second)
 
-    event_second = foul.second if foul.second is not None else (current_elapsed % 60)
-
+    now = datetime.now(timezone.utc)
     foul_dict = {
         "tournament": ObjectId(foul.tournament),
         "team_id": ObjectId(foul.team),
@@ -111,7 +68,7 @@ async def assign_foul(foul: AssignFoulDto, current_user=Depends(get_current_user
         "minute": foul.minute,
         "second": event_second,
         "is_direct_free_kick": foul.is_direct_free_kick,
-        "timestamp": datetime.utcnow(),
+        "timestamp": now,
     }
 
     result = await db.db["fouls"].insert_one(foul_dict)
@@ -137,7 +94,7 @@ async def assign_foul(foul: AssignFoulDto, current_user=Depends(get_current_user
             "second": event_second,
             "card": None,
             "is_direct_free_kick": foul.is_direct_free_kick,
-            "timestamp": foul_dict["timestamp"].isoformat(),
+            "timestamp": now.isoformat(),
         }
     }
 
