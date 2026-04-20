@@ -15,6 +15,6 @@ patches:
 
 images:
   - name: ghcr.io/dmaxter/urca-tournament-api
-    newTag: test-bcf70ac
+    newTag: test-6b1b099
   - name: ghcr.io/dmaxter/urca-tournament-web
-    newTag: test-bcf70ac
+    newTag: test-6b1b099
