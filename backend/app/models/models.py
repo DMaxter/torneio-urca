@@ -17,6 +17,7 @@ from enum import Enum
 from typing import Optional, List, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict
+from app.constants import TournamentPhase
 
 
 class StaffType(str, Enum):
@@ -116,6 +117,7 @@ class Tournament(BaseModel):
     groups: List[str] = []
     goals: List[Any] = []
     cards: List[Any] = []
+    phase: TournamentPhase = TournamentPhase.GROUP
 
 
 class GameCall(BaseModel):

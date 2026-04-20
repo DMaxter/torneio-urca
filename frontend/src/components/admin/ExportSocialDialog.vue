@@ -143,12 +143,13 @@
             </div>
 
             <div v-if="selectedKnockoutTournament" class="flex flex-col gap-4">
-               <P-Button severity="contrast" class="w-full" @click="exportKnockoutImage" :loading="exporting">
+               <P-Button severity="contrast" class="w-full" @click="exportKnockoutImage" :loading="exporting" :disabled="!knockoutAvailable" :title="!knockoutAvailable ? 'Este torneio ainda não entrou na fase de eliminatórias' : ''">
                   <span class="material-symbols-outlined">account_tree</span>
                   Gerar Post de Eliminatórias
                </P-Button>
+               <p v-if="!knockoutAvailable" class="text-xs text-stone-500 text-center">Este torneio ainda não entrou na fase de eliminatórias</p>
 
-                <div v-if="finalStandings" class="flex gap-2">
+               <div v-if="knockoutAvailable && finalStandings" class="flex gap-2">
                    <P-Button severity="help" class="flex-1" @click="triggerStandingsPrint">
                       <span class="material-symbols-outlined">celebration</span>
                       Imprimir Classificação Final
@@ -235,6 +236,7 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted } from 'vue';
+import { useToast } from 'primevue/usetoast';
 import { useGameStore } from "@stores/games";
 import { useGameDayStore } from "@stores/game_days";
 import { useGroupStore } from "@stores/groups";
@@ -243,8 +245,11 @@ import { useTournamentStore } from "@stores/tournaments";
 import { useDateFormatter } from "@/composables/useDateFormatter";
 import { getClassification } from "@router/backend/services/group";
 import { GameStatus } from "@router/backend/services/game/types";
+import { TournamentPhase } from "@router/backend/services/tournament/types";
 import { exportElementAsPng } from "@/utils/export_service";
 import PostCanvas from "./PostCanvas.vue";
+
+const toast = useToast();
 
 const visible = defineModel<boolean>();
 
@@ -275,6 +280,11 @@ const dayGames = computed(() => {
 const tournamentsInDay = computed(() => {
   const tids = new Set(dayGames.value.map(g => g.tournament));
   return tids.size;
+});
+
+const knockoutAvailable = computed(() => {
+  if (!selectedKnockoutTournament.value) return false;
+  return selectedKnockoutTournament.value.phase === TournamentPhase.KNOCKOUT;
 });
 
 // Canvas Rendering State

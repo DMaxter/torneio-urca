@@ -5,6 +5,7 @@ from database import db, TOURNAMENTS_COLLECTION, TEAMS_COLLECTION
 from app.schemas.schemas import CreateTournamentDto, TournamentDto
 from app.utils.auth import get_current_user, require_manage_games
 from app.utils import get_logger, sanitize_for_serialization
+from app.constants import TournamentPhase
 
 router = APIRouter(prefix="/tournaments", tags=["Tournaments"])
 
@@ -27,6 +28,7 @@ def tournament_to_dto(tournament: dict) -> TournamentDto:
         groups=clean.get("groups", []),
         goals=clean.get("goals", []),
         cards=clean.get("cards", []),
+        phase=clean.get("phase", "group"),
     )
 
 
@@ -46,6 +48,7 @@ async def add_tournament(
     )
     tournament_dict = {
         "name": tournament.name,
+        "phase": TournamentPhase.GROUP,
         "teams": [],
         "games": [],
         "groups": [],
@@ -578,6 +581,11 @@ async def advance_to_knockout(
 
     get_logger().info(
         f"[{current_user['username']}] Advanced tournament '{tournament_id}' to knockout phase"
+    )
+
+    # Update tournament phase to knockout
+    await db.db[TOURNAMENTS_COLLECTION].update_one(
+        {"_id": ObjectId(tournament_id)}, {"$set": {"phase": TournamentPhase.KNOCKOUT}}
     )
 
     return {

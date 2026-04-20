@@ -3,6 +3,7 @@ from typing import Optional, List, Any
 from datetime import datetime
 
 from app.models.models import GameStatus, GamePhase, CardType, StaffType
+from app.constants import TournamentPhase
 
 
 class CreateUserDto(BaseModel):
@@ -141,10 +142,12 @@ class TournamentDto(BaseModel):
     groups: List[str]
     goals: List[Any]
     cards: List[Any]
+    phase: TournamentPhase = TournamentPhase.GROUP
 
 
 class CreateTournamentDto(BaseModel):
     name: str
+    phase: TournamentPhase = TournamentPhase.GROUP
 
 
 class CreateGameCallDto(BaseModel):

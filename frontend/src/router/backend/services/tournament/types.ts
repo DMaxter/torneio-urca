@@ -1,3 +1,8 @@
+export enum TournamentPhase {
+    GROUP = 'group',
+    KNOCKOUT = 'knockout',
+}
+
 export type Tournament = {
     id: string,
     name: string,
@@ -6,6 +11,7 @@ export type Tournament = {
     groups: string[],
     goals: string[],
     cards: string[],
+    phase: TournamentPhase,
 };
 
 export type CreateTournament = {

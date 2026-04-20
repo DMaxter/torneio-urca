@@ -1,4 +1,11 @@
 from datetime import datetime, timezone
+from enum import Enum
+
+
+class TournamentPhase(str, Enum):
+    GROUP = "group"
+    KNOCKOUT = "knockout"
+
 
 # Tournament validation constraints
 MIN_PLAYERS = 5
