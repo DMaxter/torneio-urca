@@ -53,6 +53,17 @@ for handler in logging.root.handlers:
 logger = logging.getLogger(__name__)
 
 
+class HealthcheckFilter(logging.Filter):
+    def filter(self, record):
+        if "/api/healthz" == record.args[2] or "/api" not in record.args[2]:
+            return False
+        return True
+
+
+uvicorn_access = logging.getLogger("uvicorn.access")
+uvicorn_access.addFilter(HealthcheckFilter())
+
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = str(uuid.uuid4())[:8]
@@ -169,6 +180,13 @@ api_router.include_router(file_router)
 api_router.include_router(game_day_router)
 api_router.include_router(settings_router)
 api_router.include_router(prizes_router)
+
+api_router.add_api_route(
+    "/healthz",
+    lambda: {"status": "ok"},
+    methods=["GET"],
+    include_in_schema=False,
+)
 
 app.mount("/api", api_router)
 
