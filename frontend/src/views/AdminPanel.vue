@@ -60,6 +60,7 @@
     <UserManagement v-if="manageUser" v-model="manageUser" />
     <RoleManagement v-if="manageRoles" v-model="manageRoles" />
     <ChangePasswordDialog v-if="changePassword" v-model="changePassword" />
+    <ExportSocialDialog v-if="exportSocial" v-model="exportSocial" />
   </div>
 </template>
 
@@ -70,6 +71,7 @@ import { useRouter } from "vue-router";
 import { useAuthStore } from "@stores/auth";
 import type { Game } from "@router/backend/services/game/types";
 import type { Group } from "@router/backend/services/group/types";
+import ExportSocialDialog from "@/components/admin/ExportSocialDialog.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -105,6 +107,7 @@ const generateGames = ref(false);
 const gameCalendar = ref(false);
 const viewGames = ref(false);
 const manageRoles = ref(false);
+const exportSocial = ref(false);
 
 interface Action {
   label: string;
@@ -197,6 +200,14 @@ const sections: Section[] = [
       { label: "Gerir", icon: "manage_accounts", severity: "info", handler: () => router.push('/admin/staff') }
     ],
     show: () => authStore.canManagePlayers
+   },
+   {
+    title: "Comunicação",
+    icon: "📣",
+    actions: [
+      { label: "Exportar", icon: "share", severity: "contrast", handler: () => exportSocial.value = true, requiredRole: () => authStore.canManageGames }
+    ],
+    show: () => authStore.canManageGames
    }
 ];
 </script>
