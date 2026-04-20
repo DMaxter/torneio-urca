@@ -5,7 +5,7 @@
       <p class="text-stone-500 text-sm md:text-base">Ver classificações dos grupos</p>
     </div>
 
-    <div class="mb-4">
+    <div class="mb-4 flex gap-2">
       <P-Select
         v-model="selectedTournament"
         :options="tournaments"
@@ -15,6 +15,9 @@
         class="w-full md:w-64"
         @change="loadGroups"
       />
+      <P-Button text rounded @click="refresh" :disabled="!selectedTournament" v-tooltip.top="'Atualizar'">
+        <span class="material-symbols-outlined text-orange-500">refresh</span>
+      </P-Button>
     </div>
 
     <div v-if="loading" class="flex justify-center py-8">
@@ -94,6 +97,14 @@ const groups = ref<{ id: string; name: string; tournament: string }[]>([]);
 const classifications = ref<Classification[]>([]);
 const selectedTournament = ref<string | null>(null);
 const loading = ref(false);
+const refreshing = ref(false);
+
+async function refresh() {
+  if (!selectedTournament.value) return;
+  refreshing.value = true;
+  await loadGroups();
+  refreshing.value = false;
+}
 
 onMounted(async () => {
   await tournamentStore.getTournaments();
