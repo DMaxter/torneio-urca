@@ -15,4 +15,4 @@ patches:
 
 images:
   - name: ghcr.io/dmaxter/urca-tournament
-    newTag: test-bcf70ac
+    newTag: test-10ec10c
