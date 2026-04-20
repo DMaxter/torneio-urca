@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: urca-tournament
+  name: urca-tournament-api
   labels:
-    app: urca-tournament
+    app: urca-tournament-api
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: urca-tournament
+      app: urca-tournament-api
   template:
     metadata:
       labels:
-        app: urca-tournament
+        app: urca-tournament-api
     spec:
       containers:
-        - name: urca-tournament
-          image: ghcr.io/dmaxter/urca-tournament:latest
+        - name: urca-tournament-api
+          image: ghcr.io/dmaxter/urca-tournament-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

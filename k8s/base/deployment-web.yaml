@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urca-tournament-web
+  labels:
+    app: urca-tournament-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: urca-tournament-web
+  template:
+    metadata:
+      labels:
+        app: urca-tournament-web
+    spec:
+      containers:
+        - name: urca-tournament-web
+          image: ghcr.io/dmaxter/urca-tournament-web:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              memory: "32Mi"
+              cpu: "50m"
+            limits:
+              memory: "64Mi"
+              cpu: "100m"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5

@@ -64,7 +64,7 @@
 </P-Dialog>
 
   <P-Dialog v-model:visible="showDeleteConfirm" modal header="Confirmar Eliminação" class="w-11/12 md:w-6/12">
-    <p>Tem a certeza que deseja eliminar o torneo <strong>{{ tournamentToDelete?.name }}</strong>?</p>
+    <p>Tem a certeza que deseja eliminar o torneio <strong>{{ tournamentToDelete?.name }}</strong>?</p>
     <p class="text-red-600 mt-2 text-sm">Esta ação não pode ser desfeita.</p>
     <template #footer>
       <P-Button severity="secondary" @click="showDeleteConfirm = false">Cancelar</P-Button>
@@ -222,7 +222,7 @@ async function confirmDelete() {
   if (result.success) {
     toast.add({ severity: "success", summary: "Sucesso", detail: "Torneio eliminado", life: 3000 });
   } else {
-    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível eliminar o torneos", life: 3000 });
+    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível eliminar o torneio", life: 3000 });
   }
 }
 

@@ -8,11 +8,13 @@ resources:
   - cronjob.yaml
 
 patches:
-  - target:
+  - path: deployment-api-patch.yaml
+    target:
       kind: Deployment
-      name: urca-tournament
-    path: deployment.yaml
+      name: urca-tournament-api
 
 images:
-  - name: ghcr.io/dmaxter/urca-tournament
-    newTag: test-10ec10c
+  - name: ghcr.io/dmaxter/urca-tournament-api
+    newTag: test-bcf70ac
+  - name: ghcr.io/dmaxter/urca-tournament-web
+    newTag: test-bcf70ac

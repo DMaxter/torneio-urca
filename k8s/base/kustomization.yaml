@@ -3,6 +3,8 @@ kind: Kustomization
 
 resources:
   - configmap.yaml
-  - deployment.yaml
-  - service.yaml
+  - deployment-api.yaml
+  - deployment-web.yaml
+  - service-api.yaml
+  - service-web.yaml
   - mongodb.yaml

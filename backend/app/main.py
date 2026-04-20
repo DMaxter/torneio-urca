@@ -1,12 +1,10 @@
 import logging
 import traceback
 import uuid
-import os
-import pathlib
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi.middleware import SlowAPIMiddleware
@@ -189,26 +187,6 @@ api_router.add_api_route(
 )
 
 app.mount("/api", api_router)
-
-# ---------------------------------------------------------------------------
-# Static SPA serving — path-traversal protected (OWASP A01)
-# ---------------------------------------------------------------------------
-_static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
-_static_path = pathlib.Path(_static_dir).resolve()
-
-if _static_path.is_dir():
-
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        resolved = (_static_path / full_path).resolve()
-        try:
-            # Reject any path that escapes the static root
-            resolved.relative_to(_static_path)
-        except ValueError:
-            return FileResponse(str(_static_path / "index.html"))
-        if resolved.is_file():
-            return FileResponse(str(resolved))
-        return FileResponse(str(_static_path / "index.html"))
 
 
 @app.get("/")

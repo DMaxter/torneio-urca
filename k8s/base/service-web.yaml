@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: urca-tournament
+  name: urca-tournament-web
 spec:
   selector:
-    app: urca-tournament
+    app: urca-tournament-web
   ports:
     - name: http
       port: 80
-      targetPort: 8000
+      targetPort: 80
       protocol: TCP
   type: ClusterIP

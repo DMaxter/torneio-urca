@@ -6,12 +6,8 @@ resources:
   - http-route.yaml
   - sealed-secret.yaml
 
-patches:
-  - target:
-      kind: Deployment
-      name: urca-tournament
-    path: deployment-patch.yaml
-
 images:
-  - name: ghcr.io/dmaxter/urca-tournament
+  - name: ghcr.io/dmaxter/urca-tournament-api
+    newTag: latest
+  - name: ghcr.io/dmaxter/urca-tournament-web
     newTag: latest
