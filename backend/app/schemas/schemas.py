@@ -150,6 +150,10 @@ class CreateTournamentDto(BaseModel):
     phase: TournamentPhase = TournamentPhase.GROUP
 
 
+class UpdateTournamentDto(BaseModel):
+    name: str
+
+
 class CreateGameCallDto(BaseModel):
     team: str
 

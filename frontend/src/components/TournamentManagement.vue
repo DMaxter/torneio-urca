@@ -22,6 +22,7 @@ import { useToast } from "primevue/usetoast";
 
 import type { Tournament } from "@router/backend/services/tournament/types";
 import { useTournamentStore } from "@stores/tournaments";
+import * as tournamentService from "@router/backend/services/tournament";
 
 const toast = useToast();
 const enabled = defineModel<boolean>();
@@ -58,7 +59,14 @@ async function create() {
 }
 
 async function update() {
-  toast.add({ severity: "warn", summary: "Em desenvolvimento", detail: "Funcionalidade de edição ainda não disponível", life: 3000 });
+  const result = await tournamentService.updateTournament(props.tournament!.id, { name: name.value });
+  if (result.success) {
+    await tournamentStore.forceGetTournaments();
+    toast.add({ severity: "success", summary: "Sucesso", detail: "Torneio atualizado com sucesso", life: 3000 });
+    close();
+  } else {
+    toast.add({ severity: "error", summary: "Erro", detail: "Não foi possível atualizar o torneio", life: 3000 });
+  }
 }
 
 function close() {

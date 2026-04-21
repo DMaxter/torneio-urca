@@ -12,6 +12,15 @@ export async function createTournament(tournament: CreateTournament): Promise<Ax
   return await http.post("/tournaments", tournament);
 }
 
+export async function updateTournament(tournamentId: string, tournament: CreateTournament) {
+  try {
+    const response = await http.put(`/tournaments/${tournamentId}`, tournament);
+    return { success: true, data: response.data };
+  } catch (error) {
+    return { success: false };
+  }
+}
+
 export async function deleteTournament(tournamentId: string): Promise<AxiosResponse<void | Error>> {
   return await http.delete(`/tournaments/${tournamentId}`);
 }

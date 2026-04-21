@@ -45,13 +45,20 @@
           >sports_soccer</span>
         </template>
       </P-Column>
-      <P-Column header="Eliminar" class="w-5rem">
+<P-Column header="Ações" class="w-5rem">
         <template #body="{ data }">
-          <span
-            class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
-            @click.stop="promptDelete(data)"
-            v-tooltip.top="'Eliminar torneio'"
-          >delete</span>
+          <div class="flex items-center gap-1">
+            <span
+              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-blue-600 hover:bg-blue-50"
+              @click.stop="editTournament(data)"
+              v-tooltip.top="'Editar torneio'"
+            >edit</span>
+            <span
+              class="material-symbols-outlined cursor-pointer text-xl p-1 rounded text-red-600 hover:bg-red-50"
+              @click.stop="promptDelete(data)"
+              v-tooltip.top="'Eliminar torneio'"
+            >delete</span>
+          </div>
         </template>
       </P-Column>
     </P-DataTable>
@@ -136,6 +143,13 @@ import { useTeamStore } from "@stores/teams";
 import { useAuthStore } from "@stores/auth";
 import { useTournamentColors } from "@/composables/useTournamentColors";
 import { previewKnockout, advanceToKnockout, type PreviewKnockoutResponse } from "@router/backend/services/tournament";
+import type { Tournament } from "@router/backend/services/tournament/types";
+
+const emit = defineEmits(['edit-tournament']);
+
+function editTournament(tournament: Tournament) {
+  emit('edit-tournament', tournament);
+}
 
 const { getColor, setColor, TOURNAMENT_COLORS } = useTournamentColors();
 

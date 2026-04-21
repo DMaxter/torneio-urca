@@ -54,8 +54,8 @@
     <TeamManagement v-if="manageTeam" v-model="manageTeam" />
     <PlayerList v-if="listPlayers" v-model="listPlayers" />
     <PlayerManagement v-if="createPlayer" v-model="createPlayer" />
-    <TournamentList v-if="listTournaments" v-model="listTournaments" />
-    <TournamentManagement v-if="manageTournament" v-model="manageTournament" />
+    <TournamentList v-if="listTournaments" v-model="listTournaments" @edit-tournament="(t: Tournament) => { selectedTournament = t; manageTournament = true; }" />
+    <TournamentManagement v-if="manageTournament" v-model="manageTournament" :tournament="selectedTournament" />
     <UserList v-if="listUsers" v-model="listUsers" />
     <UserManagement v-if="manageUser" v-model="manageUser" />
     <RoleManagement v-if="manageRoles" v-model="manageRoles" />
@@ -71,6 +71,7 @@ import { useRouter } from "vue-router";
 import { useAuthStore } from "@stores/auth";
 import type { Game } from "@router/backend/services/game/types";
 import type { Group } from "@router/backend/services/group/types";
+import type { Tournament } from "@router/backend/services/tournament/types";
 import ExportSocialDialog from "@/components/admin/ExportSocialDialog.vue";
 
 const router = useRouter();
@@ -97,6 +98,7 @@ const createPlayer = ref(false);
 const listGroups = ref(false);
 const manageGroup = ref(false);
 const selectedGroup = ref<Group | undefined>(undefined);
+const selectedTournament = ref<Tournament | undefined>(undefined);
 const generateGroups = ref(false);
 const viewGroups = ref(false);
 const listGames = ref(false);
@@ -129,7 +131,7 @@ const sections: Section[] = [
     title: "Torneios",
     icon: "🏆",
     actions: [
-      { label: "Criar", icon: "add", severity: "success", handler: () => manageTournament.value = true },
+      { label: "Criar", icon: "add", severity: "success", handler: () => { selectedTournament.value = undefined; manageTournament.value = true; } },
       { label: "Listar", icon: "list", handler: () => listTournaments.value = true }
     ],
     show: () => authStore.canManagePlayers

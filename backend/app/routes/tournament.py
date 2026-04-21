@@ -2,7 +2,7 @@ from typing import List
 from bson import ObjectId
 from fastapi import APIRouter, Depends
 from database import db, TOURNAMENTS_COLLECTION, TEAMS_COLLECTION
-from app.schemas.schemas import CreateTournamentDto, TournamentDto
+from app.schemas.schemas import CreateTournamentDto, TournamentDto, UpdateTournamentDto
 from app.utils.auth import get_current_user, require_manage_games
 from app.utils import get_logger, sanitize_for_serialization
 from app.constants import TournamentPhase
@@ -75,6 +75,39 @@ async def get_tournaments():
     tournaments = await db.db[TOURNAMENTS_COLLECTION].find().to_list(1000)
     get_logger().info(f"Retrieved {len(tournaments)} tournaments")
     return [tournament_to_dto(t) for t in tournaments]
+
+
+@router.put("/{tournament_id}", response_model=TournamentDto)
+async def update_tournament(
+    tournament_id: str,
+    data: UpdateTournamentDto,
+    current_user=Depends(require_manage_games),
+):
+    """
+    Update a tournament's name.
+    """
+    from app.error import Error
+
+    tournament = await get_tournament(tournament_id)
+    if not tournament:
+        raise Error.not_found("Torneio não encontrado")
+
+    # Update name
+    await db.db[TOURNAMENTS_COLLECTION].update_one(
+        {"_id": ObjectId(tournament_id)},
+        {"$set": {"name": data.name}},
+    )
+
+    # Fetch updated tournament
+    updated = await db.db[TOURNAMENTS_COLLECTION].find_one(
+        {"_id": ObjectId(tournament_id)}
+    )
+
+    get_logger().info(
+        f"[{current_user['username']}] Updated tournament '{tournament_id}' name to '{data.name}'"
+    )
+
+    return tournament_to_dto(updated)
 
 
 @router.delete("/{tournament_id}", status_code=204)
