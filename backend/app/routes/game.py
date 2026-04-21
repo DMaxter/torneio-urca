@@ -98,7 +98,6 @@ def game_call_to_dto(call: dict) -> GameCallDto:
     )
 
 
-
 def game_to_dto(game: dict, home_call: dict | None, away_call: dict | None) -> GameDto:
     clean_game = sanitize_for_serialization(game)
     clean_home = sanitize_for_serialization(home_call) if home_call else None
@@ -343,7 +342,9 @@ async def delete_game(game_id: str, current_user=Depends(require_manage_game_eve
     get_logger().info(f"[{current_user['username']}] Deleted game '{game_id}'")
 
 
-async def calculate_game_outcome(game: dict) -> tuple[int, int, int, int, Optional[str]]:
+async def calculate_game_outcome(
+    game: dict,
+) -> tuple[int, int, int, int, Optional[str]]:
     """
     Calculate final scores and determine the winner.
     Returns: (home_goals, away_goals, home_pens, away_pens, winner_team_id)
@@ -420,7 +421,13 @@ async def advance_winner_to_next_game(game: dict):
     if not game.get("next_game_winner") and not game.get("next_game_loser"):
         return
 
-    home_goals, away_goals, home_pens, away_pens, winner_id = await calculate_game_outcome(game)
+    (
+        home_goals,
+        away_goals,
+        home_pens,
+        away_pens,
+        winner_id,
+    ) = await calculate_game_outcome(game)
 
     if not winner_id:
         get_logger().warning(f"Game '{game.get('_id')}' ended in tie, cannot advance")
@@ -430,31 +437,75 @@ async def advance_winner_to_next_game(game: dict):
     away_call_id = game.get("away_call")
 
     if home_goals > away_goals or (home_goals == away_goals and home_pens > away_pens):
-        winner_team_id = str((await db.db[GAME_CALLS_COLLECTION].find_one({"_id": home_call_id})).get("team"))
-        loser_team_id = str((await db.db[GAME_CALLS_COLLECTION].find_one({"_id": away_call_id})).get("team"))
+        winner_team_id = str(
+            (await db.db[GAME_CALLS_COLLECTION].find_one({"_id": home_call_id})).get(
+                "team"
+            )
+        )
+        loser_team_id = str(
+            (await db.db[GAME_CALLS_COLLECTION].find_one({"_id": away_call_id})).get(
+                "team"
+            )
+        )
     else:
-        winner_team_id = str((await db.db[GAME_CALLS_COLLECTION].find_one({"_id": away_call_id})).get("team"))
-        loser_team_id = str((await db.db[GAME_CALLS_COLLECTION].find_one({"_id": home_call_id})).get("team"))
+        winner_team_id = str(
+            (await db.db[GAME_CALLS_COLLECTION].find_one({"_id": away_call_id})).get(
+                "team"
+            )
+        )
+        loser_team_id = str(
+            (await db.db[GAME_CALLS_COLLECTION].find_one({"_id": home_call_id})).get(
+                "team"
+            )
+        )
 
     # Advance winner to next game (via direct game call ID)
     if game.get("next_game_winner"):
-        winner_team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(winner_team_id)})
-        players = [{"player": p, "number": None} for p in winner_team.get("players", [])] if winner_team else []
+        winner_team = await db.db[TEAMS_COLLECTION].find_one(
+            {"_id": ObjectId(winner_team_id)}
+        )
+        players = (
+            [{"player": p, "number": None} for p in winner_team.get("players", [])]
+            if winner_team
+            else []
+        )
         await db.db[GAME_CALLS_COLLECTION].update_one(
             {"_id": game.get("next_game_winner")},
-            {"$set": {"team": ObjectId(winner_team_id), "players": players, "staff": []}},
+            {
+                "$set": {
+                    "team": ObjectId(winner_team_id),
+                    "players": players,
+                    "staff": [],
+                }
+            },
         )
-        get_logger().info(f"Advanced winner to next game (call: {game.get('next_game_winner')})")
+        get_logger().info(
+            f"Advanced winner to next game (call: {game.get('next_game_winner')})"
+        )
 
     # Advance loser to next game (for third place)
     if game.get("next_game_loser"):
-        loser_team = await db.db[TEAMS_COLLECTION].find_one({"_id": ObjectId(loser_team_id)})
-        players = [{"player": p, "number": None} for p in loser_team.get("players", [])] if loser_team else []
+        loser_team = await db.db[TEAMS_COLLECTION].find_one(
+            {"_id": ObjectId(loser_team_id)}
+        )
+        players = (
+            [{"player": p, "number": None} for p in loser_team.get("players", [])]
+            if loser_team
+            else []
+        )
         await db.db[GAME_CALLS_COLLECTION].update_one(
             {"_id": game.get("next_game_loser")},
-            {"$set": {"team": ObjectId(loser_team_id), "players": players, "staff": []}},
+            {
+                "$set": {
+                    "team": ObjectId(loser_team_id),
+                    "players": players,
+                    "staff": [],
+                }
+            },
         )
-        get_logger().info(f"Advanced loser to next game (call: {game.get('next_game_loser')})")
+        get_logger().info(
+            f"Advanced loser to next game (call: {game.get('next_game_loser')})"
+        )
 
 
 async def initialize_knockout_dependencies(tournament_id: str):
@@ -550,7 +601,10 @@ async def update_game_status(
     new_status = body.status
 
     # Check permissions based on target status
-    if new_status == GameStatus.CallsPending or new_status == GameStatus.ReadyToStart:
+    if new_status == GameStatus.Scheduled:
+        # Allow undoing from InProgress/Finished/Canceled only with manage_games role
+        await check_game_permission(current_user, game_id)
+    elif new_status == GameStatus.CallsPending or new_status == GameStatus.ReadyToStart:
         await check_call_permission(current_user, game_id)
     elif new_status == GameStatus.InProgress or new_status == GameStatus.Finished:
         await check_game_permission(current_user, game_id)
@@ -563,9 +617,9 @@ async def update_game_status(
         GameStatus.Scheduled: [GameStatus.CallsPending, GameStatus.Canceled],
         GameStatus.CallsPending: [GameStatus.ReadyToStart, GameStatus.Canceled],
         GameStatus.ReadyToStart: [GameStatus.InProgress, GameStatus.Canceled],
-        GameStatus.InProgress: [GameStatus.Finished],
-        GameStatus.Finished: [],
-        GameStatus.Canceled: [],
+        GameStatus.InProgress: [GameStatus.Finished, GameStatus.Scheduled],
+        GameStatus.Finished: [GameStatus.Scheduled],
+        GameStatus.Canceled: [GameStatus.Scheduled],
     }
 
     if new_status not in valid_transitions.get(current_status, []):
@@ -609,12 +663,14 @@ async def update_game_status(
     if new_status == GameStatus.Finished:
         now = datetime.now(timezone.utc)
         game["finish_date"] = now
-        
+
         # In knockout phase, do not allow finishing a tied game
         if game.get("phase") != GamePhase.Group:
             hg, ag, hp, ap, winner = await calculate_game_outcome(game)
             if not winner:
-                raise Error.bad_request("Jogos de eliminatórias não podem terminar empatados. Por favor, proceda para prolongamento ou penalidades.")
+                raise Error.bad_request(
+                    "Jogos de eliminatórias não podem terminar empatados. Por favor, proceda para prolongamento ou penalidades."
+                )
         else:
             hg, ag, hp, ap, winner = await calculate_game_outcome(game)
 
@@ -762,7 +818,9 @@ async def update_period(
 
         # Only allow extra periods (3+) in knockout phase
         if new_period > 2 and game.get("phase") == GamePhase.Group:
-            raise Error.bad_request("Períodos extra e penalidades apenas são permitidos na fase de eliminatórias.")
+            raise Error.bad_request(
+                "Períodos extra e penalidades apenas são permitidos na fase de eliminatórias."
+            )
 
         # Validate tie for overtime (period 3) and penalties (period 5)
         if new_period in (3, 5):

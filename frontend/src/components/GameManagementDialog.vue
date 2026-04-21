@@ -115,6 +115,14 @@
                 @click="viewGameLog(data.id)"
                 v-tooltip.top="'Ver registo do jogo'"
               />
+              <P-Button
+                v-if="canManageGames && (isInProgress(data.status) || isFinished(data.status) || isCanceled(data.status))"
+                label="Reprogramar"
+                size="small"
+                severity="info"
+                @click="resetGame(data.id)"
+                v-tooltip.top="'Reprogramar jogo'"
+              />
             </div>
           </template>
         </P-Column>
@@ -255,6 +263,7 @@ function isCallsPending(status: string) { return status === "CallsPending" || st
 function isReadyToStart(status: string) { return status === "ReadyToStart" || status === "2"; }
 function isInProgress(status: string) { return status === "InProgress" || status === "3"; }
 function isFinished(status: string) { return status === "Finished" || status === "4"; }
+function isCanceled(status: string) { return status === "Canceled"; }
 
 function getStatusSeverity(status: string) {
   const s = String(status);
@@ -351,6 +360,18 @@ async function viewGameLog(gameId: string) {
       const idx = gameStore.games.findIndex(x => x.id === gameId);
       if (idx !== -1) gameStore.games[idx] = data as Game;
     }
+  }
+}
+
+async function resetGame(gameId: string) {
+  try {
+    const response = await gameService.updateGameStatus(gameId, GameStatus.Scheduled);
+    if (response.status === 200) {
+      toast.add({ severity: "success", summary: "Sucesso", detail: "Jogo reprogramado", life: 3000 });
+      await gameStore.forceGetGames();
+    }
+  } catch (e: unknown) {
+    handleApiError(e, "Erro ao reprogramar jogo");
   }
 }
 
