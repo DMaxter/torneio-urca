@@ -30,6 +30,9 @@
         <router-link to="/calendar" class="nav-link" @click="menuOpen = false">
           Calendário
         </router-link>
+        <router-link to="/pinga" class="nav-link" @click="menuOpen = false">
+          Taça da Pinga
+        </router-link>
         <router-link v-if="isRegistrationOpen" to="/register" class="nav-link cta-link" @click="menuOpen = false">
           Registar Equipa
         </router-link>

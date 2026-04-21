@@ -36,6 +36,8 @@ COLLECTIONS = [
     "fouls",
     "fs.files",
     "fs.chunks",
+    "team_counts",
+    "vote_history",
 ]
 
 ADMIN_USERNAME = "admin"

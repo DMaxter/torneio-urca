@@ -61,21 +61,26 @@
     <RoleManagement v-if="manageRoles" v-model="manageRoles" />
     <ChangePasswordDialog v-if="changePassword" v-model="changePassword" />
     <ExportSocialDialog v-if="exportSocial" v-model="exportSocial" />
+    <PingaApiKeyDialog v-if="pingaApiKey" v-model="pingaApiKey" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { useToast } from "primevue/usetoast";
 
 import { useAuthStore } from "@stores/auth";
 import type { Game } from "@router/backend/services/game/types";
 import type { Group } from "@router/backend/services/group/types";
 import type { Tournament } from "@router/backend/services/tournament/types";
 import ExportSocialDialog from "@/components/admin/ExportSocialDialog.vue";
+import PingaApiKeyDialog from "@/components/admin/PingaApiKeyDialog.vue";
+import * as pingaService from "@router/backend/services/pinga";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const toast = useToast();
 
 function handleLogout() {
   authStore.logout(router);
@@ -110,6 +115,7 @@ const gameCalendar = ref(false);
 const viewGames = ref(false);
 const manageRoles = ref(false);
 const exportSocial = ref(false);
+const pingaApiKey = ref(false);
 
 interface Action {
   label: string;
@@ -203,14 +209,22 @@ const sections: Section[] = [
     ],
     show: () => authStore.canManagePlayers
    },
-   {
-    title: "Comunicação",
-    icon: "📣",
-    actions: [
-      { label: "Exportar", icon: "share", severity: "contrast", handler: () => exportSocial.value = true, requiredRole: () => authStore.canManageGames }
-    ],
-    show: () => authStore.canManageGames
-   }
+{
+     title: "Comunicação",
+     icon: "📣",
+     actions: [
+       { label: "Exportar", icon: "share", severity: "contrast", handler: () => exportSocial.value = true, requiredRole: () => authStore.canManageGames }
+     ],
+     show: () => authStore.canManageGames
+    },
+{
+      title: "Taça da Pinga",
+      icon: "🏆",
+      actions: [
+        { label: "Chave API", icon: "key", severity: "secondary", handler: () => pingaApiKey.value = true }
+      ],
+      show: () => authStore.isAdmin
+     }
 ];
 </script>
 

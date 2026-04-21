@@ -92,15 +92,24 @@ const routes = [
        requiresAuth: true,
      }
    },
-   {
-    path: "/admin/staff",
-    name: "staffManagement",
-    component: () => import("@views/StaffManagement.vue"),
-    meta: {
-      title: "Gestão de Staff | " + import.meta.env.VUE_APP_NAME,
-      requiresAuth: true,
-    }
-  },
+{
+     path: "/admin/staff",
+     name: "staffManagement",
+     component: () => import("@views/StaffManagement.vue"),
+     meta: {
+       title: "Gestão de Staff | " + import.meta.env.VUE_APP_NAME,
+       requiresAuth: true,
+     }
+},
+    {
+       path: "/pinga",
+       name: "pinga",
+       component: () => import("@views/TacaDaPingaView.vue"),
+       meta: {
+         title: "Taça da Pinga | " + import.meta.env.VUE_APP_NAME,
+         requiresAuth: false,
+       }
+     },
   {
     path: "/privacy",
     name: "privacyPolicy",

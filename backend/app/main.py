@@ -25,6 +25,7 @@ from app.routes.game_day import router as game_day_router
 from app.routes.file import router as file_router
 from app.routes.settings import router as settings_router
 from app.routes.prizes import router as prizes_router
+from app.routes.taca_da_pinga import router as taca_da_pinga_router
 from app.config import get_settings
 from app.utils import REQUEST_ID, get_logger
 
@@ -178,6 +179,7 @@ api_router.include_router(file_router)
 api_router.include_router(game_day_router)
 api_router.include_router(settings_router)
 api_router.include_router(prizes_router)
+api_router.include_router(taca_da_pinga_router)
 
 api_router.add_api_route(
     "/healthz",
