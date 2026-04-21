@@ -189,7 +189,7 @@ const sections: Section[] = [
     icon: "🎮",
     actions: [
       { label: "Criar", icon: "add", severity: "success", handler: () => manageGame.value = true, requiredRole: () => authStore.canManageGames },
-      { label: "Gerir", icon: "manage_search", severity: "info", handler: () => manageGames.value = true, requiredRole: () => authStore.canManageGames || authStore.canManageGameEvents || authStore.canFillGameCalls },
+      { label: "Administrar", icon: "manage_search", severity: "info", handler: () => manageGames.value = true, requiredRole: () => authStore.canManageGames || authStore.canManageGameEvents || authStore.canFillGameCalls },
       { label: "Gerar", icon: "sports_soccer", severity: "secondary", handler: () => generateGames.value = true, requiredRole: () => authStore.canManageGames },
       { label: "Ver", icon: "grid_view", severity: "secondary", handler: () => viewGames.value = true, requiredRole: () => authStore.canManageGames }
     ],
