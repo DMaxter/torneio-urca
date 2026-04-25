@@ -116,7 +116,7 @@ const lineChartData = computed(() => {
 
   const teamNames = [...new Set(flattenHistory.value.map(h => h.team_name))];
 
-  let cumulative = new Map<string, number>();
+  const cumulative = new Map<string, number>();
   const datasets = teamNames.map(teamName => {
     cumulative.set(teamName, 0);
     return {

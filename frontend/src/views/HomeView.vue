@@ -11,7 +11,7 @@
         <div class="card-icon">📅</div>
         <h3>Inscrições Abertas</h3>
         <p class="deadline">
-          Até <strong>8 de Maio de 2026</strong>
+          Até <strong>{{ formattedDeadline }}</strong>
         </p>
         <div class="countdown">
           <div class="countdown-item">
@@ -69,9 +69,15 @@
 </template>
 
 <script setup lang="ts">
-import { useRegistrationDeadline } from "@composables/useRegistrationDeadline";
+import { useRegistrationDeadline, REGISTRATION_DEADLINE } from "@composables/useRegistrationDeadline";
 
 const { timeLeft, isOpen } = useRegistrationDeadline();
+
+const formattedDeadline = new Intl.DateTimeFormat('pt-PT', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric'
+}).format(REGISTRATION_DEADLINE);
 </script>
 
 <style scoped>
