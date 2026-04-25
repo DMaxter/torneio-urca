@@ -16,7 +16,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: reset-and-seed
-              image: ghcr.io/dmaxter/urca-tournament:latest
+              image: ghcr.io/dmaxter/urca-tournament-api:latest
               imagePullPolicy: Always
               command:
                 - uv
@@ -30,7 +30,7 @@ spec:
                     name: urca-tournament-secret
               env:
                 - name: BASE_URL
-                  value: "http://urca-tournament:80/api"
+                  value: "http://urca-tournament-api:8000/api"
               resources:
                 requests:
                   memory: "256Mi"
