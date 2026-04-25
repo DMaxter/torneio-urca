@@ -5,6 +5,8 @@ resources:
   - ../../base
   - http-route.yaml
   - sealed-secret.yaml
+  - mongodb-backup-pvc.yaml
+  - mongodb-backup-cronjob.yaml
 
 images:
   - name: ghcr.io/dmaxter/urca-tournament-api

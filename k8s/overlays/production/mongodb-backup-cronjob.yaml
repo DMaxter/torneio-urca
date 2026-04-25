@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mongodb-backup
+spec:
+  schedule: "0 4 * * *"
+  successfulJobsHistoryLimit: 7
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: mongo:8
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  DATE=$(date +%Y-%m-%d)
+                  echo "Starting backup for $DATE"
+                  
+                  # Run mongodump
+                  mongodump \
+                    --host=mongodb \
+                    --username=root \
+                    --password=$MONGO_PASSWORD \
+                    --archive=/backup/mongodb-$DATE.tar.gz \
+                    --gzip
+                  
+                  echo "Backup completed: mongodb-$DATE.tar.gz"
+                  
+                  # Cleanup files older than 7 days
+                  find /backup -name "mongodb-*.tar.gz" -mtime +7 -delete
+                  echo "Cleanup completed"
+              env:
+                - name: MONGO_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: urca-tournament-secret
+                      key: MONGO_PASSWORD
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backup
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: mongodb-backup
