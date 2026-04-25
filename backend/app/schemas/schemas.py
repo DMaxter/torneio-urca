@@ -17,6 +17,7 @@ class UserRoles:
     MANAGE_GAME_EVENTS = "manage_game_events"
     FILL_GAME_CALLS = "fill_game_calls"
     OPEN_CALENDAR = "open_calendar"
+    ANNOUNCER = "announcer"
 
     ALL = [
         MANAGE_PLAYERS,
@@ -24,6 +25,7 @@ class UserRoles:
         MANAGE_GAME_EVENTS,
         FILL_GAME_CALLS,
         OPEN_CALENDAR,
+        ANNOUNCER,
     ]
 
 
@@ -62,6 +64,27 @@ class CreatePlayerDto(BaseModel):
     federation_team: Optional[str] = None
     federation_exams_up_to_date: bool = False
     is_goalkeeper: bool = False
+
+
+class CreateAnnouncementDto(BaseModel):
+    title: str
+    content: str
+    is_active: bool = True
+
+
+class UpdateAnnouncementDto(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class AnnouncementDto(BaseModel):
+    id: str
+    title: str
+    content: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
 
 
 class PlayerDto(BaseModel):

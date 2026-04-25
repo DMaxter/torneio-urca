@@ -23,6 +23,7 @@ GAME_DAYS_COLLECTION = "game_days"
 SETTINGS_COLLECTION = "settings"
 TEAM_COUNTS_COLLECTION = "team_counts"
 VOTE_HISTORY_COLLECTION = "vote_history"
+ANNOUNCEMENTS_COLLECTION = "announcements"
 
 
 class Database:
@@ -77,6 +78,7 @@ class Database:
             SETTINGS_COLLECTION,
             TEAM_COUNTS_COLLECTION,
             VOTE_HISTORY_COLLECTION,
+            ANNOUNCEMENTS_COLLECTION,
         ]:
             if coll not in existing:
                 await self._db.create_collection(coll)  # type: ignore[union-attr]

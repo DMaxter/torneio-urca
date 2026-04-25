@@ -7,6 +7,16 @@
     </div>
 
     <div class="content">
+      <div v-if="announcements.length > 0" class="announcements-card">
+        <h3>Anúncios</h3>
+        <div class="announcements-list">
+          <div v-for="announcement in announcements" :key="announcement.id" class="announcement-item">
+            <strong>{{ announcement.title }}</strong>
+            <p>{{ announcement.content }}</p>
+          </div>
+        </div>
+      </div>
+
       <div v-if="isOpen" class="info-card">
         <div class="card-icon">📅</div>
         <h3>Inscrições Abertas</h3>
@@ -69,15 +79,31 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from "vue";
 import { useRegistrationDeadline, REGISTRATION_DEADLINE } from "@composables/useRegistrationDeadline";
+import * as announcementService from "@router/backend/services/announcement";
+import type { Announcement } from "@router/backend/services/announcement/types";
 
 const { timeLeft, isOpen } = useRegistrationDeadline();
+
+const announcements = ref<Announcement[]>([]);
 
 const formattedDeadline = new Intl.DateTimeFormat('pt-PT', {
   day: 'numeric',
   month: 'long',
   year: 'numeric'
 }).format(REGISTRATION_DEADLINE);
+
+onMounted(async () => {
+  try {
+    const response = await announcementService.getAnnouncements();
+    if (response.status === 200 && Array.isArray(response.data)) {
+      announcements.value = (response.data as Announcement[]).filter(a => a.is_active);
+    }
+  } catch (error) {
+    console.error("Failed to load announcements:", error);
+  }
+});
 </script>
 
 <style scoped>
@@ -129,6 +155,47 @@ const formattedDeadline = new Intl.DateTimeFormat('pt-PT', {
   gap: 1.5rem;
   width: 100%;
   max-width: 400px;
+}
+
+.announcements-card {
+  background: white;
+  border: 1px solid var(--color-stone-200);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  width: 100%;
+}
+
+.announcements-card h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-stone-800);
+  margin: 0 0 1rem 0;
+}
+
+.announcements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: left;
+}
+
+.announcement-item {
+  padding: 0.75rem;
+  background: var(--color-stone-50);
+  border-radius: 8px;
+}
+
+.announcement-item strong {
+  display: block;
+  color: var(--color-stone-800);
+  margin-bottom: 0.25rem;
+}
+
+.announcement-item p {
+  margin: 0;
+  color: var(--color-stone-600);
+  font-size: 0.875rem;
 }
 
 .info-card {

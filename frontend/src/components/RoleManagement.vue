@@ -19,6 +19,8 @@
             <label for="fgc_{{ data.id }}" class="text-sm">Chamadas</label>
             <P-Checkbox v-model="selectedRoles[data.id]" value="open_calendar" :binary="false" inputId="oc_{{ data.id }}" />
             <label for="oc_{{ data.id }}" class="text-sm">Abrir Calendário</label>
+            <P-Checkbox v-model="selectedRoles[data.id]" value="announcer" :binary="false" inputId="anc_{{ data.id }}" />
+            <label for="anc_{{ data.id }}" class="text-sm">Anúncios</label>
           </div>
         </template>
       </P-Column>

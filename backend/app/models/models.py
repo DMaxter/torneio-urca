@@ -232,3 +232,14 @@ class Card(BaseModel):
     period: int
     minute: int
     timestamp: datetime
+
+
+class Announcement(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: Optional[str] = Field(None, alias="_id")
+    title: str
+    content: str
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)

@@ -62,6 +62,8 @@
     <ChangePasswordDialog v-if="changePassword" v-model="changePassword" />
     <ExportSocialDialog v-if="exportSocial" v-model="exportSocial" />
     <PingaApiKeyDialog v-if="pingaApiKey" v-model="pingaApiKey" />
+    <AnnouncementList v-if="listAnnouncements" v-model="listAnnouncements" @edit-announcement="(a: Announcement) => { selectedAnnouncement = a; manageAnnouncement = true; }" />
+    <AnnouncementManagement v-if="manageAnnouncement" v-model="manageAnnouncement" :announcement="selectedAnnouncement" />
   </div>
 </template>
 
@@ -74,8 +76,11 @@ import { useAuthStore } from "@stores/auth";
 import type { Game } from "@router/backend/services/game/types";
 import type { Group } from "@router/backend/services/group/types";
 import type { Tournament } from "@router/backend/services/tournament/types";
+import type { Announcement } from "@router/backend/services/announcement/types";
 import ExportSocialDialog from "@/components/admin/ExportSocialDialog.vue";
 import PingaApiKeyDialog from "@/components/admin/PingaApiKeyDialog.vue";
+import AnnouncementList from "@/components/admin/AnnouncementList.vue";
+import AnnouncementManagement from "@/components/admin/AnnouncementManagement.vue";
 import * as pingaService from "@router/backend/services/pinga";
 
 const router = useRouter();
@@ -116,6 +121,9 @@ const viewGames = ref(false);
 const manageRoles = ref(false);
 const exportSocial = ref(false);
 const pingaApiKey = ref(false);
+const listAnnouncements = ref(false);
+const manageAnnouncement = ref(false);
+const selectedAnnouncement = ref<Announcement | undefined>(undefined);
 
 interface Action {
   label: string;
@@ -224,7 +232,16 @@ const sections: Section[] = [
         { label: "Chave API", icon: "key", severity: "secondary", handler: () => pingaApiKey.value = true }
       ],
       show: () => authStore.isAdmin
-     }
+     },
+  {
+     title: "Anúncios",
+     icon: "📢",
+     actions: [
+       { label: "Criar", icon: "add", severity: "success", handler: () => { selectedAnnouncement.value = undefined; manageAnnouncement.value = true; } },
+       { label: "Listar", icon: "list", handler: () => listAnnouncements.value = true }
+     ],
+     show: () => authStore.canManageAnnouncements
+    }
 ];
 </script>
 

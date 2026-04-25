@@ -34,6 +34,7 @@ export const useAuthStore = defineStore("auth", () => {
   const canFillGameCalls = computed(() => roles.value.includes(USER_ROLES.FILL_GAME_CALLS));
   // Apenas utilizadores com a role explícita — admin NÃO tem automaticamente
   const canOpenCalendar = computed(() => roles.value.includes(USER_ROLES.OPEN_CALENDAR));
+  const canManageAnnouncements = computed(() => roles.value.includes(USER_ROLES.ANNOUNCER));
 
   /**
    * Determines if the user possesses a specific role.
@@ -155,6 +156,7 @@ export const useAuthStore = defineStore("auth", () => {
     canManageGameEvents,
     canFillGameCalls,
     canOpenCalendar,
+    canManageAnnouncements,
     hasRole,
     hasGameAccess,
     hasCallAccess,
