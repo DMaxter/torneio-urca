@@ -18,19 +18,19 @@
         <router-link to="/" class="nav-link" @click="menuOpen = false">
           Início
         </router-link>
-        <router-link to="/dashboard" class="nav-link" @click="menuOpen = false">
+        <router-link v-if="!isRegistrationOpen" to="/dashboard" class="nav-link" @click="menuOpen = false">
           Dashboard
         </router-link>
-        <router-link to="/classifications" class="nav-link" @click="menuOpen = false">
+        <router-link v-if="!isRegistrationOpen" to="/classifications" class="nav-link" @click="menuOpen = false">
           Classificações
         </router-link>
-        <router-link to="/prizes" class="nav-link" @click="menuOpen = false">
+        <router-link v-if="!isRegistrationOpen" to="/prizes" class="nav-link" @click="menuOpen = false">
           Prémios
         </router-link>
-        <router-link to="/calendar" class="nav-link" @click="menuOpen = false">
+        <router-link v-if="!isRegistrationOpen" to="/calendar" class="nav-link" @click="menuOpen = false">
           Calendário
         </router-link>
-        <router-link to="/pinga" class="nav-link" @click="menuOpen = false">
+        <router-link v-if="!isRegistrationOpen" to="/pinga" class="nav-link" @click="menuOpen = false">
           Taça da Pinga
         </router-link>
         <router-link v-if="isRegistrationOpen" to="/register" class="nav-link cta-link" @click="menuOpen = false">
