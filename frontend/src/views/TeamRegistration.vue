@@ -25,8 +25,9 @@
             <li>É também possível seleccionar o staff que fará parte da equipa e que corresponderão às pessoas que poderão estar em campo em dia de jogo: <strong>treinador</strong>, <strong>treinador adjunto</strong>, <strong>fisioterapeuta</strong> e <strong>2 delegados de jogo</strong>, no entanto estes são <strong>opcionais</strong> para este registo.</li>
             <li>Apenas os membros do staff registados poderão ter acesso ao campo em dias de jogo, para garantir a segurança de todos e evitar acessos não autorizados.</li>
             <li>Para cada jogador é obrigatório preencher: <strong>nome completo</strong>, <strong>data de nascimento</strong>, <strong>NIF</strong>, <strong>morada</strong>, <strong>local de nascimento</strong>, <strong>PDF com cartão de cidadão</strong> <span class="tooltip-wrapper"><button @click="citizenCardTooltipVisible = !citizenCardTooltipVisible" class="help-tooltip"><span class="material-symbols-outlined">help</span></button><span v-if="citizenCardTooltipVisible" class="tooltip-box">Pode digitalizar o cartão de cidadão com uma aplicação como o Adobe Scan.<button class="tooltip-close" @click.stop="citizenCardTooltipVisible = false"><span class="material-symbols-outlined">close</span></button></span></span>, <strong>PDF com comprovativo de residência</strong> <span class="tooltip-wrapper"><button @click="proofOfResidenceTooltipVisible = !proofOfResidenceTooltipVisible" class="help-tooltip"><span class="material-symbols-outlined">help</span></button><span v-if="proofOfResidenceTooltipVisible" class="tooltip-box">Portal das Finanças > Login > Serviços > Documentos e Certidões > Requerer Certidão > Domicílio Fiscal > Confirmar > Obter<button class="tooltip-close" @click.stop="proofOfResidenceTooltipVisible = false"><span class="material-symbols-outlined">close</span></button></span></span> e <strong>se pertence a uma equipa federada ou não</strong>.</li>
-            <li>Se precisar de registar membros adicionais (jogadores ou staff) após o primeiro registo, contacte a organização.</li>
-            <li>Se uma equipa não tiver um selecionador associado no início do torneio, <strong>não poderá participar</strong>, por isso se não selecionar um selecionador agora, certifique-se que contacta a organização para o fazer.</li>
+<li>Se precisar de registar membros adicionais (jogadores ou staff) após o primeiro registo, contacte a organização.</li>
+            <li>Se uma equipa não tiver um selecionador associado no início do torneo, <strong>não poderá participar</strong>, por isso se não selecionar um selecionador agora, certifique-se que contacta a organização para o fazer.</li>
+            <li>Para qualquer questão, contacte a organização através do email: <strong>{{ URCA_EMAIL }}</strong>.</li>
           </ul>
 
           <div class="privacy-acceptance mt-6 p-4 border border-surface-200 rounded-lg bg-surface-50">
@@ -38,6 +39,19 @@
                   Política de Privacidade
                 </span>
                 e que todos os jogadores e membros do staff da minha equipa tomaram conhecimento e aceitam os termos da mesma. Todos os dados fornecidos são verdadeiros e atuais.
+              </label>
+            </div>
+          </div>
+
+          <div class="privacy-acceptance mt-4 p-4 border border-surface-200 rounded-lg bg-surface-50">
+            <div class="flex align-items-start gap-3">
+              <P-Checkbox v-model="regulationAccepted" :binary="true" inputId="regulationAccept" />
+              <label for="regulationAccept" class="text-surface-700 leading-7">
+                Declaro que li e aceito o
+                <a href="/static/regulation.pdf" target="_blank" class="text-primary font-medium cursor-pointer hover:underline">
+                  Regulamento do Torneio
+                </a>
+                e que todos os jogadores e membros do staff da minha equipa tomaram conhecimento e aceitam os termos do mesmo.
               </label>
             </div>
           </div>
@@ -195,7 +209,7 @@ import { ref, reactive, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useToast } from "primevue/usetoast";
 import { useTournamentStore } from "@stores/tournaments";
-import { TOURNAMENT } from "@/constants";
+import { TOURNAMENT, URCA_EMAIL } from "@/constants";
 import { isUnderAge } from "@/utils";
 import { useRegistrationDeadline } from "@composables/useRegistrationDeadline";
 import PlayerForm from "@components/forms/PlayerForm.vue";
@@ -257,6 +271,7 @@ interface StaffFormEntry {
 
 const currentStep = ref(0);
 const privacyAccepted = ref(false);
+const regulationAccepted = ref(false);
 const submitting = ref(false);
 const registrationProgress = ref({ current: 0, total: 0, step: "" });
 let currentTeamId: string | null = null;
@@ -365,8 +380,8 @@ function removePlayer(id: string) {
 }
 
 function nextStep() {
-  if (currentStep.value === 0 && !privacyAccepted.value) {
-    toast.add({ severity: "error", summary: "Erro", detail: "Tem de aceitar a Política de Privacidade para continuar", life: 3000 });
+  if (currentStep.value === 0 && (!privacyAccepted.value || !regulationAccepted.value)) {
+    toast.add({ severity: "error", summary: "Erro", detail: "Tem de aceitar a Política de Privacidade e o Regulamento para continuar", life: 3000 });
     return;
   }
   if (currentStep.value === 1 && (!teamData.name || !teamData.tournament)) {
